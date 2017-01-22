@@ -1,6 +1,8 @@
-/* Arduino Rotator Controller "2.0 Edition"
-   Anthony Good
-   K3NG
+/* Arduino Rotator Controller "wa1hco Edition"
+   Jeff Millar, WA1HCO
+   wa1hco@gmail.com
+   
+   Anthony Good, K3NG
    anthony.good@gmail.com
 
    Contributions from John Eigenbode, W3SA
@@ -562,8 +564,8 @@ You can tweak these, but read the online documentation!
 #define SERIAL2_BAUD_RATE             9600     // 9600
 #define SERIAL3_BAUD_RATE             9600     // 9600
 #define LCD_UPDATE_TIME                500     // LCD update time in milliseconds
-#define AZ_BRAKE_DELAY                3000     // in milliseconds
-#define EL_BRAKE_DELAY                3000     // in milliseconds
+#define AZ_BRAKE_DELAY                1000     // in milliseconds
+#define EL_BRAKE_DELAY                1000     // in milliseconds
 
 #define EEPROM_MAGIC_NUMBER 100
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
@@ -595,11 +597,11 @@ You can tweak these, but read the online documentation!
 #define AZ_REMOTE_UNIT_QUERY_TIME_MS     150  // how often we query the remote remote for azimuth
 #define EL_REMOTE_UNIT_QUERY_TIME_MS     150  // how often we query the remote remote for elevation
 
-// Depends on rotator interface, Values for wa1hco do everything board
+// Define polarity, depends on rotator interface, Values for wa1hco "do everything" box
 #define ROTATE_PIN_INACTIVE_VALUE        HIGH
 #define ROTATE_PIN_ACTIVE_VALUE          LOW
-#define BRAKE_RELEASE_OFF                HIGH  // means braked, used inside *break_release*() control functions
-#define BRAKE_RELEASE_ON                 LOW // means brake released, used inside *break_release*() control functions
+#define BRAKE_RELEASE_OFF                HIGH // means braked, used inside *break_release*() control functions
+#define BRAKE_RELEASE_ON                 LOW  // means brake released, used inside *break_release*() control functions
 
 #define AZIMUTH_SMOOTHING_FACTOR           0  // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR         0  // value = 0 to 99.9
@@ -723,16 +725,16 @@ byte lcdcolor = GREEN;  // default color of I2C LCD display
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT
 #ifdef OPTION_ENCODER_HALF_STEP_MODE      // Use the half-step state table (emits a code at 00 and 11)
 const unsigned char ttable[6][4] = {
-  {0x3 , 0x2, 0x1,  0x0}, {0x23, 0x0, 0x1, 0x0},
-  {0x13, 0x2, 0x0,  0x0}, {0x3 , 0x5, 0x4, 0x0},
-  {0x3 , 0x3, 0x4, 0x10}, {0x3 , 0x5, 0x3, 0x20}
+  {0x03, 0x02, 0x01, 0x00}, {0x23, 0x00, 0x01, 0x00},
+  {0x13, 0x02, 0x00, 0x00}, {0x03, 0x05, 0x04, 0x00},
+  {0x03, 0x03, 0x04, 0x10}, {0x03, 0x05, 0x03, 0x20}
 };
 #else                                      // Use the full-step state table (emits a code at 00 only)
 const unsigned char ttable[7][4] = {
-  {0x0, 0x2, 0x4,  0x0}, {0x3, 0x0, 0x1, 0x10},
-  {0x3, 0x2, 0x0,  0x0}, {0x3, 0x2, 0x1,  0x0},
-  {0x6, 0x0, 0x4,  0x0}, {0x6, 0x5, 0x0, 0x10},
-  {0x6, 0x5, 0x4,  0x0},
+  {0x00, 0x02, 0x04,  0x00}, {0x03, 0x00, 0x01, 0x10},
+  {0x03, 0x02, 0x00,  0x00}, {0x03, 0x02, 0x01, 0x00},
+  {0x06, 0x00, 0x04,  0x00}, {0x06, 0x05, 0x00, 0x10},
+  {0x06, 0x05, 0x04,  0x00},
 };
 #endif //OPTION_ENCODER_HALF_STEP_MODE 
 #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
@@ -5293,8 +5295,8 @@ void initialize_display()
   lcd.setBacklight(lcdcolor);
   #endif //FEATURE_I2C_LCD
   
-  lcd.setCursor(((LCD_COLUMNS-4)/2),0);
-  lcd.print("K3NG");
+  lcd.setCursor(((LCD_COLUMNS-6)/2),0);
+  lcd.print("wa1hco");
   if (LCD_COLUMNS < 20) 
   {
     lcd.setCursor(((LCD_COLUMNS-15)/2),1);  // W3SA
@@ -6014,7 +6016,8 @@ void service_request_queue()
               if (debug_mode) {Serial.print(F("->B"));}
               #endif //DEBUG_SERVICE_REQUEST_QUEUE
             }
-            if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) < ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)) 
+            if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) < 
+                ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)) 
             { // is there a second possible heading in overlap?
               if (abs(raw_azimuth - work_target_raw_azimuth) < abs((work_target_raw_azimuth+(360*HEADING_MULTIPLIER)) - raw_azimuth)) 
               { // is second possible heading closer?
@@ -6987,5 +6990,4 @@ void service_rotation_indicator_pin()
   } 
 }
 #endif //FEATURE_ROTATION_INDICATOR_PIN  
-
 
