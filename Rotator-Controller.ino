@@ -3259,8 +3259,6 @@ void update_display()
   last_direction_string = direction_string;
 }
 
-#include "BigDisplay.h" // LCD display with big azimuth font
-
 #endif // Feature LCD Display
 //--------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
