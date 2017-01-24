@@ -224,62 +224,14 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 
 #include "BigFonts.h"
 
-/* uncomment this section for Adafruit I2C LCD display */
-//#define FEATURE_LCD_DISPLAY
-//#define FEATURE_I2C_LCD   
-//#include <Adafruit_MCP23017.h>
-//#include <Adafruit_RGBLCDShield.h>
-//Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
-//#define FEATURE_ADAFRUIT_BUTTONS            // Uncomment this to use Adafruit LCD buttons for manual AZ/EL instead of normal buttons
-/* end of Adafruit I2C LCD display */
-
-/* uncomment the section for YourDuino.com I2C LCD display */
-//#define FEATURE_LCD_DISPLAY
-//#define FEATURE_I2C_LCD 
-//#define OPTION_INITIALIZE_YOURDUINO_I2C
-//#define I2C_ADDR    0x20
-//#define BACKLIGHT_PIN  3
-//#define En_pin  2
-//#define Rw_pin  1
-//#define Rs_pin  0
-//#define D4_pin  4
-//#define D5_pin  5
-//#define D6_pin  6
-//#define D7_pin  7
-//#define  LED_OFF  1
-//#define  LED_ON  0 
-//#include <LCD.h>                 
-//#include <LiquidCrystal_I2C.h>
-//LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
-/* end of of section to uncomment for YourDuino.com I2C LCD display */
-
-/* uncomment the section for DFRobot I2C LCD display */
-//#define FEATURE_LCD_DISPLAY
-//#define FEATURE_I2C_LCD 
-//#include <LiquidCrystal_I2C.h>
-//LiquidCrystal_I2C lcd(0x27,16,2); 
-/* end of of section to uncomment for DFRobot I2C LCD display */
-
-//#include <HMC5883L.h> // Uncomment for experimental HMC5883L digital compass support
-//HMC5883L compass;                        // Uncomment for HMC5883L digital compass support
-
-//#include <Adafruit_Sensor.h>    // uncomment for any Adafruit sensors/libraries
-
-//#include <ADXL345.h>  // Uncomment for elevation ADXL345 accelerometer using Love Electronics ADXL345 library
-//ADXL345 accel;        // Uncomment for elevation ADXL345 accelerometer support using Love Electronics ADXL345 library
-
-//#include <Adafruit_ADXL345.h>   // uncomment for elevation ADXL345 accelerometer using Adafruit ADXL345 library
-//Adafruit_ADXL345 accel = Adafruit_ADXL345(12345); // Uncomment for elevation ADXL345 accelerometer support using Adafruit ADXL345 library
-
-//#include <Adafruit_LSM303.h>     // uncomment for azimuth / elevation LSM303 compass / accelerometer
-//Adafruit_LSM303 lsm;    // Uncomment for LSM303 support (azimuth and/or elevation) using Adafruit LSM303 library
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
-
+// added Teensy 3.2, 3.1 as M20DX256
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644P__) || defined(__MK20DX256__)
 #define OPTION_SERIAL1_SUPPORT
 #endif
 
+// added Teensy 3.2, 3.1 as M20DX256
 #if defined(__AVR_ATmega2560__) || defined(__MK20DX256__)
 #define OPTION_SERIAL2_SUPPORT
 #define OPTION_SERIAL3_SUPPORT
@@ -481,7 +433,6 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 #define REMOTE_UNIT_NO_COMMAND           0
 #define REMOTE_UNIT_AZ_COMMAND           1
 #define REMOTE_UNIT_EL_COMMAND           2
-
 /* ------end of macros ------- */
 
 /* --------------------------- Settings ------------------------------------------------
@@ -622,9 +573,9 @@ You can tweak these, but read the online documentation!
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
 
 /*----------------------- variables -------------------------------------*/
-int azimuth = 0;
-int raw_azimuth = 0;
-int target_azimuth = 0;
+int azimuth            = 0;
+int raw_azimuth        = 0;
+int target_azimuth     = 0;
 int target_raw_azimuth = 0;
 
 byte incoming_serial_byte = 0;
@@ -734,7 +685,7 @@ const unsigned char ttable[6][4] = {
   {0x13, 0x02, 0x00, 0x00}, {0x03, 0x05, 0x04, 0x00},
   {0x03, 0x03, 0x04, 0x10}, {0x03, 0x05, 0x03, 0x20}
 };
-#else                                      // Use the full-step state table (emits a code at 00 only)
+#else                                     // Use the full-step state table (emits a code at 00 only)
 const unsigned char ttable[7][4] = {
   {0x00, 0x02, 0x04,  0x00}, {0x03, 0x00, 0x01, 0x10},
   {0x03, 0x02, 0x00,  0x00}, {0x03, 0x02, 0x01, 0x00},
@@ -794,7 +745,6 @@ byte remote_port_tx_sniff = 0;
 byte suspend_remote_commands = 0;
 #endif
 
-
 #ifdef DEBUG_POSITION_PULSE_INPUT
 //unsigned int az_position_pule_interrupt_handler_flag = 0;
 //unsigned int el_position_pule_interrupt_handler_flag = 0;
@@ -804,12 +754,9 @@ volatile unsigned int az_pulse_counter_ambiguous = 0;
 volatile unsigned int el_pulse_counter_ambiguous = 0;
 #endif //DEBUG_POSITION_PULSE_INPUT
 
-/*d
-
+/*
   Azimuth and Elevation calibraton tables - use with FEATURE_AZIMUTH_CORRECTION and/or FEATURE_ELEVATION_CORRECTION
-  
   You must have the same number of entries in the _from and _to arrays!
-
 */
 #ifdef FEATURE_AZIMUTH_CORRECTION
 float azimuth_calibration_from[]  = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
@@ -822,20 +769,13 @@ float elevation_calibration_to[]    = { 180, 0, 180};
 #endif //FEATURE_ELEVATION_CORRECTION
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
-
 void setup() 
 {
-  
   delay(1000);
-
   initialize_serial();
-
   initialize_peripherals();
-
   read_settings_from_eeprom(); 
-  
   initialize_pins();
-  
   read_azimuth();
   #ifdef FEATURE_YAESU_EMULATION
   report_current_azimuth();      // Yaesu - report the azimuth right off the bat without a C command; the Arduino doesn't wake up quick enough
@@ -856,7 +796,6 @@ void setup()
 }
 
 /*-------------------------- here's where the magic happens --------------------------------*/
-
 void loop() 
 { 
   check_serial();
@@ -881,7 +820,7 @@ void loop()
 
   #ifdef FEATURE_LCD_DISPLAY
   //update_display();
-  update_big_display();
+  update_big_display(); // Azimuth display with the large fonts
   #endif
   
   read_headings();
@@ -930,24 +869,21 @@ void loop()
   
   service_blink_led();
 }
+
 /* -------------------------------------- subroutines -----------------------------------------------
-
    Where the real work happens...
-
 */
 
-void read_headings(){
-  
+void read_headings()
+{
   read_azimuth();
   
   #ifdef FEATURE_ELEVATION_CONTROL
   read_elevation();
-  #endif
-  
+  #endif 
 }
 
 //--------------------------------------------------------------
-
 void service_blink_led()
 { 
   static unsigned long last_blink_led_transition = 0;
@@ -969,14 +905,12 @@ void service_blink_led()
 
 
 //--------------------------------------------------------------
-
 void profile_loop_time()
 {
   #ifdef DEBUG_PROFILE_LOOP_TIME 
   static unsigned long last_time = 0;
   static unsigned long last_print_time = 0;
 
-  
   average_loop_time = (average_loop_time + (millis()-last_time))/2.0;
   last_time = millis();
     
@@ -990,15 +924,13 @@ void profile_loop_time()
   #endif //DEBUG_PROFILE_LOOP_TIME  
 }
 
-
 //--------------------------------------------------------------
 void check_az_speed_pot() 
 {
   static unsigned long last_pot_check_time = 0;
   int pot_read = 0;
   byte new_azimuth_speed_voltage = 0;
-  
- 
+   
   if (az_speed_pot && azimuth_speed_voltage && ((millis() - last_pot_check_time) > 500))  {
     pot_read = analogRead(az_speed_pot);
     new_azimuth_speed_voltage = map(pot_read, SPEED_POT_LOW, SPEED_POT_HIGH, SPEED_POT_LOW_MAP, SPEED_POT_HIGH_MAP);
@@ -1022,6 +954,7 @@ void check_az_speed_pot()
     last_pot_check_time = millis();  
   }
 }
+
 //--------------------------------------------------------------
 void check_az_preset_potentiometer() 
 {
@@ -1080,8 +1013,8 @@ void check_az_preset_potentiometer()
     }    
   } //if (az_preset_pot)
 }
-//--------------------------------------------------------------
 
+//--------------------------------------------------------------
 void initialize_rotary_encoders()
 {
   #ifdef FEATURE_AZ_PRESET_ENCODER
@@ -1093,7 +1026,6 @@ void initialize_rotary_encoders()
   digitalWrite(az_rotary_preset_pin2, HIGH);
   #endif //OPTION_ENCODER_ENABLE_PULLUPS
   #endif //FEATURE_AZ_PRESET_ENCODER
-  
   
   #ifdef FEATURE_EL_PRESET_ENCODER
   pinMode(el_rotary_preset_pin1, INPUT);
@@ -1114,7 +1046,6 @@ void initialize_rotary_encoders()
   #endif //OPTION_ENCODER_ENABLE_PULLUPS
   #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
   
-  
   #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
   pinMode(el_rotary_position_pin1, INPUT);
   pinMode(el_rotary_position_pin2, INPUT); 
@@ -1124,7 +1055,6 @@ void initialize_rotary_encoders()
   #endif //OPTION_ENCODER_ENABLE_PULLUPS
   #endif //FEATURE_EL_POSITION_ROTARY_ENCODER    
 }
-
 
 //--------------------------------------------------------------
 #ifdef FEATURE_AZ_PRESET_ENCODER
@@ -1349,7 +1279,6 @@ void check_preset_encoders()
 #endif //FEATURE_AZ_PRESET_ENCODER
 
 //--------------------------------------------------------------
-
 #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
 void check_az_manual_rotate_limit() 
 {
@@ -1377,7 +1306,6 @@ void check_az_manual_rotate_limit()
 #endif //#ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
 
 //--------------------------------------------------------------
-
 #if defined(OPTION_EL_MANUAL_ROTATE_LIMITS) && defined(FEATURE_ELEVATION_CONTROL)
 void check_el_manual_rotate_limit() 
 {
@@ -1403,7 +1331,6 @@ void check_el_manual_rotate_limit()
   }
 }
 #endif //#ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
-
 
 //--------------------------------------------------------------
 void check_brake_release() 
@@ -1445,8 +1372,7 @@ void check_brake_release()
       in_el_brake_release_delay = 1;
     }  
   } 
-  #endif //FEATURE_ELEVATION_CONTROL
-  
+  #endif //FEATURE_ELEVATION_CONTROL  
 }
 
 //--------------------------------------------------------------
@@ -1708,6 +1634,7 @@ void yaesu_serial_command()
   }  
 }
 #endif //FEATURE_YAESU_EMULATION
+
 //--------------------------------------------------------------
 void clear_command_buffer()
 {
@@ -1715,9 +1642,7 @@ void clear_command_buffer()
   serial0_buffer[0] = 0;
 }
 
-
 //--------------------------------------------------------------
-
 #ifdef FEATURE_EASYCOM_EMULATION
 void easycom_serial_commmand()
 {
@@ -1739,9 +1664,7 @@ void easycom_serial_commmand()
   
   VE		        Request Version
   
-  Easycom has no way to report azimuth or elevation back to the client, or report errors
-  
-  
+  Easycom has no way to report azimuth or elevation back to the client, or report errors  
   */
   
   float heading = -1;
@@ -1873,6 +1796,7 @@ void easycom_serial_commmand()
   } 
 }
 #endif //FEATURE_EASYCOM_EMULATION
+
 //--------------------------------------------------------------
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_ANCILLARY_PIN_CONTROL)
 byte get_analog_pin(byte pin_number)
@@ -1920,13 +1844,8 @@ void remote_unit_serial_command()
 #ifdef FEATURE_REMOTE_UNIT_SLAVE  
 void service_remote_unit_serial_buffer()
 {
-  
-  
 /*
-
   This implements a protocol for host unit to remote unit communications
-
-
   Remote Slave Unit Protocol Reference
 
     PG - ping
@@ -1963,8 +1882,6 @@ void service_remote_unit_serial_buffer()
   Events
 
     EVSxy - Serial port read event; x = serial port number, y = byte returned
-
-
 */
   
   String command_string;
@@ -2284,6 +2201,7 @@ void service_remote_unit_serial_buffer()
 }
 
 #endif //FEATURE_REMOTE_UNIT_SLAVE
+
 //--------------------------------------------------------------
 void check_serial(){
   if (Serial.available()) 
@@ -2542,8 +2460,6 @@ void check_serial(){
     #endif //FEATURE_REMOTE_UNIT_SLAVE
   }
   #endif //OPTION_SERIAL4_SUPPORT  
-
-
 }
 
 //--------------------------------------------------------------
@@ -2755,9 +2671,7 @@ void check_buttons()
     } 
     
   }
-  
   #endif
-  
   
   if (button_stop) 
   {
@@ -2773,6 +2687,7 @@ void check_buttons()
     }      
   }  
 }
+
 //--------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
 char *azimuth_direction(int azimuth_in)
@@ -2798,6 +2713,7 @@ char *azimuth_direction(int azimuth_in)
   return (char *) "N";
 }
 #endif
+
 //--------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
 void update_display()
@@ -2959,7 +2875,6 @@ void update_display()
     #endif
 
     // ------------ AZ & EL -----------------------------------------------
-
     #ifdef FEATURE_ELEVATION_CONTROL
     
     #ifdef FEATURE_AZ_PRESET_ENCODER
@@ -3175,12 +3090,9 @@ void update_display()
     #endif //FEATURE_ELEVATION_CONTROL 
     
     push_lcd_update = 0;
-    
   }
 
   //     row 1 --------------------------------------------
-
-  
   if ((millis()-last_lcd_update) > LCD_UPDATE_TIME) 
   {
     #ifndef FEATURE_ELEVATION_CONTROL //---------------- az only -----------------------------------
@@ -3261,6 +3173,8 @@ void update_display()
 }
 
 //--------------------------------------------------------------
+// started from update_display()
+// stripped elevation options
 void update_big_display()
 {
   // update the LCD display
@@ -3419,7 +3333,6 @@ void update_big_display()
   }
 
   //     row 1 --------------------------------------------
-
   if ((millis()-last_lcd_update) > LCD_UPDATE_TIME) 
   {
     if (last_azimuth != azimuth) 
@@ -3443,6 +3356,7 @@ void update_big_display()
 } // update_big_dispaly()
 
 #endif // Feature LCD Display
+
 //--------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
 void clear_display_row(byte row_number)
@@ -3466,11 +3380,9 @@ void get_keystroke()
 }
 
 //--------------------------------------------------------------
-
 #ifdef FEATURE_YAESU_EMULATION
 void yaesu_x_command() 
 {  
-  
   if (serial0_buffer_index > 1) 
   {
     switch (serial0_buffer[1]) 
@@ -3568,6 +3480,7 @@ void yaesu_o_command()
   print_wrote_to_memory();
 }
 #endif //FEATURE_YAESU_EMULATION
+
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
 void print_wrote_to_memory()
@@ -3576,6 +3489,7 @@ void print_wrote_to_memory()
 }
 
 #endif //FEATURE_YAESU_EMULATION
+
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
 void clear_serial_buffer()
@@ -3585,8 +3499,8 @@ void clear_serial_buffer()
 }
 
 #endif //FEATURE_YAESU_EMULATION
-//--------------------------------------------------------------
 
+//--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
 void yaesu_f_command()
 {
@@ -3608,6 +3522,7 @@ void yaesu_f_command()
   print_wrote_to_memory();
 }
 #endif //FEATURE_YAESU_EMULATION
+
 //--------------------------------------------------------------
 #if defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
 void yaesu_o2_command()
@@ -3621,7 +3536,6 @@ void yaesu_o2_command()
   print_wrote_to_memory();
 }
 #endif //defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
-
 
 //--------------------------------------------------------------
 #if defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
@@ -3638,10 +3552,8 @@ void yaesu_f2_command()
 #endif //defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
 
 //--------------------------------------------------------------
-
 void read_settings_from_eeprom()
 {
-
   //EEPROM_readAnything(0,configuration);
 
   byte* p = (byte*)(void*)&configuration;
@@ -3691,9 +3603,7 @@ void read_settings_from_eeprom()
     #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
     elevation = int(configuration.last_elevation*HEADING_MULTIPLIER);
     #endif //FEATURE_EL_POSITION_ROTARY_ENCODER
-    
-    
-    
+       
     #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
     raw_azimuth = int(configuration.last_azimuth*HEADING_MULTIPLIER);
     if (raw_azimuth >= (360*HEADING_MULTIPLIER))
@@ -3725,9 +3635,10 @@ void read_settings_from_eeprom()
     initialize_eeprom_with_defaults();
   }
 }
-//--------------------------------------------------------------
-void initialize_eeprom_with_defaults(){
 
+//--------------------------------------------------------------
+void initialize_eeprom_with_defaults()
+{
   #ifdef DEBUG_EEPROM
   if (debug_mode) 
   {
@@ -3749,7 +3660,6 @@ void initialize_eeprom_with_defaults(){
   #endif
   write_settings_to_eeprom();
 }
-
 
 //--------------------------------------------------------------
 void write_settings_to_eeprom()
@@ -3775,7 +3685,6 @@ void write_settings_to_eeprom()
 }
 
 //--------------------------------------------------------------
-
 void az_check_operation_timeout()
 {
   // check if the last executed rotation operation has been going on too long
@@ -3790,7 +3699,6 @@ void az_check_operation_timeout()
 }
 
 //--------------------------------------------------------------
-
 #ifdef FEATURE_TIMED_BUFFER
 void clear_timed_buffer()
 {
@@ -3799,6 +3707,7 @@ void clear_timed_buffer()
   timed_buffer_entry_pointer = 0;
 }
 #endif //FEATURE_TIMED_BUFFER
+
 //--------------------------------------------------------------
 void yaesu_m_command()
 {
@@ -3832,7 +3741,6 @@ void yaesu_m_command()
 }
 
 //--------------------------------------------------------------
-
 #ifdef FEATURE_TIMED_BUFFER
 void initiate_timed_buffer()
 {
@@ -3866,6 +3774,7 @@ void initiate_timed_buffer()
   }
 }
 #endif //FEATURE_TIMED_BUFFER
+
 //--------------------------------------------------------------
 #ifdef FEATURE_TIMED_BUFFER
 void print_timed_buffer_empty_message()
@@ -3876,6 +3785,7 @@ void print_timed_buffer_empty_message()
 }
 
 #endif //FEATURE_TIMED_BUFFER
+
 //--------------------------------------------------------------
 #ifdef FEATURE_TIMED_BUFFER
 void check_timed_interval()
@@ -3913,6 +3823,7 @@ void check_timed_interval()
   #endif
 }
 #endif //FEATURE_TIMED_BUFFER
+
 //--------------------------------------------------------------
 #ifdef FEATURE_TIMED_BUFFER
 void yaesu_az_load_timed_intervals()
@@ -3956,7 +3867,6 @@ void yaesu_az_load_timed_intervals()
 #endif //FEATURE_TIMED_BUFFER
 
 //--------------------------------------------------------------
-
 void read_azimuth()
 {
   unsigned int previous_raw_azimuth = raw_azimuth;
@@ -4212,7 +4122,6 @@ void read_azimuth()
 }
 
 //--------------------------------------------------------------
-
 void output_debug()
 {
   if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) 
@@ -4315,8 +4224,7 @@ void output_debug()
       Serial.print(F("\tAZ Preset Pot Setting: "));
       Serial.print(map(analogRead(az_preset_pot), AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP));
     }
-    
-    
+        
     Serial.println();
 
     #ifdef FEATURE_ELEVATION_CONTROL
@@ -4511,7 +4419,6 @@ void report_current_azimuth()
 }
 
 //--------------------------------------------------------------
-
 void print_help()
 {
   // The H command
@@ -4547,7 +4454,6 @@ void print_help()
 }
 
 //--------------- Elevation -----------------------
-
 #ifdef FEATURE_ELEVATION_CONTROL
 void el_check_operation_timeout()
 {
@@ -4875,7 +4781,6 @@ void read_elevation()
 #endif
 
 //--------------------------------------------------------------
-
 #ifdef FEATURE_ELEVATION_CONTROL
 void report_current_elevation() 
 {
@@ -4910,7 +4815,6 @@ void report_current_elevation()
   Serial.println(elevation_string);
   #endif //FEATURE_YAESU_EMULATION
 }
-
 #endif
 
 //--------------------------------------------------------------
@@ -5285,13 +5189,11 @@ void initialize_pins()
   if (serial_led) 
   {
     pinMode(serial_led, OUTPUT);
-  }
-  
+  } 
   if (overlap_led) 
   {
     pinMode(overlap_led, OUTPUT);
   }
-
   if (brake_az) 
   {
     // apparently, have to set output before setting output level
@@ -5299,13 +5201,11 @@ void initialize_pins()
     pinMode(brake_az, OUTPUT);
     digitalWrite(brake_az, BRAKE_RELEASE_OFF);
   }
-  
   if (az_speed_pot) 
   {
     pinMode(az_speed_pot, INPUT);
     digitalWrite(az_speed_pot, LOW);
   }
-  
   if (az_preset_pot) 
   {
     pinMode(az_preset_pot, INPUT);
@@ -5446,7 +5346,6 @@ void initialize_pins()
 }  
 
 //--------------------------------------------------------------
-
 void initialize_serial()
 {  
   Serial.begin(SERIAL_BAUD_RATE);
@@ -5470,7 +5369,6 @@ void initialize_serial()
 }
 
 //--------------------------------------------------------------
-
 #ifdef FEATURE_LCD_DISPLAY
 void initialize_display()
 {    
@@ -5502,13 +5400,11 @@ void initialize_display()
 
  //============================================
  // code inserted for font setup
- 
  loadchars(); // configure the LCD for Big Fonts
 }
 #endif 
 
 //--------------------------------------------------------------
-
 void initialize_peripherals()
 {  
   #ifdef FEATURE_WIRE_SUPPORT 
@@ -5584,6 +5480,7 @@ void submit_request(byte axis, byte request, int parm)
   }   
   #endif //FEATURE_ELEVATION_CONTROL 
 }
+
 //--------------------------------------------------------------
 void service_rotation()
 {   
@@ -5712,7 +5609,6 @@ void service_rotation()
       }   
     }    
   } //((az_state == SLOW_START_CW) || (az_state == SLOW_START_CCW))
-
 
   // timed slow down ------------------------------------------------------------------------------------------------------
   if (((az_state == TIMED_SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CCW)) && ((millis() - az_last_step_time) >= (TIMED_SLOW_DOWN_TIME/AZ_SLOW_DOWN_STEPS))) 
@@ -6674,6 +6570,7 @@ byte current_az_state()
   }  
   return NOT_DOING_ANYTHING;
 }
+
 //--------------------------------------------------------------
 #ifdef FEATURE_ELEVATION_CONTROL
 byte current_el_state()
@@ -6828,7 +6725,6 @@ byte submit_remote_command(byte remote_command_to_send)
     return 1;
   }
 }
-
 #endif //FEATURE_HOST_REMOTE_PROTOCOL
 
 //--------------------------------------------------------------------------
@@ -6843,8 +6739,8 @@ byte is_ascii_number(byte char_in)
     return 0;
   }
 }
-
 #endif //FEATURE_HOST_REMOTE_PROTOCOL
+
 //--------------------------------------------------------------------------
 #ifdef FEATURE_HOST_REMOTE_PROTOCOL
 void service_remote_communications_incoming_serial_buffer()
@@ -6940,8 +6836,8 @@ void service_remote_communications_incoming_serial_buffer()
     remote_unit_incoming_buffer_timeouts++;
   }
 }
-
 #endif //FEATURE_HOST_REMOTE_PROTOCOL
+
 //--------------------------------------------------------------------------
 #ifdef FEATURE_AZIMUTH_CORRECTION
 float correct_azimuth(float azimuth_in)
@@ -7131,8 +7027,8 @@ void check_joystick()
   }
 }
 #endif //FEATURE_JOYSTICK_CONTROL
-//--------------------------------------------------------------------------
- 
+
+//-------------------------------------------------------------------------- 
 #ifdef FEATURE_ROTATION_INDICATOR_PIN
 void service_rotation_indicator_pin()
 {
