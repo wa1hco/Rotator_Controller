@@ -4,7 +4,7 @@ void loadchars()
 {
   // Define the custom characters, only loadchars() needs to know
   byte custchar[8][8] = {
-   { // 0
+   {    // 0, upper half
      B11111,
      B11111,
      B11111,
@@ -13,7 +13,7 @@ void loadchars()
      B00000,
      B00000,
      B00000
-   }, { // 1
+   }, { // 1, lower right corner
      B00000,
      B00000,
      B00000,
@@ -22,7 +22,7 @@ void loadchars()
      B00111,
      B01111,
      B11111
-   }, { // 2
+   }, { // 2, upper half
      B11111,
      B11111,
      B11111,
@@ -31,7 +31,7 @@ void loadchars()
      B00000,
      B00000,
      B00000   
-   }, { // 3
+   }, { // 3, lower left corner
      B00000,
      B00000,
      B00000,
@@ -40,7 +40,7 @@ void loadchars()
      B11100,
      B11110,
      B11111
-   }, { // 4
+   }, { // 4, upper right corner
      B11111,
      B01111,
      B00111,
@@ -49,7 +49,7 @@ void loadchars()
      B00000,
      B00000,
      B00000
-   }, { // 5
+   }, { // 5, lower half
      B00000,
      B00000,
      B00000,
@@ -58,7 +58,7 @@ void loadchars()
      B11111,
      B11111,
      B11111
-   }, { // 6
+   }, { // 6, upper left corner
      B11111,
      B11110,
      B11100,
@@ -67,7 +67,7 @@ void loadchars()
      B00000,
      B00000,
      B00000
-   }, { // 7
+   }, { // 7, deg symbol
      B00000,
      B00000,
      B01110,
@@ -88,73 +88,89 @@ void loadchars()
   lcd.createChar(7, custchar[7]);  
 }
 
+//------------------------------------------------------------------------
 // digit 0-9; col, row in LCD character, symbol
 // only printbigchar() need to know about the font design
-void printbigchar(byte digit, byte col, byte row, byte symbol = 0) 
+// prints a digit on a 4x4 character grid with special symbols
+// 5th column of digit is blanked
+// digit is 0-9 and -1 for blank
+// row, col define the upper left corner of the digit display
+// symbol put a deg symbol on the character
+//
+void printbigchar(int digit, int col, int row, int symbol = 0) 
 {
   // Define the large fonts, borrowed from GreenHerron RT-21 pictures
+  // 255 defined as all pixels on, 254 defined as all pixels off
+  #define UH  0
+  #define LR  1
+  //#define UH  2
+  #define LL  3
+  #define UR  4
+  #define LH  5
+  #define UL  6
+  #define deg 7
   const byte bignums[10][4][4] = 
   {
-    { //0 tested
-      {  1,   2,   2,   3},
+    {   // 0, zero
+      { LR,  UH,  UH,  LL},
       {255, 254, 254, 255},
       {255, 254, 254, 255},
-      {  4,   5,   5,   6}
-    },{ //1 tested
-      {254,   1, 255, 254},
+      { UR,  LH,  LH,  UL}
+    },{ // 1, one
+      {254,  LR, 255, 254},
       {254, 254, 255, 254},
       {254, 254, 255, 254},
-      {254,   5, 255,   5}
-    },{ //2 tested
-      {  1,   2,   2,   3},
-      {254, 254,   5,   6},
-      {  1,   2, 254, 254},
-      {255,   5,   5,   5}
-    },{ //3
-      {  1,   2,   2,   3},
-      {254, 254,   5,   6},
-      {254,   2,   2,   3},
-      {  4,   5,   5,   6}
-    },{ //4 tested
+      {254,  LH, 255,  LH}
+    },{ // 2, two
+      { LR,  UH,  UH,  LL},
+      {254, 254,  LH,  UL},
+      { LR,  UH, 254, 254},
+      {255,  LH,  LH,  LH}
+    },{ // 3, three
+      { LR,  UH,  UH,  LL},
+      {254, 254,  LH,  UL},
+      {254, 254,  UH,  LL},
+      { UR,  LH,  LH,  UL}
+    },{ // 4, four
       {255, 254, 254, 255},
       {255, 254, 254, 255},
-      {  4,   2,   2, 255},
+      { UR,  UH,  UH, 255},
       {254, 254, 254, 255}
-    },{ // 5 tested
-      {255,   2,   2,   2},
-      {255, 254, 254, 254},
-      {  4,   2,   2,   3},
-      {  4,   5,   5,   6}
-    },{ // 6 tested
-      {  1,   2,   2,   3},
-      {255, 254, 254, 254},
-      {255,   2,   2,   3},
-      {  4,   5,   5,   6}
-    },{ // 7 tested
-      {  2,   2,   2, 255},
-      {254, 254,   5,   6},
-      {  5,   2, 254, 254},
-      {255, 254, 254, 254}
-    },{ //8 tested
-      {  1,   2,   2,   3},
-      {  4,   5,   5,   6},
-      {  1,   2,   2,   3},
-      {  4,   5,   5,   6}
-    },{ //9 tested
-      {  1,   2,   2,   3},
-      {  4,   5,   5, 255},
+    },{ // 5, five
+      {255,  UH,  UH,  UH},
+      { UR,  LH,  LH,  LL},
       {254, 254, 254, 255},
-      {  4,   5,   5,   6}
+      { UR,  LH,  LH,  UL}
+    },{ // 6, six
+      { LR,  UH,  UH,  LL},
+      {255, 254, 254, 254},
+      {255,  UH,  UH,  LL},
+      { UR,  LH,  LH,  UL}
+    },{ // 7, seven
+      { UR,  UH,  UH, 255},
+      {254, 254,  LR,  UL},
+      {254, 254, 255, 254},
+      {254, 254, 255, 254}
+    },{ // 8, eight
+      { LR,  UH,  UH,  LL},
+      { UR,  LH,  LH,  UL},
+      { LR,  UH,  UH,  LL},
+      { UR,  LH,  LH,  UL}
+    },{ // 9, ninr
+      { LR,  UH,  UH,  LL},
+      { UR,  LH,  LH, 255},
+      {254, 254, 254, 255},
+      { UR,  LH,  LH,  UL}
     }
   }; 
 
   // print the large characters
-  if ((digit > 0) & (digit < 9)) 
+  if ((digit >= 0) & (digit <= 9)) // if valid digit
   {
     // loop over the font and write to lcd
-    for (int i = 0; i < 4; i++)    // for each row
+    for (int i = 0; i < 4; i++)    // for each row of fond
     {
-      lcd.setCursor(col, row + i); //set the row address
+      lcd.setCursor(col, row + i); // set the row address
       for (int j = 0; j < 4; j++)  // for each column of font
       {
         lcd.write(bignums[digit][i][j]); // increments the col address also
@@ -167,8 +183,8 @@ void printbigchar(byte digit, byte col, byte row, byte symbol = 0)
       lcd.setCursor(col + 4, row + 0);
       lcd.write(7); // deg symbol
     } 
-    else if (symbol == 2) 
-    { // not a useful symbol
+    else if (symbol == 2) // not a useful symbol
+    { 
       lcd.setCursor(col + 3, row);
       lcd.write(4);
       lcd.setCursor(col + 3, row + 1);
@@ -179,7 +195,7 @@ void printbigchar(byte digit, byte col, byte row, byte symbol = 0)
   else if ( digit == -1) // print a blank
   {
     // loop over the cell to write a blank
-    for (int i = 0; i < 4; i++)    // for each row
+    for (int i = 0; i < 4; i++)    // for each row of fond
     {
       lcd.setCursor(col, row + i); //set the row address
       for (int j = 0; j < 5; j++)  // for each column of font
@@ -199,19 +215,12 @@ void printbigazimuth(int azimuth)
   int tens;
   int ones;
   
-  hundreds = azimuth / 100;
+  hundreds =  azimuth / 100;
   tens     = (azimuth - 100 * hundreds) / 10;
   ones     = (azimuth - 100 * hundreds - 10 * tens);
-  if (hundreds > 0)
-  {
-    //printbigchar(byte digit, byte col, byte row, byte symbol = 0)
-    printbigchar(hundreds, 0,   0,  0);     
-  } 
-  else
-  {
-    // flag printing blank
-    printbigchar(-1, 0, 0, 0);
-  }
+  
+  //printbigchar(byte digit, byte col, byte row, byte symbol = 0)
+  printbigchar(hundreds, 0,   0,  0);     
   printbigchar(tens,     5,   0,  0);     
   printbigchar(ones,    10,   0,  1);  // flag degree symbol
 }

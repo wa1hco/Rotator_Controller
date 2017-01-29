@@ -16,8 +16,8 @@
 //---------|-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|---|---|---|---|---|
 // Audio   | | | | | | |6|7| |9|10|11|12|13|14|15|  |  |18|19|  |  |22|23|  |  |  |  |  |  |  |  |  |  |   |   |   |   |   |
 // Serial  |R|T| | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   |   |   |   |
-// LCD     | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  | G| Y|  |  |D7|  |D6|  |D5|  |D4|  |  |  |   |   |   |   |   |
-// LED     | | | | | | | | | | |  |  |  |  |  |  |RS|EN|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   |   |   |   |
+// LCD     | | | | | | | | | | |  |  |  |  |  |  |RS|EN|  |  |  |  |  |  |D7|  |D6|  |D5|  |D4|  |  |  |   |   |   |   |   |
+// LED     | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  | G| Y|  |  |  |  |  |  |  |  |  |  | R|  |   |   |   |   |   |
 // Relays  | | |1|2| | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 4|  | 3|  |  |  |  |   |   |   |   |   |
 // Key     | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |KY|  |  |   |   |   |   |   |
 // Pots    | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |PT1|PT2|   |   |   |
@@ -65,10 +65,10 @@
 #define rotate_ccw_freq         0           // optional - CCW variable frequency output
 #define button_cw               0           // normally open button to ground for manual CW rotation (schematic pin: A1)
 #define button_ccw              0           // normally open button to ground for manual CCW rotation (schematic pin: A2)
-#define serial_led              0           // LED blinks when command is received on serial port (set to 0 to disable)
+#define serial_led              LEDGrnPin   // LED blinks when command is received on serial port (set to 0 to disable)
 #define rotator_analog_az       PotTopPin   // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
 #define azimuth_speed_voltage   0           // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
-#define overlap_led             0           // line goes high when azimuth rotator is in overlap (> 360 rotators)
+#define overlap_led             LEDYelPin   // line goes high when azimuth rotator is in overlap (> 360 rotators)
 #define brake_az                Relay3Pin   // goes high to disengage azimuth brake (set to 0 to disable)
 #define az_speed_pot            0           // connect to wiper of 1K to 10K potentiometer for speed control (set to 0 to disable)
 #define az_preset_pot           PotBotPin   // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)

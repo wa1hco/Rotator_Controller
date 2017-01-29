@@ -10,7 +10,6 @@
 /* host and remote unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE       //uncomment this to make this unit a remote unit controlled by a host unit
 
-
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
@@ -42,16 +41,16 @@
 #define OPTION_POSITION_PULSE_INPUT_PULLUPS  // define to enable weak pullups on position pulse inputs
 
 /* less often used features and options */
-//#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
-//#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
+//#define FEATURE_TIMED_BUFFER              // Support for Yaesu timed buffer commands
+//#define OPTION_SERIAL_HELP_TEXT           // Yaesu help command prints help
 //#define FEATURE_PARK
 //#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 //#define OPTION_EL_MANUAL_ROTATE_LIMITS
-//#define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
-//#define OPTION_EASYCOM_EL_QUERY_COMMAND // Adds non-standard Easycom command: EL with no parm returns current elevation
+//#define OPTION_EASYCOM_AZ_QUERY_COMMAND   // Adds non-standard Easycom command: AZ with no parm returns current azimuth
+//#define OPTION_EASYCOM_EL_QUERY_COMMAND   // Adds non-standard Easycom command: EL with no parm returns current elevation
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 //#define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
-#define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
+//#define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 //#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table below
 //#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table below
 //#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
@@ -71,7 +70,7 @@
   */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
-#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
@@ -82,14 +81,14 @@
 //#define DEBUG_AZ_PRESET_POT
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
-#define DEBUG_BRAKE
+//#define DEBUG_BRAKE
 //#define DEBUG_OVERLAP
 //#define DEBUG_DISPLAY
 //#define DEBUG_AZ_CHECK_OPERATION_TIMEOUT
 //#define DEBUG_TIMED_BUFFER
 //#define DEBUG_EL_CHECK_OPERATION_TIMEOUT
 //#define DEBUG_VARIABLE_OUTPUTS
-#define DEBUG_ROTATOR
+//#define DEBUG_ROTATOR
 //#define DEBUG_SUBMIT_REQUEST
 //#define DEBUG_SERVICE_ROTATION
 //#define DEBUG_POSITION_ROTARY_ENCODER

@@ -184,7 +184,6 @@
 
 */
 
-
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <math.h> 
@@ -196,19 +195,18 @@
 //#include "pins_m0upu.h"
 
 //#define CODE_VERSION "2013091101"
-#define CODE_VERSION "2016060501"
+#define CODE_VERSION "2017012701"
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
 #define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator
                                                 // (the Yaesu GS-232B Emulation Z command will override this and write the setting to eeprom)
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 540 // the default rotation capability of the rotator in degrees
                                                 // (the Yaesu P36 and P45 commands will override this and write the setting to eeprom)
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 
 /* ---------------------------- object declarations ----------------------------------------------
      Object declarations are required for several devices, including LCD displays, compass devices, and accelerometers
-   
 */
 
 /* uncomment this section for classic 4 bit interface LCD display (in addition to FEATURE_LCD_DISPLAY above) */
@@ -222,8 +220,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_d7_pin); 
 /* end of classic 4 bit interface LCD display section */
 
-#include "BigFonts.h"
-
+#include "BigFonts.h"  // this defines how to bit fonts on a 4 line display
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 // added Teensy 3.2, 3.1 as M20DX256
@@ -333,7 +330,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 #define EL 2
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT 
-#define DIR_CCW 0x10                      // CW Encoder Code (Do not change)
+#define DIR_CCW 0x10                      //  CW Encoder Code (Do not change)
 #define DIR_CW 0x20                       // CCW Encoder Code (Do not change)
 #endif //FEATURE_ROTARY_ENCODER_SUPPORT
 
@@ -439,7 +436,8 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 You can tweak these, but read the online documentation!
 */
 
-// analog voltage calibration - these are default values; you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
+// analog voltage calibration - these are default values; 
+// you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
 #define ANALOG_AZ_FULL_CCW               4
 #define ANALOG_AZ_FULL_CW             1009
 #define ANALOG_EL_0_DEGREES              2
@@ -489,7 +487,7 @@ You can tweak these, but read the online documentation!
 #define EL_VARIABLE_FREQ_OUTPUT_HIGH    50    // Frequency in hertz of maximum speed
 
 // Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
-#define AZ_MANUAL_ROTATE_CCW_LIMIT       0    // if using a rotator that starts at 180 degrees, set this to something like 185
+#define AZ_MANUAL_ROTATE_CCW_LIMIT     185    // if using a rotator that starts at 180 degrees, set this to something like 185
 #define AZ_MANUAL_ROTATE_CW_LIMIT      535    // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
 
 // Settings for OPTION_EL_MANUAL_ROTATE_LIMITS
@@ -519,7 +517,7 @@ You can tweak these, but read the online documentation!
 #define SERIAL1_BAUD_RATE             9600     // 9600
 #define SERIAL2_BAUD_RATE             9600     // 9600
 #define SERIAL3_BAUD_RATE             9600     // 9600
-#define LCD_UPDATE_TIME                500     // LCD update time in milliseconds
+#define LCD_UPDATE_TIME                200     // LCD update time in milliseconds
 #define AZ_BRAKE_DELAY                1000     // in milliseconds
 #define EL_BRAKE_DELAY                1000     // in milliseconds
 
@@ -553,7 +551,9 @@ You can tweak these, but read the online documentation!
 #define AZ_REMOTE_UNIT_QUERY_TIME_MS     150  // how often we query the remote remote for azimuth
 #define EL_REMOTE_UNIT_QUERY_TIME_MS     150  // how often we query the remote remote for elevation
 
-// Define polarity, depends on rotator interface, Values for wa1hco "do everything" box
+// Define polarity, depends on rotator interface
+//   Values for wa1hco "do everything" box
+//     Arduino digital pin, optoisolator pull down to light, optoisolator pulls down relay coil
 #define ROTATE_PIN_INACTIVE_VALUE        HIGH
 #define ROTATE_PIN_ACTIVE_VALUE          LOW
 #define BRAKE_RELEASE_OFF                HIGH // means braked, used inside *break_release*() control functions
@@ -966,45 +966,69 @@ void check_az_preset_potentiometer()
   byte button_read = 0;
   static byte pot_changed_waiting = 0;
 
-  if (az_preset_pot){  
-    if (last_pot_read == 9999) {  // initialize last_pot_read the first time we hit this subroutine
+  if (az_preset_pot)
+  {  
+    if (last_pot_read == 9999) // initialize last_pot_read the first time we hit this subroutine
+    {  
       last_pot_read = analogRead(az_preset_pot);
     }
       
-    if (!pot_changed_waiting) {
-      if (preset_start_button) { // if we have a preset start button, check it
+    if (!pot_changed_waiting) 
+    {
+      if (preset_start_button) // if we have a preset start button, check it
+      { 
         button_read = digitalRead(preset_start_button);
         if (button_read == LOW) {check_pot = 1;}
-      } else {  // if not, check the pot every 500 mS
+      } else // if not, check the pot every 500 mS
+      {  
         if ((millis() - last_pot_check_time) < 250) {check_pot = 1;}        
       }  
-      if (check_pot) {
+      if (check_pot) 
+      {
         pot_read = analogRead(az_preset_pot);
-        new_pot_azimuth = map(pot_read, AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP);
+        new_pot_azimuth = map(pot_read, 
+                              AZ_PRESET_POT_FULL_CW, 
+                              AZ_PRESET_POT_FULL_CCW, 
+                              AZ_PRESET_POT_FULL_CW_MAP, 
+                              AZ_PRESET_POT_FULL_CCW_MAP);
+                              
         if ((abs(last_pot_read - pot_read) > 4) && (abs(new_pot_azimuth - (raw_azimuth/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) {
           pot_changed_waiting = 1;
-          if (debug_mode) {Serial.println(F("check_az_preset_potentiometer: in pot_changed_waiting"));}
+          if (debug_mode) 
+          {
+            Serial.println(F("check_az_preset_potentiometer: in pot_changed_waiting"));
+          }
           last_pot_read = pot_read;
         }              
       }
       last_pot_check_time = millis();
-    } else {  // we're in pot change mode
+    } else // no preset button
+    {  
       pot_read = analogRead(az_preset_pot);
-      if (abs(pot_read - last_pot_read) > 3) {  // if the pot has changed, reset the timer
+      if (abs(pot_read - last_pot_read) > 3) // if the pot has changed, reset the timer
+      {  
         last_pot_check_time = millis();
         last_pot_read = pot_read;
-      } else { 
-        if ((millis() - last_pot_check_time) >= 250) {  // has it been awhile since the last pot change?
-          new_pot_azimuth = map(pot_read, AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP);
+      } else 
+      { 
+        if ((millis() - last_pot_check_time) >= 250) // has it been awhile since the last pot change?
+        {  
+          new_pot_azimuth = map(pot_read, 
+                                AZ_PRESET_POT_FULL_CW, 
+                                AZ_PRESET_POT_FULL_CCW, 
+                                AZ_PRESET_POT_FULL_CW_MAP, 
+                                AZ_PRESET_POT_FULL_CCW_MAP);
+                                
           #ifdef DEBUG_AZ_PRESET_POT
-          if (debug_mode) {
+          if (debug_mode) 
+          {
             Serial.print(F("check_az_preset_potentiometer: pot change - current raw_azimuth: "));
             Serial.print(raw_azimuth/HEADING_MULTIPLIER);
             Serial.print(F(" new_azimuth: "));
             Serial.println(new_pot_azimuth);
           }
           #endif //DEBUG_AZ_PRESET_POT
-          submit_request(AZ,REQUEST_AZIMUTH_RAW,new_pot_azimuth*HEADING_MULTIPLIER);
+          submit_request(AZ, REQUEST_AZIMUTH_RAW,new_pot_azimuth*HEADING_MULTIPLIER);
           pot_changed_waiting = 0;
           last_pot_read = pot_read;
           last_pot_check_time = millis();
@@ -1087,8 +1111,9 @@ void check_preset_encoders()
   #endif //FEATURE_EL_PRESET_ENCODER
  
   #ifdef FEATURE_AZ_PRESET_ENCODER
-  if (az_encoder_result) {                                    // If rotary encoder modified  
-    az_timestamp[0] = az_timestamp[1];                     // Encoder step timer
+  if (az_encoder_result) // If rotary encoder modified 
+  {                                     
+    az_timestamp[0] = az_timestamp[1];   // Encoder step timer
     az_timestamp[1] = az_timestamp[2]; 
     az_timestamp[2] = az_timestamp[3]; 
     az_timestamp[3] = az_timestamp[4]; 
@@ -1099,28 +1124,34 @@ void check_preset_encoders()
     unsigned long az_elapsed_time = (az_timestamp[4] - az_timestamp[0]); // Encoder step time difference for 10's step
 
     #ifdef OPTION_PRESET_ENCODER_RELATIVE_CHANGE
-    if ((preset_encoders_state == ENCODER_IDLE) || (preset_encoders_state == ENCODER_EL_PENDING)) {
-      if (az_request_queue_state == IN_PROGRESS_TO_TARGET) {
+    if ((preset_encoders_state == ENCODER_IDLE) || (preset_encoders_state == ENCODER_EL_PENDING)) 
+    {
+      if (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
+      {
         az_encoder_raw_degrees = target_raw_azimuth;
-      } else {
+      } else 
+      {
         az_encoder_raw_degrees = raw_azimuth;
       }
     }
     #endif //OPTION_PRESET_ENCODER_RELATIVE_CHANGE
  
-    if (az_encoder_result == DIR_CW) {                 
+    if (az_encoder_result == DIR_CW) 
+    {                 
       if (az_elapsed_time < 250 /* mSec */) {az_encoder_raw_degrees += (5*HEADING_MULTIPLIER);} else {az_encoder_raw_degrees += (1*HEADING_MULTIPLIER);};  // Single deg increase unless encoder turned quickly then 10's step         
       //if (az_encoder_raw_degrees >=(360*HEADING_MULTIPLIER)) {az_encoder_raw_degrees -= (360*HEADING_MULTIPLIER);};                    
-      if (az_encoder_raw_degrees >((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)) {
-        az_encoder_raw_degrees = 
-          ((configuration.azimuth_starting_point*HEADING_MULTIPLIER)
+      if (az_encoder_raw_degrees >((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)) 
+      {
+        az_encoder_raw_degrees = ((configuration.azimuth_starting_point*HEADING_MULTIPLIER)
            /* + ((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER) - az_encoder_raw_degrees*/);
       }                                    
     }
-    if (az_encoder_result == DIR_CCW) {                     
+    if (az_encoder_result == DIR_CCW) 
+    {                     
       if (az_elapsed_time < 250 /* mSec */) {az_encoder_raw_degrees -= (5*HEADING_MULTIPLIER);} else {az_encoder_raw_degrees -= (1*HEADING_MULTIPLIER);};   // Single deg decrease unless encoder turned quickly then 10's step
       //if (az_encoder_raw_degrees < 0) {az_encoder_raw_degrees = (360*HEADING_MULTIPLIER);};                                
-      if (az_encoder_raw_degrees < (configuration.azimuth_starting_point*HEADING_MULTIPLIER)) {
+      if (az_encoder_raw_degrees < (configuration.azimuth_starting_point*HEADING_MULTIPLIER)) 
+      {
         az_encoder_raw_degrees = (((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)
           /*- (az_encoder_raw_degrees-(configuration.azimuth_starting_point*HEADING_MULTIPLIER))*/);
       }                                         
@@ -1131,16 +1162,20 @@ void check_preset_encoders()
     push_lcd_update = 1;                     // push an LCD update
     #endif //FEATURE_LCD_DISPLAY
     
-    if (preset_encoders_state == ENCODER_IDLE) {
+    if (preset_encoders_state == ENCODER_IDLE) 
+    {
       preset_encoders_state = ENCODER_AZ_PENDING;
-    } else {
-      if (preset_encoders_state == ENCODER_EL_PENDING) {
+    } else 
+    {
+      if (preset_encoders_state == ENCODER_EL_PENDING) 
+      {
         preset_encoders_state = ENCODER_AZ_EL_PENDING;
       }
     }
     
     #ifdef DEBUG_PRESET_ENCODERS
-    if (debug_mode) {
+    if (debug_mode) 
+    {
       Serial.print(F("check_preset_encoders: az target: "));
       Serial.println(az_encoder_raw_degrees/HEADING_MULTIPLIER,1);
     }
@@ -1152,17 +1187,21 @@ void check_preset_encoders()
   #ifdef FEATURE_EL_PRESET_ENCODER
   
   #ifdef OPTION_PRESET_ENCODER_RELATIVE_CHANGE
-  if ((preset_encoders_state == ENCODER_IDLE) || (preset_encoders_state == ENCODER_AZ_PENDING)) {
-    if (el_request_queue_state == IN_PROGRESS_TO_TARGET) {
+  if ((preset_encoders_state == ENCODER_IDLE) || (preset_encoders_state == ENCODER_AZ_PENDING)) 
+  {
+    if (el_request_queue_state == IN_PROGRESS_TO_TARGET) 
+    {
       el_encoder_degrees = target_elevation;
-    } else {
+    } else 
+    {
       el_encoder_degrees = elevation;
     }
   }
   #endif //OPTION_PRESET_ENCODER_RELATIVE_CHANGE  
   
-  if (el_encoder_result) {                                    // If rotary encoder modified  
-    el_timestamp[0] = el_timestamp[1];                     // Encoder step timer
+  if (el_encoder_result) // If rotary encoder modified
+  {                                      
+    el_timestamp[0] = el_timestamp[1];  // Encoder step timer
     el_timestamp[1] = el_timestamp[2]; 
     el_timestamp[2] = el_timestamp[3]; 
     el_timestamp[3] = el_timestamp[4]; 
@@ -1172,12 +1211,14 @@ void check_preset_encoders()
     
     unsigned long el_elapsed_time = (el_timestamp[4] - el_timestamp[0]); // Encoder step time difference for 10's step
  
-    if (el_encoder_result == DIR_CW) {                      // Rotary Encoder CW 0 - 359 Deg
+    if (el_encoder_result == DIR_CW) // Rotary Encoder CW 0 - 359 Deg
+    {                      
       
       if (el_elapsed_time < 250) {el_encoder_degrees += (5*HEADING_MULTIPLIER);} else {el_encoder_degrees += (1*HEADING_MULTIPLIER);};  // Single deg increase unless encoder turned quickly then 10's step
       if (el_encoder_degrees > (180*HEADING_MULTIPLIER)) {el_encoder_degrees = (180*HEADING_MULTIPLIER);};                                    
     }
-    if (el_encoder_result == DIR_CCW) {                      // Rotary Encoder CCW 359 - 0 Deg
+    if (el_encoder_result == DIR_CCW) // Rotary Encoder CCW 359 - 0 Deg
+    {                      
       if (el_elapsed_time < 250) {el_encoder_degrees -= (5*HEADING_MULTIPLIER);} else {el_encoder_degrees -= (1*HEADING_MULTIPLIER);};   // Single deg decrease unless encoder turned quickly then 10's step
       if (el_encoder_degrees < 0) {el_encoder_degrees = 0;};                                            
     }
@@ -1187,16 +1228,20 @@ void check_preset_encoders()
     last_lcd_update = 0;                     // push an LCD update
     #endif //FEATURE_LCD_DISPLAY    
     
-    if (preset_encoders_state == ENCODER_IDLE) {
+    if (preset_encoders_state == ENCODER_IDLE) 
+    {
       preset_encoders_state = ENCODER_EL_PENDING;
-    } else {
-      if (preset_encoders_state == ENCODER_AZ_PENDING) {
+    } else 
+    {
+      if (preset_encoders_state == ENCODER_AZ_PENDING) 
+      {
         preset_encoders_state = ENCODER_AZ_EL_PENDING;
       }
     }
     
     #ifdef DEBUG_PRESET_ENCODERS
-    if (debug_mode) {
+    if (debug_mode) 
+    {
       Serial.print(F("check_preset_encoders: el target: "));
       Serial.println(el_encoder_degrees/HEADING_MULTIPLIER,1);
     }
@@ -1206,9 +1251,10 @@ void check_preset_encoders()
   
   #endif //FEATURE_EL_PRESET_ENCODER
 
-  if ((preset_encoders_state != ENCODER_IDLE) && (!submit_encoder_change)) {                           // Check button or timer
-    if (preset_start_button) 
-    {                                         // if we have a preset start button, check it
+  if ((preset_encoders_state != ENCODER_IDLE) && (!submit_encoder_change)) 
+  {                           // Check button or timer
+    if (preset_start_button) // if we have a preset start button, check it
+    {
       button_read = digitalRead(preset_start_button);
       if (button_read == LOW) 
       {
@@ -1221,10 +1267,12 @@ void check_preset_encoders()
     }  
   } //if (!enc_changed_waiting) 
 
-  if (preset_start_button) {                                         // if we have a preset start button, check it
+  if (preset_start_button) // if we have a preset start button, check it
+  {                                         
     button_read = digitalRead(preset_start_button);   
     if ((button_read == LOW) && (!submit_encoder_change) && ((millis() - last_preset_start_button_start) > 250) 
-    && ((millis() - last_preset_start_button_kill) > 250) && (preset_encoders_state == ENCODER_IDLE)) {
+    && ((millis() - last_preset_start_button_kill) > 250) && (preset_encoders_state == ENCODER_IDLE)) 
+    {
       #ifdef DEBUG_PRESET_ENCODERS
       if (debug_mode) 
       {
@@ -1247,20 +1295,23 @@ void check_preset_encoders()
     }
   }
     
-  if ((submit_encoder_change) && (button_read == HIGH)) {
+  if ((submit_encoder_change) && (button_read == HIGH)) 
+  {
     #ifdef DEBUG_PRESET_ENCODERS
-    if (debug_mode) {
+    if (debug_mode) 
+    {
       Serial.println(F("check_preset_encoders: submit_encoder_change "));
     }
     #endif //DEBUG_PRESET_ENCODERS
 
-    
-    if ((preset_encoders_state == ENCODER_AZ_PENDING) || (preset_encoders_state == ENCODER_AZ_EL_PENDING)) {
+    if ((preset_encoders_state == ENCODER_AZ_PENDING) || (preset_encoders_state == ENCODER_AZ_EL_PENDING)) 
+    {
       submit_request(AZ,REQUEST_AZIMUTH_RAW,az_encoder_raw_degrees);
     }
     
     #ifdef FEATURE_EL_PRESET_ENCODER
-    if ((preset_encoders_state == ENCODER_EL_PENDING) || (preset_encoders_state == ENCODER_AZ_EL_PENDING)) {
+    if ((preset_encoders_state == ENCODER_EL_PENDING) || (preset_encoders_state == ENCODER_AZ_EL_PENDING)) 
+    {
       submit_request(EL,REQUEST_ELEVATION,el_encoder_degrees);
     }    
     #endif //FEATURE_EL_PRESET_ENCODER
@@ -1269,7 +1320,8 @@ void check_preset_encoders()
     submit_encoder_change = 0;
   } //if (submit_encoder_change)
   
-  if ((preset_start_button) && (preset_encoders_state != ENCODER_IDLE) && ((millis() - last_encoder_move) > ENCODER_PRESET_TIMEOUT)){ // timeout if we have a preset start button
+  if ((preset_start_button) && (preset_encoders_state != ENCODER_IDLE) && ((millis() - last_encoder_move) > ENCODER_PRESET_TIMEOUT)) // timeout if we have a preset start button
+  { 
     preset_encoders_state = ENCODER_IDLE;
     #ifdef FEATURE_LCD_DISPLAY
     push_lcd_update = 1;                     // push an LCD update
@@ -1282,7 +1334,8 @@ void check_preset_encoders()
 #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
 void check_az_manual_rotate_limit() 
 {
-  if ((current_az_state() == ROTATING_CCW) && (raw_azimuth <= (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER))) {
+  if ((current_az_state() == ROTATING_CCW) && (raw_azimuth <= (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER))) 
+  {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
     if (debug_mode) 
     {
@@ -1292,7 +1345,8 @@ void check_az_manual_rotate_limit()
     #endif //DEBUG_AZ_MANUAL_ROTATE_LIMITS
     submit_request(AZ,REQUEST_KILL,0);       
   }
-  if ((current_az_state() == ROTATING_CW) && (raw_azimuth >= (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER))) {
+  if ((current_az_state() == ROTATING_CW) && (raw_azimuth >= (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER))) 
+  {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
     if (debug_mode) 
     {
@@ -1309,7 +1363,8 @@ void check_az_manual_rotate_limit()
 #if defined(OPTION_EL_MANUAL_ROTATE_LIMITS) && defined(FEATURE_ELEVATION_CONTROL)
 void check_el_manual_rotate_limit() 
 {
-  if ((current_el_state() == ROTATING_DOWN) && (elevation <= (EL_MANUAL_ROTATE_DOWN_LIMIT*HEADING_MULTIPLIER))) {
+  if ((current_el_state() == ROTATING_DOWN) && (elevation <= (EL_MANUAL_ROTATE_DOWN_LIMIT*HEADING_MULTIPLIER))) 
+  {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
     if (debug_mode) 
     {
@@ -1319,7 +1374,8 @@ void check_el_manual_rotate_limit()
     #endif //DEBUG_EL_MANUAL_ROTATE_LIMITS
     submit_request(EL,REQUEST_KILL,0);       
   }
-  if ((current_el_state() == ROTATING_UP) && (elevation >= (EL_MANUAL_ROTATE_UP_LIMIT*HEADING_MULTIPLIER))) {
+  if ((current_el_state() == ROTATING_UP) && (elevation >= (EL_MANUAL_ROTATE_UP_LIMIT*HEADING_MULTIPLIER))) 
+  {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
     if (debug_mode) 
     {
@@ -1346,7 +1402,8 @@ void check_brake_release()
   {
     if (in_az_brake_release_delay) 
     {
-      if ((millis() - az_brake_delay_start_time) > AZ_BRAKE_DELAY) {
+      if ((millis() - az_brake_delay_start_time) > AZ_BRAKE_DELAY) 
+      {
         brake_release(AZ, false);
         in_az_brake_release_delay = 0; 
       }    
@@ -1362,7 +1419,8 @@ void check_brake_release()
   {
     if (in_el_brake_release_delay) 
     {
-      if ((millis() - el_brake_delay_start_time) > EL_BRAKE_DELAY) {
+      if ((millis() - el_brake_delay_start_time) > EL_BRAKE_DELAY) 
+      {
         brake_release(EL, false);
         in_el_brake_release_delay = 0; 
       }    
@@ -1383,7 +1441,8 @@ void brake_release(byte az_or_el, boolean brake_release)
 { 
   if (az_or_el == AZ) 
   {
-    if (brake_az) {
+    if (brake_az) 
+    {
       if (brake_release) 
       {
         digitalWrite(brake_az, BRAKE_RELEASE_ON);
@@ -1394,7 +1453,8 @@ void brake_release(byte az_or_el, boolean brake_release)
           Serial.println(F("brake_release: brake_az BRAKE_RELEASE_ON"));
         }
         #endif //DEBUG_BRAKE
-      } else {
+      } else 
+      {
         digitalWrite(brake_az,BRAKE_RELEASE_OFF);
         brake_az_engaged = 0;      
         #ifdef DEBUG_BRAKE
@@ -1442,7 +1502,8 @@ void check_overlap()
   if ((overlap_led) && ((millis() - last_check_time) > 500)) 
   {
      //if ((analog_az > (500*HEADING_MULTIPLIER)) && (azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
-     if ((raw_azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
+     if ((raw_azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
+     {
        digitalWrite(overlap_led, HIGH);
        overlap_led_status = 1;
        #ifdef DEBUG_OVERLAP
@@ -1454,7 +1515,8 @@ void check_overlap()
      } else 
      {
        //if (((analog_az < (500*HEADING_MULTIPLIER)) || (azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
-       if ((raw_azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) {
+       if ((raw_azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
+       {
          digitalWrite(overlap_led, LOW);
          overlap_led_status = 0;
          #ifdef DEBUG_OVERLAP
@@ -1803,7 +1865,8 @@ byte get_analog_pin(byte pin_number)
 {  
   byte return_output = 0;
            
-  switch(pin_number){
+  switch(pin_number)
+  {
     case 0: return_output = A0; break;
     case 1: return_output = A1; break;
     case 2: return_output = A2; break;
@@ -2336,20 +2399,25 @@ void check_serial(){
         case 'P' :  // \Pxxyyy - turn on pin PWM; xx = pin number, yyy = PWM value (0-255)
           if (((serial0_buffer[2] > 47) && (serial0_buffer[2] < 58)) && (serial0_buffer[3] > 47) && (serial0_buffer[3] < 58)  && (serial0_buffer_index == 7)){
             byte pin_value = 0;
-            if (toupper(serial0_buffer[2]) == 'A'){
+            if (toupper(serial0_buffer[2]) == 'A')
+            {
               pin_value = get_analog_pin(serial0_buffer[3]-48);
-            } else {
+            } else 
+            {
               pin_value = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48);
             }
             int write_value = ((serial0_buffer[4]-48)*100) + ((serial0_buffer[5]-48)*10) + (serial0_buffer[6]-48);
-            if ((write_value >= 0) && (write_value < 256)){
+            if ((write_value >= 0) && (write_value < 256))
+            {
               pinMode(pin_value,OUTPUT);
               analogWrite(pin_value,write_value);
               Serial.println("OK");
-            } else {
+            } else 
+            {
               Serial.println(F("Error"));               
             }
-          } else {
+          } else 
+          {
             Serial.println(F("Error")); 
           }
           break;         
@@ -2360,10 +2428,11 @@ void check_serial(){
         clear_command_buffer();
         backslash_command = 0;
         
-      } else { // no, add the character to the buffer
+      } else // no, add the character to the buffer
+      { 
         if ((incoming_serial_byte > 96) && (incoming_serial_byte < 123)) {incoming_serial_byte = incoming_serial_byte - 32;} //uppercase it
-        if (incoming_serial_byte != 10) 
-        { // add it to the buffer if it's not a line feed
+        if (incoming_serial_byte != 10) // add it to the buffer if it's not a line feed
+        { 
           serial0_buffer[serial0_buffer_index] = incoming_serial_byte;
           serial0_buffer_index++;
         }
@@ -2384,7 +2453,8 @@ void check_serial(){
       #endif //FEATURE_REMOTE_UNIT_SLAVE
     }
     
-    if (serial_led) {
+    if (serial_led) 
+    {
       digitalWrite(serial_led, LOW);
     }
   } //if (Serial.available())
@@ -2449,10 +2519,12 @@ void check_serial(){
   #endif //OPTION_SERIAL3_SUPPORT 
   
   #ifdef OPTION_SERIAL4_SUPPORT
-  if (Serial4.available()){
+  if (Serial4.available())
+  {
     incoming_serial_byte = Serial4.read(); 
     #ifdef FEATURE_REMOTE_UNIT_SLAVE   
-    if (serial_read_event_flag[4]){
+    if (serial_read_event_flag[4])
+    {
       Serial.print("EVS4");
       Serial.write(incoming_serial_byte); 
       Serial.println();
@@ -2497,14 +2569,15 @@ void check_buttons()
       #endif            
     }
 
-  } else {
-  #ifdef FEATURE_ADAFRUIT_BUTTONS
-  if (buttons & BUTTON_LEFT) 
+  } else 
   {
-  #else
+    #ifdef FEATURE_ADAFRUIT_BUTTONS
+    if (buttons & BUTTON_LEFT) 
+    {
+    #else
     if (button_ccw && (digitalRead(button_ccw) == LOW)) 
     {
-  #endif //FEATURE_ADAFRUIT_BUTTONS
+    #endif //FEATURE_ADAFRUIT_BUTTONS
       if (azimuth_button_was_pushed == 0) 
       {
         #ifdef DEBUG_BUTTONS
@@ -2716,472 +2789,26 @@ char *azimuth_direction(int azimuth_in)
 
 //--------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
-void update_display()
-{
-  // update the LCD display
-  
-  static byte lcd_state_row_0 = 0;
-  static byte lcd_state_row_1 = 0;
-  
-  String direction_string;
+// started from update_display(), stripped elevation options
 
-  static int last_azimuth = -1;
-  
-  char workstring[7];
-  
-  unsigned int target = 0;
-  
-  #ifdef FEATURE_ELEVATION_CONTROL
-  static int last_elevation = -1;
-  static int last_target_elevation = 0;
-  #endif
+//Display Definitions 
+// Col  0-14, Row 0-3, Big fonts and deg symbol
+// Col 15,    Row 0,   Deg symbol
+// Col 15,    Row 1,   {0 to 9}, Speed number
+// Col 15,    Row 2,   TBD
+// Col 15,    Row 3,   Azimuth tenths
+// Col 17-20, Row 0,   {OT}
+// Col 17-20, Row 0,   {<, >, ->, <-}, Soft Limits
+// Col 17-20, Row 0,   {000 to 359}, Preset knob position
+// Col 17-20, Row 0,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
 
-  // row 0 ------------------------------------------------------------
-  // direction_string
-  // work_string
-  // azimuth_direction(azimuth)
-
-  if (((millis() - last_lcd_update) > LCD_UPDATE_TIME) || (push_lcd_update))
-  {
-    if ((lcd_state_row_0 == 0) && (lcd_state_row_1 == 0))
-    {
-      lcd.clear();
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0); // cursor to start of centered string
-      lcd.print(direction_string); 
-      lcd_state_row_0 = LCD_DIRECTION;
-    }
-
-    #ifndef FEATURE_ELEVATION_CONTROL
-    #ifdef FEATURE_AZ_PRESET_ENCODER
-    target = az_encoder_raw_degrees;
-    // wrap, twice if necessary
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-
-    if (preset_encoders_state == ENCODER_AZ_PENDING) 
-    {
-      clear_display_row(0);                                                 // Show Target Deg on upper line
-      direction_string = "Target ";
-      dtostrf(target/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring);
-      direction_string.concat(char(223));
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-      lcd.print(direction_string); 
-      
-      lcd_state_row_0 = LCD_TARGET_AZ;
-      #ifdef DEBUG_DISPLAY
-      if (debug_mode) 
-      {
-        Serial.print(F("update_display: "));
-        Serial.println(direction_string);
-      }        
-      #endif //DEBUG_DISPLAY
-      
-    } else 
-    {   
-    #endif //FEATURE_AZ_PRESET_ENCODER  
-      if (az_state != IDLE) 
-      {
-        if (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
-        {
-          clear_display_row(0);
-          direction_string = "Rotating to ";
-          dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring);          
-          //direction_string.concat(int(target_azimuth / LCD_HEADING_MULTIPLIER));
-          direction_string.concat(char(223));
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.print(direction_string);          
-          lcd_state_row_0 = LCD_ROTATING_TO;
-          
-          #ifdef DEBUG_DISPLAY
-          if (debug_mode) {
-            Serial.print(F("update_display: "));
-            Serial.println(direction_string);
-          }  
-          #endif //DEBUG_DISPLAY        
-        } else {
-          if ((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) 
-          {
-            if (lcd_state_row_0 != LCD_ROTATING_CW) 
-            {
-              clear_display_row(0);
-              direction_string = "Rotating CW";
-              lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-              lcd.print(direction_string);                             
-              lcd_state_row_0 = LCD_ROTATING_CW;
-              #ifdef DEBUG_DISPLAY
-              if (debug_mode) 
-              {
-                Serial.print(F("update_display: "));
-                Serial.println(direction_string);
-              }     
-              #endif //DEBUG_DISPLAY           
-            }
-          } else 
-          {
-            if (lcd_state_row_0 != LCD_ROTATING_CCW) 
-            {
-              clear_display_row(0);
-              direction_string = "Rotating CCW";
-              lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-              lcd.print(direction_string);                              
-              lcd_state_row_0 = LCD_ROTATING_CCW;
-              #ifdef DEBUG_DISPLAY
-              if (debug_mode) 
-              {
-                Serial.print(F("update_display: "));
-                Serial.println(direction_string);
-              }     
-              #endif //DEBUG_DISPLAY            
-            }
-          }
-        }
-      } else { // az_state == IDLE
-        if ((last_azimuth != azimuth) || (lcd_state_row_0 != LCD_DIRECTION))
-        {
-          direction_string = azimuth_direction(azimuth);
-          if ((last_direction_string == direction_string) || (lcd_state_row_0 != LCD_DIRECTION)) 
-          {
-            clear_display_row(0);
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-            lcd.print(direction_string);          
-            lcd_state_row_0 = LCD_DIRECTION;
-            #ifdef DEBUG_DISPLAY
-            if (debug_mode) 
-            {
-              Serial.print(F("update_display: "));
-              Serial.println(direction_string); 
-            }       
-            #endif //DEBUG_DISPLAY        
-          } else 
-          {
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2)-1,0);
-            lcd.print(" ");
-            lcd.print(direction_string);   
-            lcd.print(" "); 
-            #ifdef DEBUG_DISPLAY
-            if (debug_mode) {
-              Serial.print(F("update_display: "));
-              Serial.println(direction_string); 
-            }               
-            #endif //DEBUG_DISPLAY
-          }
-        }
-      } //(az_state != IDLE)
-    #ifdef FEATURE_AZ_PRESET_ENCODER
-    } //(preset_encoders_state == ENCODER_AZ_PENDING)
-    #endif //FEATURE_AZ_PRESET_ENCODER
-    #endif
-
-    // ------------ AZ & EL -----------------------------------------------
-    #ifdef FEATURE_ELEVATION_CONTROL
-    
-    #ifdef FEATURE_AZ_PRESET_ENCODER
-    #ifndef FEATURE_EL_PRESET_ENCODER
-
-    unsigned int target = az_encoder_raw_degrees;
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-
-    if (preset_encoders_state == ENCODER_AZ_PENDING) 
-    {
-      clear_display_row(0);                                                 // Show Target Deg on upper line
-      direction_string = "Target ";
-      dtostrf(target/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring);          
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-      lcd.print(direction_string);         
-      
-      lcd_state_row_0 = LCD_TARGET_AZ;
-      #ifdef DEBUG_DISPLAY
-      if (debug_mode) 
-      {
-        Serial.print(F("update_display: "));
-        Serial.println(direction_string);
-      }      
-      #endif //DEBUG_DISPLAY  
-      
-    } else 
-    {   
-    
-    #endif //ndef FEATURE_EL_PRESET_ENCODER
-    #endif //FEATURE_AZ_PRESET_ENCODER
-    
-    
-    #ifdef FEATURE_EL_PRESET_ENCODER
-    unsigned int target = az_encoder_raw_degrees;
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-    
-    if (preset_encoders_state != ENCODER_IDLE)
-    {
-      switch(preset_encoders_state)
-      {    
-        case ENCODER_AZ_PENDING:
-          clear_display_row(0);                                                 // Show Target Deg on upper line
-          direction_string = "Az Target ";
-          dtostrf(target/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring); 
-          direction_string.concat(char(223));         
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.print(direction_string);              
-          lcd_state_row_0 = LCD_TARGET_AZ;
-          break;
-        case ENCODER_EL_PENDING:
-          clear_display_row(0);                                                 // Show Target Deg on upper line
-          direction_string = "El Target ";
-          dtostrf(el_encoder_degrees/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring); 
-          direction_string.concat(char(223));         
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.print(direction_string);             
-          lcd_state_row_0 = LCD_TARGET_EL;
-          break;   
-        case ENCODER_AZ_EL_PENDING:
-          clear_display_row(0);                                                 // Show Target Deg on upper line
-          direction_string = "Target ";
-          dtostrf(target/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring); 
-          direction_string.concat(char(223));          
-          dtostrf(el_encoder_degrees/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat("   ");
-          direction_string.concat(workstring); 
-          direction_string.concat(char(223));         
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.print(direction_string);           
-          lcd_state_row_0 = LCD_TARGET_AZ_EL;
-          break;          
-      }    
-    } else 
-    { //(preset_encoders_state != ENCODER_IDLE)
-    #endif //FEATURE_EL_PRESET_ENCODER
-      if ((az_state != IDLE) && (el_state == IDLE)) 
-      {     
-        if (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
-        {
-          clear_display_row(0);
-          direction_string = "Rotating to ";
-          dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring); 
-          direction_string.concat(char(223));                  
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.print(direction_string);            
-          lcd_state_row_0 = LCD_ROTATING_TO;
-        } else 
-        {
-          if ((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) 
-          {
-            clear_display_row(0);
-            direction_string = "Rotating CW";
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-            lcd.print(direction_string);            
-            lcd_state_row_0 = LCD_ROTATING_CW;
-          } else 
-          {
-            clear_display_row(0);
-            direction_string = "Rotating CCW";
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-            lcd.print(direction_string);             
-            lcd_state_row_0 = LCD_ROTATING_CCW;
-          }
-        }
-      } //((az_state != IDLE) && (el_state == IDLE))  
-      
-      if ((az_state == IDLE) && (el_state != IDLE)) 
-      {
-        if ((el_request_queue_state == IN_PROGRESS_TO_TARGET) && ((lcd_state_row_0 != LCD_ELEVATING_TO) || (target_elevation != last_target_elevation)))
-        {
-          clear_display_row(0);
-          direction_string = "Elevating to ";
-          dtostrf(target_elevation/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring); 
-          direction_string.concat(char(223));                  
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.print(direction_string);          
-          lcd_state_row_0 = LCD_ELEVATING_TO;
-        } else 
-        {
-          if (((el_state == SLOW_START_UP)||(el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (lcd_state_row_0 != LCD_ELEVATING_UP))
-          {
-            clear_display_row(0);
-            direction_string = "Elevating Up";
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-            lcd.print(direction_string);                
-            lcd_state_row_0 = LCD_ELEVATING_UP;
-          }
-          if (((el_state == SLOW_START_DOWN)||(el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (lcd_state_row_0 != LCD_ELEVATING_DOWN)) 
-          {
-            clear_display_row(0);
-            direction_string = "Elevating Down";
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-            lcd.print(direction_string);            
-            lcd_state_row_0 = LCD_ELEVATING_DOWN;
-          }
-        }
-      } //((az_state == IDLE) && (el_state != IDLE))
-      
-      if ((az_state != IDLE) && (el_state != IDLE) && (lcd_state_row_0 != LCD_ROTATING_AZ_EL)) 
-      {
-        clear_display_row(0);
-        direction_string = "Rotating ";      
-        if (az_request_queue_state == NONE) 
-        {
-          if (current_az_state() == ROTATING_CW) 
-          {
-            direction_string.concat("CW");
-          } else {
-            direction_string.concat("CCW");
-          }
-        } else 
-        {
-          direction_string.concat(int(target_azimuth / LCD_HEADING_MULTIPLIER));
-        }
-        direction_string.concat(" ");
-        if (el_request_queue_state == NONE) 
-        {
-          if (current_el_state() == ROTATING_UP) 
-          {
-            direction_string.concat("UP");
-          } else {
-            direction_string.concat("DOWN");
-          }        
-        } else 
-        {
-          dtostrf(target_elevation/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring);          
-        }
-        lcd_state_row_0 = LCD_ROTATING_AZ_EL;
-        lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2)-1,0);
-        lcd.print(direction_string);          
-      } //((az_state != IDLE) && (el_state != IDLE))
-      
-      if ((az_state == IDLE) && (el_state == IDLE)) 
-      {
-        if ((last_azimuth != azimuth) || (lcd_state_row_0 != LCD_DIRECTION))
-        {
-          direction_string = azimuth_direction(azimuth);
-          if ((last_direction_string == direction_string) || (lcd_state_row_0 != LCD_DIRECTION))
-          {
-            clear_display_row(0);
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-            lcd.print(direction_string);          
-            lcd_state_row_0 = LCD_DIRECTION;
-          } else 
-          {
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2)-1,0);
-            lcd.print(" ");
-            lcd.print(direction_string);   
-            lcd.print(" ");         
-          }
-        }       
-      } //((az_state == IDLE) && (el_state == IDLE))
-
-    #ifdef FEATURE_EL_PRESET_ENCODER
-    } //(preset_encoders_state != ENCODER_IDLE)
-    #endif //FEATURE_EL_PRESET_ENCODER
-
-    #ifdef FEATURE_AZ_PRESET_ENCODER
-    #ifndef FEATURE_EL_PRESET_ENCODER
-    }
-    #endif //ndef FEATURE_EL_PRESET_ENCODER
-    #endif //FEATURE_AZ_PRESET_ENCODER
-
-    #endif //FEATURE_ELEVATION_CONTROL 
-    
-    push_lcd_update = 0;
-  }
-
-  //     row 1 --------------------------------------------
-  if ((millis()-last_lcd_update) > LCD_UPDATE_TIME) 
-  {
-    #ifndef FEATURE_ELEVATION_CONTROL //---------------- az only -----------------------------------
-    if (last_azimuth != azimuth) {
-      clear_display_row(1);
-      direction_string = "Azimuth ";
-      dtostrf(azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring); 
-      direction_string.concat(char(223));                  
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),1);
-      lcd.print(direction_string);  
-       
-      printbigazimuth(azimuth);
-       
-      last_azimuth = azimuth;
-      lcd_state_row_1 = LCD_HEADING;  
-    }  
-    #endif //FEATURE_ELEVATION_CONTROL---------------------------------------------------------------
-
-
-    #ifdef FEATURE_ELEVATION_CONTROL  //--------------------az & el---------------------------------
-    if ((last_azimuth != azimuth) || (last_elevation != elevation))
-    {
-      clear_display_row(1);
-      #ifdef FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-      if ((azimuth >= 1000) && (elevation >= 1000))
-      {
-        direction_string = "Az";
-      } else 
-      {
-        direction_string = "Az ";
-      }
-      #else
-      direction_string = "Az ";
-      #endif //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-      
-      dtostrf(azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring); 
-      
-      #ifndef FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-      if (LCD_COLUMNS > 14) {direction_string.concat(char(223));}
-      #else
-      if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {direction_string.concat(char(223));}
-      #endif  
-      
-      #ifdef FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-      if ((elevation >= 1000) && (azimuth >= 1000))
-      {
-        direction_string.concat(" El");
-      } else 
-      {
-        direction_string.concat(" El ");
-      }
-      #else
-      direction_string.concat(" El ");
-      #endif //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-      
-      dtostrf(elevation/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring); 
-      
-      #ifndef FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-      if (LCD_COLUMNS > 14) {direction_string.concat(char(223));}
-      #else
-      if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {direction_string.concat(char(223));}
-      #endif
-      
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),1);
-      lcd.print(direction_string);      
-            
-      last_azimuth = azimuth;
-      last_elevation = elevation;
-      lcd_state_row_1 = LCD_HEADING;
-    }
-    #endif //FEATURE_ELEVATION_CONTROL //------------------------------------------------------------
-  }
-  if ((millis() - last_lcd_update) > LCD_UPDATE_TIME) {last_lcd_update = millis();}
-  last_direction_string = direction_string;
-}
-
-//--------------------------------------------------------------
-// started from update_display()
-// stripped elevation options
 void update_big_display()
 {
   // update the LCD display
   static byte lcd_state_row_0 = 0;
   static byte lcd_state_row_1 = 0;
   
-  String direction_string;
+  String direction_string; // temporary string, not really direction
 
   static int last_azimuth = -1;
   
@@ -3189,22 +2816,24 @@ void update_big_display()
   
   unsigned int target = 0;
   
-  // row 0 ------------------------------------------------------------
-  // direction_string
-  // work_string
+  // ---------------------------------------------------------------------
+  // target from preset knob
   // azimuth_direction(azimuth)
 
   if (((millis() - last_lcd_update) > LCD_UPDATE_TIME) || (push_lcd_update))
   {
+    // initialization
     if ((lcd_state_row_0 == 0) && (lcd_state_row_1 == 0))
     {
       lcd.clear();
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0); // cursor to start of centered string
+      // lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0); // cursor to start of centered string
+      lcd.setCursor(16, 0);
+      //TODO, this seems uninitialized
       lcd.print(direction_string); 
       lcd_state_row_0 = LCD_DIRECTION;
     }
 
-    #ifndef FEATURE_ELEVATION_CONTROL
+    // Azimuth Pre-set value
     #ifdef FEATURE_AZ_PRESET_ENCODER
     target = az_encoder_raw_degrees;
     // wrap, twice if necessary
@@ -3213,12 +2842,14 @@ void update_big_display()
 
     if (preset_encoders_state == ENCODER_AZ_PENDING) 
     {
-      clear_display_row(0);                                                 // Show Target Deg on upper line
-      direction_string = "Target ";
+      // position and blank the target display
+      lcd.setCursor(16, 2); 
+      lcd.print("    ");
+      direction_string = "";
       dtostrf(target/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
       direction_string.concat(workstring);
-      direction_string.concat(char(223));
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
+      direction_string.concat(char(223)); // deg symbol
+      lcd.setCursor(17, 2);      
       lcd.print(direction_string); 
       
       lcd_state_row_0 = LCD_TARGET_AZ;
@@ -3230,20 +2861,25 @@ void update_big_display()
       }        
       #endif //DEBUG_DISPLAY
       
-    } else 
+    } else // not ENCODER_AZ_PENDING
     {   
     #endif //FEATURE_AZ_PRESET_ENCODER  
+    
       if (az_state != IDLE) 
       {
         if (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
         {
-          clear_display_row(0);
-          direction_string = "Rotating to ";
+          lcd.setCursor(16, 2); 
+          lcd.print("    ");
+          //clear_display_row(0);
+          //direction_string = "Rotating to ";
+          direction_string = "";
           dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
           direction_string.concat(workstring);          
           //direction_string.concat(int(target_azimuth / LCD_HEADING_MULTIPLIER));
           direction_string.concat(char(223));
-          lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
+          //lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
+          lcd.setCursor(16, 2);          
           lcd.print(direction_string);          
           lcd_state_row_0 = LCD_ROTATING_TO;
           
@@ -3253,15 +2889,16 @@ void update_big_display()
             Serial.println(direction_string);
           }  
           #endif //DEBUG_DISPLAY        
-        } else 
+        } else
         {
           if ((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) 
           {
             if (lcd_state_row_0 != LCD_ROTATING_CW) 
             {
-              clear_display_row(0);
-              direction_string = "Rotating CW";
-              lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
+              lcd.setCursor(16, 1);
+              lcd.print("    ");
+              direction_string = "CW";
+              lcd.setCursor(16, 1);
               lcd.print(direction_string);                             
               lcd_state_row_0 = LCD_ROTATING_CW;
               #ifdef DEBUG_DISPLAY
@@ -3276,9 +2913,10 @@ void update_big_display()
           {
             if (lcd_state_row_0 != LCD_ROTATING_CCW) 
             {
-              clear_display_row(0);
-              direction_string = "Rotating CCW";
-              lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
+              lcd.setCursor(16, 1);
+              lcd.print("    ");
+              direction_string = "CCW";
+              lcd.setCursor(16, 1);
               lcd.print(direction_string);                              
               lcd_state_row_0 = LCD_ROTATING_CCW;
               #ifdef DEBUG_DISPLAY
@@ -3291,15 +2929,16 @@ void update_big_display()
             }
           }
         }
-      } else 
-      { // az_state == IDLE
+      } else // az_state == IDLE
+      { 
         if ((last_azimuth != azimuth) || (lcd_state_row_0 != LCD_DIRECTION))
         {
-          direction_string = azimuth_direction(azimuth);
+          direction_string = azimuth_direction(azimuth);  // NE, ENE, NNE, etc
           if ((last_direction_string == direction_string) || (lcd_state_row_0 != LCD_DIRECTION)) 
           {
-            clear_display_row(0);
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
+            lcd.setCursor(16, 0);
+            lcd.print("    ");
+            lcd.setCursor(16, 0);
             lcd.print(direction_string);          
             lcd_state_row_0 = LCD_DIRECTION;
             #ifdef DEBUG_DISPLAY
@@ -3311,8 +2950,9 @@ void update_big_display()
             #endif //DEBUG_DISPLAY        
           } else 
           {
-            lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2)-1,0);
-            lcd.print(" ");
+            lcd.setCursor(16, 0);
+            lcd.print("    ");
+            lcd.setCursor(16, 0);
             lcd.print(direction_string);   
             lcd.print(" "); 
             #ifdef DEBUG_DISPLAY
@@ -3327,26 +2967,16 @@ void update_big_display()
     #ifdef FEATURE_AZ_PRESET_ENCODER
     } //(preset_encoders_state == ENCODER_AZ_PENDING)
     #endif //FEATURE_AZ_PRESET_ENCODER
-    #endif
    
     push_lcd_update = 0;
   }
 
-  //     row 1 --------------------------------------------
+  // Large Azimuth Characters
   if ((millis()-last_lcd_update) > LCD_UPDATE_TIME) 
   {
     if (last_azimuth != azimuth) 
-    {
-      clear_display_row(1);
-      direction_string = "Azimuth ";
-      dtostrf(azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring); 
-      direction_string.concat(char(223));                  
-      lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),1);
-      lcd.print(direction_string);  
-       
-      printbigazimuth(azimuth);
-       
+    {  
+      printbigazimuth(azimuth);    
       last_azimuth = azimuth;
       lcd_state_row_1 = LCD_HEADING;  
     }  
@@ -3646,17 +3276,17 @@ void initialize_eeprom_with_defaults()
   }
   #endif //DEBUG_EEPROM
 
-  configuration.analog_az_full_ccw = ANALOG_AZ_FULL_CCW;
-  configuration.analog_az_full_cw = ANALOG_AZ_FULL_CW;
-  configuration.analog_el_0_degrees = ANALOG_EL_0_DEGREES;
-  configuration.analog_el_max_elevation = ANALOG_EL_MAX_ELEVATION;   
-  configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
+  configuration.analog_az_full_ccw          = ANALOG_AZ_FULL_CCW;
+  configuration.analog_az_full_cw           = ANALOG_AZ_FULL_CW;
+  configuration.analog_el_0_degrees         = ANALOG_EL_0_DEGREES;
+  configuration.analog_el_max_elevation     = ANALOG_EL_MAX_ELEVATION;   
+  configuration.azimuth_starting_point      = AZIMUTH_STARTING_POINT_DEFAULT;
   configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
-  configuration.last_azimuth = raw_azimuth;
+  configuration.last_azimuth                = raw_azimuth;
   #ifdef FEATURE_ELEVATION_CONTROL
-  configuration.last_elevation = elevation; 
+  configuration.last_elevation              = elevation; 
   #else    
-  configuration.last_elevation = 0;
+  configuration.last_elevation              = 0;
   #endif
   write_settings_to_eeprom();
 }
@@ -3711,7 +3341,6 @@ void clear_timed_buffer()
 //--------------------------------------------------------------
 void yaesu_m_command()
 {
-  
   int parsed_azimuth = 0;
   
   // parse out M command
@@ -3862,7 +3491,6 @@ void yaesu_az_load_timed_intervals()
   {
     Serial.println(F("?>"));  // error
   }
-
 }
 #endif //FEATURE_TIMED_BUFFER
 
@@ -3889,9 +3517,14 @@ void read_azimuth()
     // read analog input and convert it to degrees; this gets funky because of 450 degree rotation
     // Bearings:  180-------359-0--------270
     // Voltage:    0----------------------5
-  
+    // ADC:        0--------------------1023
+
     analog_az = analogRead(rotator_analog_az);
-    raw_azimuth = (map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, (configuration.azimuth_starting_point*HEADING_MULTIPLIER), ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)));
+    raw_azimuth = (map(analog_az, configuration.analog_az_full_ccw, 
+                       configuration.analog_az_full_cw, 
+                       (configuration.azimuth_starting_point*HEADING_MULTIPLIER), 
+                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)));
+    
     #ifdef FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
     #endif //FEATURE_AZIMUTH_CORRECTION
@@ -6165,7 +5798,8 @@ void service_request_queue()
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {Serial.print(F("->F"));}
           #endif //DEBUG_SERVICE_REQUEST_QUEUE             
-          if ((az_request_parm > (360*HEADING_MULTIPLIER)) && (az_request_parm <= ((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER))) {
+          if ((az_request_parm > (360*HEADING_MULTIPLIER)) && (az_request_parm <= ((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER))) 
+          {
             target_azimuth = az_request_parm - (360*HEADING_MULTIPLIER);
             target_raw_azimuth = az_request_parm;
             if (az_request_parm > raw_azimuth) 
