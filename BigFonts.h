@@ -3,8 +3,9 @@
 void loadchars() 
 {
   // Define the custom characters, only loadchars() needs to know
-  byte custchar[8][8] = {
-   {    // 0, upper half
+  byte custchar[8][8] = 
+  {
+    {    // 0, upper half
      B11111,
      B11111,
      B11111,
@@ -13,7 +14,7 @@ void loadchars()
      B00000,
      B00000,
      B00000
-   }, { // 1, lower right corner
+    }, { // 1, lower right corner
      B00000,
      B00000,
      B00000,
@@ -22,7 +23,7 @@ void loadchars()
      B00111,
      B01111,
      B11111
-   }, { // 2, upper half
+    }, { // 2, upper half
      B11111,
      B11111,
      B11111,
@@ -31,7 +32,7 @@ void loadchars()
      B00000,
      B00000,
      B00000   
-   }, { // 3, lower left corner
+    }, { // 3, lower left corner
      B00000,
      B00000,
      B00000,
@@ -40,7 +41,7 @@ void loadchars()
      B11100,
      B11110,
      B11111
-   }, { // 4, upper right corner
+    }, { // 4, upper right corner
      B11111,
      B01111,
      B00111,
@@ -49,7 +50,7 @@ void loadchars()
      B00000,
      B00000,
      B00000
-   }, { // 5, lower half
+    }, { // 5, lower half
      B00000,
      B00000,
      B00000,
@@ -58,7 +59,7 @@ void loadchars()
      B11111,
      B11111,
      B11111
-   }, { // 6, upper left corner
+    }, { // 6, upper left corner
      B11111,
      B11110,
      B11100,
@@ -67,7 +68,7 @@ void loadchars()
      B00000,
      B00000,
      B00000
-   }, { // 7, deg symbol
+    }, { // 7, deg symbol
      B00000,
      B00000,
      B01110,
@@ -76,7 +77,7 @@ void loadchars()
      B10001,
      B01110,
      B00000
-   }
+    }
   };
   lcd.createChar(0, custchar[0]);
   lcd.createChar(1, custchar[1]);
@@ -156,7 +157,7 @@ void printbigchar(int digit, int col, int row, int symbol = 0)
       { UR,  LH,  LH,  UL},
       { LR,  UH,  UH,  LL},
       { UR,  LH,  LH,  UL}
-    },{ // 9, ninr
+    },{ // 9, nine
       { LR,  UH,  UH,  LL},
       { UR,  LH,  LH, 255},
       {254, 254, 254, 255},

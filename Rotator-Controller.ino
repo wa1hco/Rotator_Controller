@@ -819,8 +819,7 @@ void loop()
   read_headings();
 
   #ifdef FEATURE_LCD_DISPLAY
-  //update_display();
-  update_big_display(); // Azimuth display with the large fonts
+  update_display(); // Azimuth display with the large fonts
   #endif
   
   read_headings();
@@ -991,6 +990,8 @@ void check_az_preset_potentiometer()
                               AZ_PRESET_POT_FULL_CCW, 
                               AZ_PRESET_POT_FULL_CW_MAP, 
                               AZ_PRESET_POT_FULL_CCW_MAP);
+
+        //display_az_preset(new_pot_azimuth);
                               
         if ((abs(last_pot_read - pot_read) > 4) && (abs(new_pot_azimuth - (raw_azimuth/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) {
           pot_changed_waiting = 1;
@@ -2802,7 +2803,7 @@ char *azimuth_direction(int azimuth_in)
 // Col 17-20, Row 0,   {000 to 359}, Preset knob position
 // Col 17-20, Row 0,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
 
-void update_big_display()
+void update_display()
 {
   // update the LCD display
   static byte lcd_state_row_0 = 0;
@@ -2811,8 +2812,6 @@ void update_big_display()
   String direction_string; // temporary string, not really direction
 
   static int last_azimuth = -1;
-  
-  char workstring[7];
   
   unsigned int target = 0;
   
@@ -2832,142 +2831,9 @@ void update_big_display()
       lcd.print(direction_string); 
       lcd_state_row_0 = LCD_DIRECTION;
     }
-
-    // Azimuth Pre-set value
-    #ifdef FEATURE_AZ_PRESET_ENCODER
-    target = az_encoder_raw_degrees;
-    // wrap, twice if necessary
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-    if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360*LCD_HEADING_MULTIPLIER);}
-
-    if (preset_encoders_state == ENCODER_AZ_PENDING) 
-    {
-      // position and blank the target display
-      lcd.setCursor(16, 2); 
-      lcd.print("    ");
-      direction_string = "";
-      dtostrf(target/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-      direction_string.concat(workstring);
-      direction_string.concat(char(223)); // deg symbol
-      lcd.setCursor(17, 2);      
-      lcd.print(direction_string); 
-      
-      lcd_state_row_0 = LCD_TARGET_AZ;
-      #ifdef DEBUG_DISPLAY
-      if (debug_mode) 
-      {
-        Serial.print(F("update_display: "));
-        Serial.println(direction_string);
-      }        
-      #endif //DEBUG_DISPLAY
-      
-    } else // not ENCODER_AZ_PENDING
-    {   
-    #endif //FEATURE_AZ_PRESET_ENCODER  
-    
-      if (az_state != IDLE) 
-      {
-        if (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
-        {
-          lcd.setCursor(16, 2); 
-          lcd.print("    ");
-          //clear_display_row(0);
-          //direction_string = "Rotating to ";
-          direction_string = "";
-          dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER,1,LCD_DECIMAL_PLACES,workstring);
-          direction_string.concat(workstring);          
-          //direction_string.concat(int(target_azimuth / LCD_HEADING_MULTIPLIER));
-          direction_string.concat(char(223));
-          //lcd.setCursor(((LCD_COLUMNS - direction_string.length())/2),0);
-          lcd.setCursor(16, 2);          
-          lcd.print(direction_string);          
-          lcd_state_row_0 = LCD_ROTATING_TO;
-          
-          #ifdef DEBUG_DISPLAY
-          if (debug_mode) {
-            Serial.print(F("update_display: "));
-            Serial.println(direction_string);
-          }  
-          #endif //DEBUG_DISPLAY        
-        } else
-        {
-          if ((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) 
-          {
-            if (lcd_state_row_0 != LCD_ROTATING_CW) 
-            {
-              lcd.setCursor(16, 1);
-              lcd.print("    ");
-              direction_string = "CW";
-              lcd.setCursor(16, 1);
-              lcd.print(direction_string);                             
-              lcd_state_row_0 = LCD_ROTATING_CW;
-              #ifdef DEBUG_DISPLAY
-              if (debug_mode) 
-              {
-                Serial.print(F("update_display: "));
-                Serial.println(direction_string);
-              }     
-              #endif //DEBUG_DISPLAY           
-            }
-          } else 
-          {
-            if (lcd_state_row_0 != LCD_ROTATING_CCW) 
-            {
-              lcd.setCursor(16, 1);
-              lcd.print("    ");
-              direction_string = "CCW";
-              lcd.setCursor(16, 1);
-              lcd.print(direction_string);                              
-              lcd_state_row_0 = LCD_ROTATING_CCW;
-              #ifdef DEBUG_DISPLAY
-              if (debug_mode) 
-              {
-                Serial.print(F("update_display: "));
-                Serial.println(direction_string);
-              }     
-              #endif //DEBUG_DISPLAY            
-            }
-          }
-        }
-      } else // az_state == IDLE
-      { 
-        if ((last_azimuth != azimuth) || (lcd_state_row_0 != LCD_DIRECTION))
-        {
-          direction_string = azimuth_direction(azimuth);  // NE, ENE, NNE, etc
-          if ((last_direction_string == direction_string) || (lcd_state_row_0 != LCD_DIRECTION)) 
-          {
-            lcd.setCursor(16, 0);
-            lcd.print("    ");
-            lcd.setCursor(16, 0);
-            lcd.print(direction_string);          
-            lcd_state_row_0 = LCD_DIRECTION;
-            #ifdef DEBUG_DISPLAY
-            if (debug_mode) 
-            {
-              Serial.print(F("update_display: "));
-              Serial.println(direction_string); 
-            }       
-            #endif //DEBUG_DISPLAY        
-          } else 
-          {
-            lcd.setCursor(16, 0);
-            lcd.print("    ");
-            lcd.setCursor(16, 0);
-            lcd.print(direction_string);   
-            lcd.print(" "); 
-            #ifdef DEBUG_DISPLAY
-            if (debug_mode) {
-              Serial.print(F("update_display: "));
-              Serial.println(direction_string); 
-            }               
-            #endif //DEBUG_DISPLAY
-          }
-        }
-      } //(az_state != IDLE)
-    #ifdef FEATURE_AZ_PRESET_ENCODER
-    } //(preset_encoders_state == ENCODER_AZ_PENDING)
-    #endif //FEATURE_AZ_PRESET_ENCODER
-   
+    display_az_preset(target_azimuth); 
+    display_az_string();    
+    display_turning();
     push_lcd_update = 0;
   }
 
@@ -2983,9 +2849,148 @@ void update_big_display()
   }
   if ((millis() - last_lcd_update) > LCD_UPDATE_TIME) {last_lcd_update = millis();}
   last_direction_string = direction_string;
-} // update_big_dispaly()
+} // update_big_display()
+
+//----------------------------------------------------------------------------------------
+// Azimuth Pre-set value at Col 16 and row 2
+void display_az_preset(int target_azimuth)
+{
+  String direction_string; // temporary string, not really direction
+  char workstring[7];
+  
+  #ifdef FEATURE_AZ_PRESET_ENCODER
+  target = az_encoder_raw_degrees;
+  // wrap, twice if necessary
+  if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360 * LCD_HEADING_MULTIPLIER);}
+  if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360 * LCD_HEADING_MULTIPLIER);}
+
+  if (preset_encoders_state == ENCODER_AZ_PENDING) 
+  {
+    // position and blank the target display
+    lcd.setCursor(16, 2); 
+    lcd.print("    ");
+    direction_string = "";
+    dtostrf(target/LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring);
+    direction_string.concat(workstring);
+    direction_string.concat(char(223)); // deg symbol
+    lcd.setCursor(17, 2);      
+    lcd.print(direction_string); 
+    
+    lcd_state_row_0 = LCD_TARGET_AZ;
+    #ifdef DEBUG_DISPLAY
+    if (debug_mode) 
+    {
+      Serial.print(F("update_display: "));
+      Serial.println(direction_string);
+    }        
+    #endif //DEBUG_DISPLAY
+    
+  } else // not state = ENCODER_AZ_PENDING
+  {   
+  #endif // not FEATURE_AZ_PRESET_ENCODER, display azimuth preset pot value
+  
+    // display the target azimuth all the time
+    lcd.setCursor(16, 2); 
+    lcd.print("    ");
+    direction_string = "";
+    dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring);
+    direction_string.concat(workstring);          
+    direction_string.concat(char(223)); // deg symbol
+    lcd.setCursor(16, 2);          
+    lcd.print(direction_string);          
+    
+    #ifdef DEBUG_DISPLAY
+    if (debug_mode) 
+    {
+      Serial.print(F("update_display: "));
+      Serial.println(direction_string);
+    }  
+    #endif //DEBUG_DISPLAY        
+
+  #ifdef FEATURE_AZ_PRESET_ENCODER
+  } //(preset_encoders_state == ENCODER_AZ_PENDING)
+  #endif //FEATURE_AZ_PRESET_ENCODER
+}
+
+//----------------------------------------------------------------
+void display_az_string()
+{
+  String direction_string;
+  direction_string = azimuth_direction(azimuth);  // NE, ENE, NNE, etc
+
+  lcd.setCursor(16, 0);
+  lcd.print("    ");
+  lcd.setCursor(16, 0);
+  lcd.print(direction_string);          
+  #ifdef DEBUG_AZ_STR
+  if (debug_mode) 
+  {
+    Serial.print(F("update_display: "));
+    Serial.println(direction_string); 
+  }       
+  #endif //DEBUG_AZ_STR       
+}
 
 #endif // Feature LCD Display
+
+//----------------------------------------------------------------
+void display_turning()
+{
+  String direction_string;
+  #ifdef DEBUG_TURNING
+    Serial.print("az_state = ");
+    Serial.print(az_state);
+    Serial.print(", az_queue = ");
+    Serial.println(az_request_queue_state);
+  #endif // DEBUG_TURNING 
+  if (az_state == IDLE) // if not idle, display CW or CCW messages
+  {
+    lcd.setCursor(16, 1);
+    lcd.print("    ");
+    //direction_string = "IDLE";
+    //lcd.setCursor(16, 1);
+    //lcd.print(direction_string);                             
+    #ifdef DEBUG_TURNING
+    if (debug_mode) 
+    {
+      Serial.print(F("update_display: "));
+      Serial.println(direction_string);
+    }     
+    #endif //DEBUG_TURNING         
+  }
+  
+  if ((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) 
+  {
+    lcd.setCursor(16, 1);
+    lcd.print("    ");
+    direction_string = "CW";
+    lcd.setCursor(16, 1);
+    lcd.print(direction_string);                             
+    #ifdef DEBUG_TURNING
+    if (debug_mode) 
+    {
+      Serial.print(F("update_display: "));
+      Serial.println(direction_string);
+    }     
+    #endif //DEBUG_TURNING         
+  }
+  
+  if ((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) 
+  {
+    lcd.setCursor(16, 1);
+    lcd.print("    ");
+    direction_string = "CCW";
+    lcd.setCursor(16, 1);
+    lcd.print(direction_string);                              
+    #ifdef DEBUG_TURNING
+    if (debug_mode) 
+    {
+      Serial.print(F("update_display: "));
+      Serial.println(direction_string);
+    }     
+    #endif //DEBUG_TURNING
+  }
+}
 
 //--------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
@@ -6567,7 +6572,7 @@ void check_joystick()
         #endif //DEBUG_JOYSTICK
         if (current_az_state() != ROTATING_CCW) 
         {
-          submit_request(AZ,REQUEST_CCW,0);    
+          submit_request(AZ, REQUEST_CCW, 0);    
         }      
         joystick_azimuth_rotation = ROTATING_CCW; 
         last_joystick_az_action_time = millis();
