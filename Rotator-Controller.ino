@@ -188,8 +188,8 @@
 #include <EEPROM.h>
 #include <math.h> 
 #include <avr/wdt.h>
-#include "rotator_features.h"
-#include "rotator_pins.h"
+#include <rotator_features.h>
+#include <rotator_pins.h>
 
 //#include "pins.h"
 //#include "pins_m0upu.h"
@@ -220,7 +220,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_d7_pin); 
 /* end of classic 4 bit interface LCD display section */
 
-#include "BigFonts.h"  // this defines how to bit fonts on a 4 line display
+#include <BigFonts.h>  // this defines how to bit fonts on a 4 line display
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 // added Teensy 3.2, 3.1 as M20DX256
