@@ -572,7 +572,7 @@ You can tweak these, but read the online documentation!
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
 
-/*----------------------- variables -------------------------------------*/
+/*----------------------- global variables -----------------------------*/
 int azimuth            = 0;
 int raw_azimuth        = 0;
 int target_azimuth     = 0;
@@ -965,7 +965,7 @@ void check_az_preset_potentiometer()
   byte button_read = 0;
   static byte pot_changed_waiting = 0;
 
-  if (az_preset_pot)
+  if (az_preset_pot) // if az preset pot pin defined
   {  
     if (last_pot_read == 9999) // initialize last_pot_read the first time we hit this subroutine
     {  
@@ -978,12 +978,15 @@ void check_az_preset_potentiometer()
       { 
         button_read = digitalRead(preset_start_button);
         if (button_read == LOW) {check_pot = 1;}
-      } else // if not, check the pot every 500 mS
+      } else // if not, check the pot every 250 mS
       {  
         if ((millis() - last_pot_check_time) < 250) {check_pot = 1;}        
       }  
+
+      // TODO, figure out why there is a flag for this.  check_pot is only local
       if (check_pot) 
       {
+        check_pot = 0;  
         pot_read = analogRead(az_preset_pot);
         new_pot_azimuth = map(pot_read, 
                               AZ_PRESET_POT_FULL_CW, 
@@ -991,7 +994,7 @@ void check_az_preset_potentiometer()
                               AZ_PRESET_POT_FULL_CW_MAP, 
                               AZ_PRESET_POT_FULL_CCW_MAP);
 
-        //display_az_preset(new_pot_azimuth);
+        display_az_preset(new_pot_azimuth);
                               
         if ((abs(last_pot_read - pot_read) > 4) && (abs(new_pot_azimuth - (raw_azimuth/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) {
           pot_changed_waiting = 1;
@@ -1012,7 +1015,7 @@ void check_az_preset_potentiometer()
         last_pot_read = pot_read;
       } else 
       { 
-        if ((millis() - last_pot_check_time) >= 250) // has it been awhile since the last pot change?
+        if ((millis() - last_pot_check_time) >= 250) // has it been a while since the last pot change?
         {  
           new_pot_azimuth = map(pot_read, 
                                 AZ_PRESET_POT_FULL_CW, 
@@ -1029,7 +1032,7 @@ void check_az_preset_potentiometer()
             Serial.println(new_pot_azimuth);
           }
           #endif //DEBUG_AZ_PRESET_POT
-          submit_request(AZ, REQUEST_AZIMUTH_RAW,new_pot_azimuth*HEADING_MULTIPLIER);
+          submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth*HEADING_MULTIPLIER);
           pot_changed_waiting = 0;
           last_pot_read = pot_read;
           last_pot_check_time = millis();
@@ -2793,16 +2796,16 @@ char *azimuth_direction(int azimuth_in)
 // started from update_display(), stripped elevation options
 
 //Display Definitions 
-// Col  0-14, Row 0-3, Big fonts and deg symbol
+// Col 00-14, Row 0-3, Big fonts and deg symbol
 // Col 15,    Row 0,   Deg symbol
 // Col 15,    Row 1,   {0 to 9}, Speed number
 // Col 15,    Row 2,   TBD
 // Col 15,    Row 3,   Azimuth tenths
-// Col 17-20, Row 0,   {OT}
-// Col 17-20, Row 0,   {<, >, ->, <-}, Soft Limits
-// Col 17-20, Row 0,   {000 to 359}, Preset knob position
-// Col 17-20, Row 0,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
-
+// Col 16-20, Row 0,   {N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, NNW}
+// Col 16-20, Row 1,   {CW, CCW}, Soft Limits
+// Col 16-20, Row 2,   {000 to 359}, Preset knob position
+// Col 16-20, Row 3,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
+//-----------------------------------------------------------------------
 void update_display()
 {
   // update the LCD display
@@ -2812,8 +2815,6 @@ void update_display()
   String direction_string; // temporary string, not really direction
 
   static int last_azimuth = -1;
-  
-  unsigned int target = 0;
   
   // ---------------------------------------------------------------------
   // target from preset knob
@@ -2857,6 +2858,10 @@ void display_az_preset(int target_azimuth)
 {
   String direction_string; // temporary string, not really direction
   char workstring[7];
+  
+  #ifdef FEATURE_AZ_PRESET_ENCODER
+  unsigned int target = 0;
+  #endif
   
   #ifdef FEATURE_AZ_PRESET_ENCODER
   target = az_encoder_raw_degrees;
@@ -3540,10 +3545,10 @@ void read_azimuth()
     if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
     {
       azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-        if (azimuth >= (360 * HEADING_MULTIPLIER)) 
-        {
-          azimuth = azimuth - (360 * HEADING_MULTIPLIER);
-        }
+      if (azimuth >= (360 * HEADING_MULTIPLIER)) 
+      {
+        azimuth = azimuth - (360 * HEADING_MULTIPLIER);
+      }
     } else 
     {
       if (raw_azimuth < 0) 
@@ -3589,10 +3594,10 @@ void read_azimuth()
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
       {
         azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-          if (azimuth >= (360 * HEADING_MULTIPLIER)) 
-          {
-            azimuth = azimuth - (360 * HEADING_MULTIPLIER);
-          }
+        if (azimuth >= (360 * HEADING_MULTIPLIER)) 
+        {
+          azimuth = azimuth - (360 * HEADING_MULTIPLIER);
+        }
       } else 
       {
         if (raw_azimuth < 0) 
