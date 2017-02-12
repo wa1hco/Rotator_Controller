@@ -1,10 +1,10 @@
-/* -------------------------------------   Pin Definitions ------------------------------------------ 
+// -------------------------------------   Pin Definitions ------------------------------------------
 
-  You need to look at these and set them appropriately !
+#ifndef ROTATOR_PINS_H_
+#define ROTATOR_PINS_H_
 
-  Most pins can be disabled by setting them to 0 (zero).  If you're not using a pin or function, set it to 0.
-
-*/
+// You need to look at these and set them appropriately !
+// Most pins can be disabled by setting them to 0 (zero).  If you're not using a pin or function, set it to 0.
 
 // Teensy v3.2 Digital and Analog Pins, with Teensey Shield
 //    Shield board with Teensy on left, USB down
@@ -142,5 +142,7 @@
 #define pin_joystick_x 0
 #define pin_joystick_y 0
 #endif //FEATURE_JOYSTICK_CONTROL
+
+#endif // ifndef ROTATOR_PINS_H_
 
 

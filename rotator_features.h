@@ -1,5 +1,9 @@
 /* ---------------------- Features and Options - you must configure this !! ------------------------------------------------*/
 
+#ifndef ROTATOR_FEATURES_H_
+#define ROTATOR_FEATURES_H_
+
+
 /* main features */
 //#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232A emulation
@@ -102,3 +106,4 @@
 //#define DEBUG_JOYSTICK
 //#define DEBUG_ROTATION_INDICATION_PIN
 
+#endif // ROTATOR_FEATURES_H_
