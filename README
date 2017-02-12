@@ -1,4 +1,4 @@
-Rotator-Controller derives from the K3NG rotator controller code.
+Rotator_Controller derives from the K3NG rotator controller code.
 
 The changes include
 --- Developed for Teensy 3.2 microcontroller
