@@ -184,6 +184,7 @@
 
 */
 
+#include "Arduino.h"
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <math.h> 
@@ -192,7 +193,7 @@
 #include "rotator_pins.h"
 
 //#define CODE_VERSION "2013091101"
-#define CODE_VERSION "2017012701"
+#define CODE_VERSION "2017021101"
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
@@ -206,8 +207,9 @@
      Object declarations are required for several devices, including LCD displays, compass devices, and accelerometers
 */
 
-/* uncomment this section for classic 4 bit interface LCD display (in addition to FEATURE_LCD_DISPLAY above) */
+/* un-comment this section for classic 4 bit interface LCD display (in addition to FEATURE_LCD_DISPLAY above) */
 #define FEATURE_LCD_DISPLAY
+
 #include <LiquidCrystal.h>                           
 LiquidCrystal lcd(lcd_4_bit_rs_pin, 
                   lcd_4_bit_enable_pin, 
@@ -217,7 +219,10 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_d7_pin); 
 /* end of classic 4 bit interface LCD display section */
 
-#include "BigFonts.h"  // this defines how to bit fonts on a 4 line display
+//TODO, combine these into a library with header, or a class with methods?
+void loadchars(LiquidCrystal lcd);
+void printbigazimuth(LiquidCrystal lcd, int azimuth);
+
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 // added Teensy 3.2, 3.1 as M20DX256
@@ -231,6 +236,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 #define OPTION_SERIAL3_SUPPORT
 #endif
 
+// TODO, something funky with this, FEATURE_HOST_REMOTE_PROTOCOL doesn't work in Eclipse Arduino
 #if (defined(FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT) || defined(FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT)) && !defined(FEATURE_HOST_REMOTE_PROTOCOL)
 #define FEATURE_HOST_REMOTE_PROTOCOL
 #endif
@@ -328,7 +334,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT 
 #define DIR_CCW 0x10                      //  CW Encoder Code (Do not change)
-#define DIR_CW 0x20                       // CCW Encoder Code (Do not change)
+#define DIR_CW  0x20                      // CCW Encoder Code (Do not change)
 #endif //FEATURE_ROTARY_ENCODER_SUPPORT
 
 //az_state
@@ -603,7 +609,8 @@ byte az_slow_down_step = 0;
 unsigned long az_timed_slow_down_start_time = 0;
 byte backslash_command = 0;
 
-struct config_t {
+struct config_t
+{
   byte magic_number;
   int analog_az_full_ccw;
   int analog_az_full_cw;
@@ -677,18 +684,21 @@ byte lcdcolor = GREEN;  // default color of I2C LCD display
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT
 #ifdef OPTION_ENCODER_HALF_STEP_MODE      // Use the half-step state table (emits a code at 00 and 11)
-const unsigned char ttable[6][4] = {
+const unsigned char ttable[6][4] =
+{
   {0x03, 0x02, 0x01, 0x00}, {0x23, 0x00, 0x01, 0x00},
   {0x13, 0x02, 0x00, 0x00}, {0x03, 0x05, 0x04, 0x00},
   {0x03, 0x03, 0x04, 0x10}, {0x03, 0x05, 0x03, 0x20}
 };
 #else                                     // Use the full-step state table (emits a code at 00 only)
-const unsigned char ttable[7][4] = {
+const unsigned char ttable[7][4] =
+{
   {0x00, 0x02, 0x04,  0x00}, {0x03, 0x00, 0x01, 0x10},
   {0x03, 0x02, 0x00,  0x00}, {0x03, 0x02, 0x01, 0x00},
   {0x06, 0x00, 0x04,  0x00}, {0x06, 0x05, 0x00, 0x10},
   {0x06, 0x05, 0x04,  0x00},
 };
+
 #endif //OPTION_ENCODER_HALF_STEP_MODE 
 #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
 int az_encoder_raw_degrees = 0;
@@ -756,8 +766,8 @@ volatile unsigned int el_pulse_counter_ambiguous = 0;
   You must have the same number of entries in the _from and _to arrays!
 */
 #ifdef FEATURE_AZIMUTH_CORRECTION
-float azimuth_calibration_from[]  = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
-float azimuth_calibration_to[]    = {180, 630};
+float azimuth_calibration_from[]    = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
+float azimuth_calibration_to[]      = {180, 630};
 #endif //FEATURE_AZIMUTH_CORRECTION
 
 #ifdef FEATURE_ELEVATION_CORRECTION
@@ -784,7 +794,7 @@ void setup()
   #endif //FEATURE_TIMED_BUFFER 
   
   #ifdef FEATURE_LCD_DISPLAY
-  loadchars();  // define the big font components
+  loadchars(lcd);  // define the big font components
   initialize_display();
   #endif
   
@@ -851,8 +861,9 @@ void loop()
   service_remote_unit_serial_buffer();
   #endif //FEATURE_REMOTE_UNIT_SLAVE
   
+  // TODO, if defined call the function, but the function is not defined in Eclipse. even though it has the same ifdef
   #ifdef FEATURE_HOST_REMOTE_PROTOCOL
-  service_remote_communications_incoming_serial_buffer();
+  //service_remote_communications_incoming_serial_buffer();
   #endif //FEATURE_HOST_REMOTE_PROTOCOL
 
   #ifdef FEATURE_JOYSTICK_CONTROL
@@ -952,15 +963,17 @@ void check_az_speed_pot()
 }
 
 //--------------------------------------------------------------
+// read the preset pot if button or time
+// deal with first indication of change and as pot continues to change
 void check_az_preset_potentiometer() 
 {
-  byte check_pot = 0;
+  byte check_pot_flag = 0;
   static unsigned long last_pot_check_time = 0;
   static int last_pot_read = 9999;
   int pot_read = 0;
   int new_pot_azimuth = 0;
   byte button_read = 0;
-  static byte pot_changed_waiting = 0;
+  static byte pot_change_flag = 0;
 
   if (az_preset_pot) // if az preset pot pin defined
   {  
@@ -968,22 +981,24 @@ void check_az_preset_potentiometer()
     {  
       last_pot_read = analogRead(az_preset_pot);
     }
-      
-    if (!pot_changed_waiting) 
+
+    // the preset pot can be stopped or in motion
+    if (!pot_change_flag) // if not a preset move in progress
     {
+      // two ways to decide to check the azimuth pot, button or time
       if (preset_start_button) // if we have a preset start button, check it
       { 
         button_read = digitalRead(preset_start_button);
-        if (button_read == LOW) {check_pot = 1;}
+        if (button_read == LOW) {check_pot_flag = 1;}
       } else // if not, check the pot every 250 mS
       {  
-        if ((millis() - last_pot_check_time) < 250) {check_pot = 1;}        
+        if ((millis() - last_pot_check_time) < 250) {check_pot_flag = 1;}        
       }  
 
-      // TODO, figure out why there is a flag for this.  check_pot is only local
-      if (check_pot) 
+      // check the preset pot two ways, with and without change waiting
+      if (check_pot_flag) // flag
       {
-        check_pot = 0;  
+        check_pot_flag = 0;  
         pot_read = analogRead(az_preset_pot);
         new_pot_azimuth = map(pot_read, 
                               AZ_PRESET_POT_FULL_CW, 
@@ -993,8 +1008,11 @@ void check_az_preset_potentiometer()
 
         display_az_preset(new_pot_azimuth);
                               
-        if ((abs(last_pot_read - pot_read) > 4) && (abs(new_pot_azimuth - (raw_azimuth/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) {
-          pot_changed_waiting = 1;
+        // if significant change in preset pot and significantly different from azimuth
+        if ((abs(last_pot_read - pot_read) > 4) && 
+        	(abs(new_pot_azimuth - (raw_azimuth/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) 
+        {
+          pot_change_flag = 1;
           if (debug_mode) 
           {
             Serial.println(F("check_az_preset_potentiometer: in pot_changed_waiting"));
@@ -1003,36 +1021,40 @@ void check_az_preset_potentiometer()
         }              
       }
       last_pot_check_time = millis();
-    } else // no preset button
+    } else // preset pot is moving
     {  
       pot_read = analogRead(az_preset_pot);
-      if (abs(pot_read - last_pot_read) > 3) // if the pot has changed, reset the timer
+      // measure preset pot motion as change in value per read
+      if (abs(pot_read - last_pot_read) > 3) // preset pot is moving
       {  
         last_pot_check_time = millis();
         last_pot_read = pot_read;
-      } else 
+      } else // preset pot has stopped moving,
       { 
-        if ((millis() - last_pot_check_time) >= 250) // has it been a while since the last pot change?
+        // wait an additional time after preset pot has stopped moving
+    	if ((millis() - last_pot_check_time) >= 250) // has it been a while since the last pot change?
         {  
-          new_pot_azimuth = map(pot_read, 
-                                AZ_PRESET_POT_FULL_CW, 
-                                AZ_PRESET_POT_FULL_CCW, 
-                                AZ_PRESET_POT_FULL_CW_MAP, 
-                                AZ_PRESET_POT_FULL_CCW_MAP);
-                                
-          #ifdef DEBUG_AZ_PRESET_POT
-          if (debug_mode) 
-          {
-            Serial.print(F("check_az_preset_potentiometer: pot change - current raw_azimuth: "));
-            Serial.print(raw_azimuth/HEADING_MULTIPLIER);
-            Serial.print(F(" new_azimuth: "));
-            Serial.println(new_pot_azimuth);
-          }
-          #endif //DEBUG_AZ_PRESET_POT
-          submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth*HEADING_MULTIPLIER);
-          pot_changed_waiting = 0;
-          last_pot_read = pot_read;
-          last_pot_check_time = millis();
+		  new_pot_azimuth = map(pot_read,
+								AZ_PRESET_POT_FULL_CW,
+								AZ_PRESET_POT_FULL_CCW,
+								AZ_PRESET_POT_FULL_CW_MAP,
+								AZ_PRESET_POT_FULL_CCW_MAP);
+	      display_az_preset(new_pot_azimuth);
+
+		  submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth*HEADING_MULTIPLIER);
+		  pot_change_flag = 0;
+		  last_pot_read = pot_read;
+		  last_pot_check_time = millis();
+
+		  #ifdef DEBUG_AZ_PRESET_POT
+		  if (debug_mode)
+		  {
+		    Serial.print(F("check_az_preset_potentiometer: pot change - current raw_azimuth: "));
+		    Serial.print(raw_azimuth/HEADING_MULTIPLIER);
+		    Serial.print(F(" new_azimuth: "));
+		    Serial.println(new_pot_azimuth);
+		  }
+		  #endif //DEBUG_AZ_PRESET_POT
         }
       }
     }    
@@ -2840,7 +2862,7 @@ void update_display()
   {
     if (last_azimuth != azimuth) 
     {  
-      printbigazimuth(azimuth);    
+      printbigazimuth(lcd, azimuth);
       last_azimuth = azimuth;
       lcd_state_row_1 = LCD_HEADING;  
     }  
@@ -5040,7 +5062,7 @@ void initialize_display()
 
  //============================================
  // code inserted for font setup
- loadchars(); // configure the LCD for Big Fonts
+ loadchars(lcd); // configure the LCD for Big Fonts
 }
 #endif 
 
@@ -5715,7 +5737,8 @@ void service_request_queue()
           target_azimuth = az_request_parm;
           target_raw_azimuth = az_request_parm;
           if (target_azimuth == (360*HEADING_MULTIPLIER)) {target_azimuth = 0;}      
-          if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) && (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)))) 
+          if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) &&
+        	  (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))))
           {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
             if (debug_mode) {Serial.print(F(" request within tolerance"));}
@@ -6201,7 +6224,7 @@ void check_for_dirty_configuration()
 //--------------------------------------------------------------
 byte current_az_state()
 {  
-  if ((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) 
+  if ((az_state  == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW))
   {
     return ROTATING_CW;
   }

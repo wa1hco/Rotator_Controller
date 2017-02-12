@@ -27,18 +27,18 @@
 //#define FEATURE_EL_POSITION_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 
 /* preset rotary encoder features and options */
-//#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
-//#define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
+//#define FEATURE_AZ_PRESET_ENCODER               // Uncomment for Rotary Encoder Azimuth Preset support
+//#define FEATURE_EL_PRESET_ENCODER               // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 #define OPTION_ENCODER_HALF_STEP_MODE
-#define OPTION_ENCODER_ENABLE_PULLUPS          // define to enable weak pullups on rotary encoder pins
+#define OPTION_ENCODER_ENABLE_PULLUPS             // define to enable weak pullups on rotary encoder pins
 //#define OPTION_PRESET_ENCODER_RELATIVE_CHANGE   // this makes the encoder(s) change the az or el in a relative fashion rather then store an absolute setting
 
 /* position sensor options */
 #define OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT // stop azimuth at lower and upper limit rather than rolling over
 #define OPTION_EL_POSITION_ROTARY_ENCODER_HARD_LIMIT // stop elevation at lower and upper limits rather than rolling over
-#define OPTION_AZ_POSITION_PULSE_HARD_LIMIT  // stop azimuth at lower and upper limit rather than rolling over
-#define OPTION_EL_POSITION_PULSE_HARD_LIMIT  // stop elevation at lower and upper limits rather than rolling over
-#define OPTION_POSITION_PULSE_INPUT_PULLUPS  // define to enable weak pullups on position pulse inputs
+#define OPTION_AZ_POSITION_PULSE_HARD_LIMIT          // stop azimuth at lower and upper limit rather than rolling over
+#define OPTION_EL_POSITION_PULSE_HARD_LIMIT          // stop elevation at lower and upper limits rather than rolling over
+#define OPTION_POSITION_PULSE_INPUT_PULLUPS          // define to enable weak pullups on position pulse inputs
 
 /* less often used features and options */
 //#define FEATURE_TIMED_BUFFER              // Support for Yaesu timed buffer commands
