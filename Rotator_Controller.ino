@@ -209,24 +209,20 @@
 
 /* un-comment this section for classic 4 bit interface LCD display (in addition to FEATURE_LCD_DISPLAY above) */
 #define FEATURE_LCD_DISPLAY
-
-#include <LiquidCrystal.h>                           
-LiquidCrystal lcd(lcd_4_bit_rs_pin, 
-                  lcd_4_bit_enable_pin, 
-                  lcd_4_bit_d4_pin, 
-                  lcd_4_bit_d5_pin, 
-                  lcd_4_bit_d6_pin, 
-                  lcd_4_bit_d7_pin); 
+#include "LiquidCrystal.h"
+LiquidCrystal lcd(lcd_4_bit_rs_pin,
+                  lcd_4_bit_enable_pin,
+                  lcd_4_bit_d4_pin,
+                  lcd_4_bit_d5_pin,
+                  lcd_4_bit_d6_pin,
+                  lcd_4_bit_d7_pin);
 /* end of classic 4 bit interface LCD display section */
 
-//TODO, combine these into a library with header, or a class with methods?
-void loadchars(LiquidCrystal lcd);
-void printbigazimuth(LiquidCrystal lcd, int azimuth);
+#include "display.h"
 
 #include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
-
 
 /*----------------------- global variables -----------------------------*/
 int azimuth            = 0;
@@ -447,7 +443,7 @@ void setup()
   #endif //FEATURE_TIMED_BUFFER 
   
   #ifdef FEATURE_LCD_DISPLAY
-  loadchars(lcd);  // define the big font components
+  //loadchars(lcd);  // define the big font components
   initialize_display();
   #endif
   
