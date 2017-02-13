@@ -14,6 +14,8 @@
 /* host and remote unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE       //uncomment this to make this unit a remote unit controlled by a host unit
 
+#define FEATURE_LCD_DISPLAY
+
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
