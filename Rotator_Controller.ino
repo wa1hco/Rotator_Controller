@@ -4216,7 +4216,6 @@ void initialize_interrupts()
 }
 
 //--------------------------------------------------------------
-
 void initialize_pins()
 {  
   if (serial_led) 
