@@ -17,12 +17,12 @@
 #define FEATURE_LCD_DISPLAY
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
-#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+#define FEATURE_AZ_POSITION_POTENTIOMETER          //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
 //#define FEATURE_AZ_POSITION_PULSE_INPUT
-//#define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support (also uncomment object declaration below)
-//#define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires an Arduino with Serial1 suppport (i.e. Arduino Mega); makes this unit a master
-//#define FEATURE_AZ_POSITION_LSM303                            // Uncomment for elevation using LSM303 magnetometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
+//#define FEATURE_AZ_POSITION_HMC5883L             // HMC5883L digital compass support (also uncomment object declaration below)
+//#define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT // requires an Arduino with Serial1 suppport (i.e. Arduino Mega); makes this unit a master
+//#define FEATURE_AZ_POSITION_LSM303               // Uncomment for elevation using LSM303 magnetometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 
 //#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
@@ -30,7 +30,7 @@
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library (also uncomment object declaration below)
 //#define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library (also uncomment object declaration below)
 //#define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires an Arduino with Serial1 suppport (i.e. Arduino Mega); makes this unit a master
-//#define FEATURE_EL_POSITION_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
+//#define FEATURE_EL_POSITION_LSM303                          // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 
 /* preset rotary encoder features and options */
 //#define FEATURE_AZ_PRESET_ENCODER               // Uncomment for Rotary Encoder Azimuth Preset support

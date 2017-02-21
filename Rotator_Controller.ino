@@ -214,16 +214,6 @@
 #include "macros.h"
 #include "settings.h"
 
-#include <LiquidCrystal.h>
-
-LiquidCrystal lcd(lcd_4_bit_rs_pin,
-                  lcd_4_bit_enable_pin,
-                  lcd_4_bit_d4_pin,
-                  lcd_4_bit_d5_pin,
-                  lcd_4_bit_d6_pin,
-                  lcd_4_bit_d7_pin);
-/* end of classic 4 bit interface LCD display section */
-
 /*----------------------- global variables -----------------------------*/
 int azimuth            = 0;
 int raw_azimuth        = 0;
@@ -283,8 +273,6 @@ byte timed_buffer_status = 0;
 byte normal_az_speed_voltage = 0;
 byte current_az_speed_voltage = 0;
 
-unsigned long last_lcd_update = 0;
-String last_direction_string;
 byte push_lcd_update = 0;
 
 #ifdef FEATURE_ELEVATION_CONTROL
@@ -407,8 +395,6 @@ float azimuth_calibration_to[]      = {180, 630};
 float elevation_calibration_from[]  = {-180, 0, 180};
 float elevation_calibration_to[]    = { 180, 0, 180};
 #endif //FEATURE_ELEVATION_CORRECTION
-
-
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 void setup() 
@@ -673,12 +659,6 @@ void check_az_preset_potentiometer()
     }    
   } //if (az_preset_pot)
 }
-
-
-
-extern unsigned long last_lcd_update;
-extern byte az_state;
-
 
 //--------------------------------------------------------------
 void initialize_rotary_encoders()
@@ -2178,7 +2158,7 @@ void check_buttons()
 
   #ifdef FEATURE_ADAFRUIT_BUTTONS
   int buttons = 0;
-  buttons = lcd.readButtons();
+  buttons = readButtons();
 
   if (buttons & BUTTON_RIGHT) 
   {

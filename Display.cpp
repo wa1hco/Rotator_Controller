@@ -9,19 +9,31 @@
 #include <LiquidCrystal.h>
 
 #include "rotator_features.h"
+#include "rotator_pins.h"
 #include "settings.h"
 #include "macros.h"
 
 #include "Display.h"
 
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(lcd_4_bit_rs_pin,
+                  lcd_4_bit_enable_pin,
+                  lcd_4_bit_d4_pin,
+                  lcd_4_bit_d5_pin,
+                  lcd_4_bit_d6_pin,
+                  lcd_4_bit_d7_pin);
+/* end of classic 4 bit interface LCD display section */
+
 // global variables referenced below
-extern LiquidCrystal lcd;
 extern int azimuth;
 extern byte az_state;
-extern String last_direction_string;
-extern unsigned long last_lcd_update;
 extern byte push_lcd_update;
 extern int target_azimuth;
+
+//-----------------------------------Display private variables--------------------------
+unsigned long last_lcd_update;
+String last_direction_string;
 
 //----------------------------------------------------------------------------------------
 // Azimuth Pre-set value at Col 16 and row 2
@@ -164,6 +176,8 @@ void initialize_display()
  //============================================
  // code inserted for font setup
  loadchars(); // configure the LCD for Big Fonts
+
+ delay(3000);  // display intro screen for 3 seconds
 }
 
 //--------------------------------------------------------------
@@ -528,3 +542,12 @@ void printbigazimuth(int azimuth)
   printbigchar(tens,     5,   0,  0);
   printbigchar(ones,    10,   0,  1);  // flag degree symbol
 }
+
+#ifdef FEATURE_ADAFRUIT_BUTTONS
+int readButtons()
+{
+	int buttons;
+	buttons = lcd.readButtons();
+	return buttons;
+}
+#endif
