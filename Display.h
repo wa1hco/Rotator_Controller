@@ -21,7 +21,7 @@ void loadchars();
 void printbigazimuth(int azimuth);
 void printbigchar(int digit, int col, int row, int symbol);
 
-int readButtons();  // used for adafruit display
+void display_L298_pins();
 
 //#define LCD_COLUMNS and ROWS
 #define LCD_COLUMNS            20

@@ -48,7 +48,7 @@
 
 /* less often used features and options */
 //#define FEATURE_TIMED_BUFFER              // Support for Yaesu timed buffer commands
-//#define OPTION_SERIAL_HELP_TEXT           // Yaesu help command prints help
+#define OPTION_SERIAL_HELP_TEXT           // Yaesu help command prints help
 //#define FEATURE_PARK
 //#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 //#define OPTION_EL_MANUAL_ROTATE_LIMITS
@@ -76,7 +76,7 @@
   */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
-#define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
@@ -96,7 +96,7 @@
 //#define DEBUG_TIMED_BUFFER
 //#define DEBUG_EL_CHECK_OPERATION_TIMEOUT
 //#define DEBUG_VARIABLE_OUTPUTS
-//#define DEBUG_ROTATOR
+#define DEBUG_ROTATOR
 //#define DEBUG_SUBMIT_REQUEST
 //#define DEBUG_SERVICE_ROTATION
 //#define DEBUG_POSITION_ROTARY_ENCODER

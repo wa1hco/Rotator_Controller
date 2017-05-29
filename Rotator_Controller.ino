@@ -1,4 +1,5 @@
 /* Arduino Rotator Controller "wa1hco Edition"
+ *
    Jeff Millar, WA1HCO
    wa1hco@gmail.com
    
@@ -27,7 +28,7 @@
 
    ***************************************************************************************************************    
 
-
+    ***** https://github.com/k3ng/k3ng_rotator_controller/wiki *****
 
 
     All copyrights are the property of their respective owners
@@ -198,18 +199,6 @@
 //#define CODE_VERSION "2013091101"
 #define CODE_VERSION "2017021101"
 
-/* -------------------------- rotation settings ---------------------------------------*/
-
-#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator
-                                                // (the Yaesu GS-232B Emulation Z command will override this and write the setting to eeprom)
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 540 // the default rotation capability of the rotator in degrees
-                                                // (the Yaesu P36 and P45 commands will override this and write the setting to eeprom)
-#define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
-
-/* ---------------------------- object declarations ----------------------------------------------
-     Object declarations are required for several devices, including LCD displays, compass devices, and accelerometers
-*/
-
 #include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
@@ -235,7 +224,7 @@ byte configuration_dirty = 0;
 unsigned long last_serial_receive_time = 0;
 
 byte az_slowstart_active = AZ_SLOWSTART_DEFAULT;
-byte az_slowdown_active = AZ_SLOWDOWN_DEFAULT;
+byte az_slowdown_active  = AZ_SLOWDOWN_DEFAULT;
 
 byte az_request = 0;
 int az_request_parm = 0;
@@ -429,7 +418,7 @@ void loop()
   read_headings();
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
   service_request_queue();
-  service_rotation();
+  service_rotation_azimuth();
   az_check_operation_timeout();
   #ifdef FEATURE_TIMED_BUFFER
   check_timed_interval();
@@ -520,8 +509,10 @@ void profile_loop_time()
   average_loop_time = (average_loop_time + (millis()-last_time))/2.0;
   last_time = millis();
     
-  if (debug_mode){
-    if ((millis()-last_print_time) > 1000){
+  if (debug_mode)
+  {
+    if ((millis()-last_print_time) > 1000)
+    {
       Serial.print(F("avg loop time: "));
       Serial.println(average_loop_time,2);
       last_print_time = millis();
@@ -537,12 +528,15 @@ void check_az_speed_pot()
   int pot_read = 0;
   byte new_azimuth_speed_voltage = 0;
    
-  if (az_speed_pot && azimuth_speed_voltage && ((millis() - last_pot_check_time) > 500))  {
+  if (az_speed_pot && azimuth_speed_voltage && ((millis() - last_pot_check_time) > 500))
+  {
     pot_read = analogRead(az_speed_pot);
     new_azimuth_speed_voltage = map(pot_read, SPEED_POT_LOW, SPEED_POT_HIGH, SPEED_POT_LOW_MAP, SPEED_POT_HIGH_MAP);
-    if (new_azimuth_speed_voltage != normal_az_speed_voltage) {
+    if (new_azimuth_speed_voltage != normal_az_speed_voltage)
+    {
       #ifdef DEBUG_AZ_SPEED_POT
-      if (debug_mode) {
+      if (debug_mode)
+      {
         Serial.print(F("check_az_speed_pot: normal_az_speed_voltage: "));
         Serial.print(normal_az_speed_voltage);
         Serial.print(F(" new_azimuth_speed_voltage:"));
@@ -576,10 +570,8 @@ void check_az_preset_potentiometer()
 
   if (az_preset_pot) // if az preset pot pin defined
   {  
-    if (last_pot_read == 9999) // initialize last_pot_read the first time we hit this subroutine
-    {  
-      last_pot_read = analogRead(az_preset_pot);
-    }
+	// initialize last_pot_read the first time we hit this subroutine
+    if (last_pot_read == 9999) last_pot_read = analogRead(az_preset_pot);
 
     // the preset pot can be stopped or in motion
     if (!pot_change_flag) // if not a preset move in progress
@@ -2900,10 +2892,11 @@ void read_azimuth()
     // ADC:        0--------------------1023
 
     analog_az = analogRead(rotator_analog_az);
-    raw_azimuth = (map(analog_az, configuration.analog_az_full_ccw, 
-                       configuration.analog_az_full_cw, 
-                       (configuration.azimuth_starting_point*HEADING_MULTIPLIER), 
-                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)));
+    raw_azimuth = (map(  analog_az,
+    		             configuration.analog_az_full_ccw,
+                         configuration.analog_az_full_cw,
+                       ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
+                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
     
     #ifdef FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
@@ -3174,28 +3167,28 @@ void output_debug()
     Serial.print(F("\tAZ: "));
     switch (az_state) 
     {
-      case IDLE: Serial.print(F("IDLE")); break;
-      case SLOW_START_CW: Serial.print(F("SLOW_START_CW")); break;
-      case SLOW_START_CCW: Serial.print(F("SLOW_START_CCW")); break;
-      case NORMAL_CW: Serial.print(F("NORMAL_CW")); break;
-      case NORMAL_CCW: Serial.print(F("NORMAL_CCW")); break;
-      case SLOW_DOWN_CW: Serial.print(F("SLOW_DOWN_CW")); break;
-      case SLOW_DOWN_CCW: Serial.print(F("SLOW_DOWN_CCW")); break;
-      case INITIALIZE_SLOW_START_CW: Serial.print(F("INITIALIZE_SLOW_START_CW")); break;
-      case INITIALIZE_SLOW_START_CCW: Serial.print(F("INITIALIZE_SLOW_START_CCW")); break;
-      case INITIALIZE_TIMED_SLOW_DOWN_CW: Serial.print(F("INITIALIZE_TIMED_SLOW_DOWN_CW")); break;
+      case IDLE:                           Serial.print(F("IDLE")); break;
+      case SLOW_START_CW:                  Serial.print(F("SLOW_START_CW")); break;
+      case SLOW_START_CCW:                 Serial.print(F("SLOW_START_CCW")); break;
+      case NORMAL_CW:                      Serial.print(F("NORMAL_CW")); break;
+      case NORMAL_CCW:                     Serial.print(F("NORMAL_CCW")); break;
+      case SLOW_DOWN_CW:                   Serial.print(F("SLOW_DOWN_CW")); break;
+      case SLOW_DOWN_CCW:                  Serial.print(F("SLOW_DOWN_CCW")); break;
+      case INITIALIZE_SLOW_START_CW:       Serial.print(F("INITIALIZE_SLOW_START_CW")); break;
+      case INITIALIZE_SLOW_START_CCW:      Serial.print(F("INITIALIZE_SLOW_START_CCW")); break;
+      case INITIALIZE_TIMED_SLOW_DOWN_CW:  Serial.print(F("INITIALIZE_TIMED_SLOW_DOWN_CW")); break;
       case INITIALIZE_TIMED_SLOW_DOWN_CCW: Serial.print(F("INITIALIZE_TIMED_SLOW_DOWN_CCW")); break;
-      case TIMED_SLOW_DOWN_CW: Serial.print(F("TIMED_SLOW_DOWN_CW")); break;
-      case TIMED_SLOW_DOWN_CCW: Serial.print(F("TIMED_SLOW_DOWN_CCW")); break;
+      case TIMED_SLOW_DOWN_CW:             Serial.print(F("TIMED_SLOW_DOWN_CW")); break;
+      case TIMED_SLOW_DOWN_CCW:            Serial.print(F("TIMED_SLOW_DOWN_CCW")); break;
     }
     
     Serial.print(F("\tQ: "));
     switch(az_request_queue_state)
     {
-      case NONE: Serial.print(F("-")); break;
-      case IN_QUEUE: Serial.print(F("IN_QUEUE")); break;
-      case IN_PROGRESS_TIMED: Serial.print(F("IN_PROGRESS_TIMED")); break;
-      case IN_PROGRESS_TO_TARGET: Serial.print(F("IN_PROGRESS_TO_TARGET")); break;
+      case NONE:                           Serial.print(F("-")); break;
+      case IN_QUEUE:                       Serial.print(F("IN_QUEUE")); break;
+      case IN_PROGRESS_TIMED:              Serial.print(F("IN_PROGRESS_TIMED")); break;
+      case IN_PROGRESS_TO_TARGET:          Serial.print(F("IN_PROGRESS_TO_TARGET")); break;
     }
     
     Serial.print(F("\tAZ: "));
@@ -3842,7 +3835,11 @@ void update_el_variable_outputs(byte speed_voltage)
   }
   #endif //DEBUG_VARIABLE_OUTPUTS
 
-  if (((el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (rotate_up_pwm))
+  if (((el_state == SLOW_START_UP) ||
+	   (el_state == NORMAL_UP) ||
+	   (el_state == SLOW_DOWN_UP) ||
+	   (el_state == TIMED_SLOW_DOWN_UP)) &&
+	   (rotate_up_pwm))
   {
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_up_pwm"));}
@@ -3850,7 +3847,11 @@ void update_el_variable_outputs(byte speed_voltage)
     analogWrite(rotate_up_pwm,speed_voltage);    
   }
   
-  if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (rotate_down_pwm))
+  if (((el_state == SLOW_START_DOWN)       ||
+	   (el_state == NORMAL_DOWN)           ||
+	   (el_state == SLOW_DOWN_DOWN)        ||
+	   (el_state == TIMED_SLOW_DOWN_DOWN)) &&
+	   (rotate_down_pwm))
   {
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_down_pwm"));}
@@ -3858,8 +3859,15 @@ void update_el_variable_outputs(byte speed_voltage)
     analogWrite(rotate_down_pwm,speed_voltage);   
   }
 
-  if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN) ||
-  (el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (rotate_up_down_pwm))
+  if (((el_state == SLOW_START_DOWN)      ||
+       (el_state == NORMAL_DOWN)          ||
+	   (el_state == SLOW_DOWN_DOWN)       ||
+	   (el_state == TIMED_SLOW_DOWN_DOWN) ||
+       (el_state == SLOW_START_UP)        ||
+	   (el_state == NORMAL_UP)            ||
+       (el_state == SLOW_DOWN_UP)         ||
+       (el_state == TIMED_SLOW_DOWN_UP))  &&
+	   (rotate_up_down_pwm))
   {
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_up_down_pwm"));}
@@ -3867,7 +3875,11 @@ void update_el_variable_outputs(byte speed_voltage)
     analogWrite(rotate_up_down_pwm,speed_voltage);   
   }
 
-  if (((el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (rotate_up_freq))
+  if (((el_state == SLOW_START_UP)       ||
+	   (el_state == NORMAL_UP)           ||
+	   (el_state == SLOW_DOWN_UP)        ||
+	   (el_state == TIMED_SLOW_DOWN_UP)) &&
+	   (rotate_up_freq))
   {
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_up_freq"));} 
@@ -3875,7 +3887,11 @@ void update_el_variable_outputs(byte speed_voltage)
     tone(rotate_up_freq,map(speed_voltage,0,255,EL_VARIABLE_FREQ_OUTPUT_LOW,EL_VARIABLE_FREQ_OUTPUT_HIGH));
   }
   
-  if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (rotate_down_freq))
+  if (((el_state == SLOW_START_DOWN)       ||
+	   (el_state == NORMAL_DOWN)           ||
+	   (el_state == SLOW_DOWN_DOWN)        ||
+	   (el_state == TIMED_SLOW_DOWN_DOWN)) &&
+	   (rotate_down_freq))
   {
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_down_freq"));} 
@@ -3914,15 +3930,19 @@ void update_az_variable_outputs(byte speed_voltage)
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_cw_pwm"));}
     #endif //DEBUG_VARIABLE_OUTPUTS
-    analogWrite(rotate_cw_pwm,speed_voltage);    
+    analogWrite(rotate_cw_pwm, speed_voltage);
   }
   
-  if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (rotate_ccw_pwm))
+  if (((az_state == SLOW_START_CCW)       ||
+	   (az_state == NORMAL_CCW)           ||
+	   (az_state == SLOW_DOWN_CCW)        ||
+	   (az_state == TIMED_SLOW_DOWN_CCW)) &&
+	   (rotate_ccw_pwm))
   {
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_ccw_pwm"));}
     #endif //DEBUG_VARIABLE_OUTPUTS
-    analogWrite(rotate_ccw_pwm,speed_voltage);   
+    analogWrite(rotate_ccw_pwm, speed_voltage);
   }
   
   if (((az_state == SLOW_START_CW)        || 
@@ -3938,7 +3958,7 @@ void update_az_variable_outputs(byte speed_voltage)
     #ifdef DEBUG_VARIABLE_OUTPUTS
     if (debug_mode) {Serial.print(F("\trotate_cw_ccw_pwm"));}
     #endif //DEBUG_VARIABLE_OUTPUTS
-    analogWrite(rotate_cw_ccw_pwm,speed_voltage);    
+    analogWrite(rotate_cw_ccw_pwm, speed_voltage);
   }  
   
   if (((az_state == SLOW_START_CW)       || 
@@ -3967,7 +3987,7 @@ void update_az_variable_outputs(byte speed_voltage)
   
   if (azimuth_speed_voltage) 
   {
-    analogWrite(azimuth_speed_voltage,speed_voltage);
+    analogWrite(azimuth_speed_voltage, speed_voltage);
   }
   
   #ifdef DEBUG_VARIABLE_OUTPUTS
@@ -3978,6 +3998,9 @@ void update_az_variable_outputs(byte speed_voltage)
 }
 
 //--------------------------------------------------------------
+// rotator(), write the rotator controls, analogWrite(), digitalWrite()
+// action: ACTIVATE, DEACTIVATE
+// type: CW, CCW, UP, DOWN
 void rotator(byte rotation_action, byte rotation_type) 
 {  
   #ifdef DEBUG_ROTATOR
@@ -3995,7 +4018,7 @@ void rotator(byte rotation_action, byte rotation_type)
   }   
   #endif //DEBUG_ROTATOR
   
-  switch(rotation_type) 
+  switch(rotation_type) // CW, CCW, UP, DOWN
   {
     case CW:
       #ifdef DEBUG_ROTATOR
@@ -4009,21 +4032,71 @@ void rotator(byte rotation_action, byte rotation_type)
           brake_release(AZ, true);
           if (az_slowstart_active) 
           {
-            if (rotate_cw_pwm) {analogWrite(rotate_cw_pwm,0);}
-            if (rotate_ccw_pwm) {analogWrite(rotate_ccw_pwm,0);digitalWrite(rotate_ccw_pwm,LOW);}
-            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm,0);}
-            if (rotate_cw_freq) {noTone(rotate_cw_freq);}
-            if (rotate_ccw_freq) {noTone(rotate_ccw_freq);}
-          } else 
+            // CW, Activate, slow start
+        	if (rotate_cw_pwm)
+            {
+            	analogWrite(rotate_cw_pwm,    0); //CW, ACTIVATE, slow start, write 0 to pwm
+            }
+            if (rotate_ccw_pwm)
+            {
+            	analogWrite( rotate_ccw_pwm,   0);
+            	digitalWrite(rotate_ccw_pwm, LOW);
+            }
+            if (rotate_cw_ccw_pwm)
+            {
+            	analogWrite(rotate_cw_ccw_pwm, 0);
+            }
+            if (rotate_cw_freq)
+            {
+            	noTone(rotate_cw_freq);
+            }
+            if (rotate_ccw_freq)
+            {
+            	noTone(rotate_ccw_freq);
+            }
+          } else // !az_slowstart_active
           {
-            if (rotate_cw_pwm) {analogWrite(rotate_cw_pwm,normal_az_speed_voltage);}
-            if (rotate_ccw_pwm) {analogWrite(rotate_ccw_pwm,0);digitalWrite(rotate_ccw_pwm,LOW);}
-            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm,normal_az_speed_voltage);}
-            if (rotate_cw_freq) {tone(rotate_cw_freq,map(normal_az_speed_voltage,0,255,AZ_VARIABLE_FREQ_OUTPUT_LOW,AZ_VARIABLE_FREQ_OUTPUT_HIGH));}
-            if (rotate_ccw_freq) {noTone(rotate_ccw_freq);}
+        	// CW, Activate, fast start
+        	if (rotate_cw_pwm)
+            {
+            	analogWrite(rotate_cw_pwm, normal_az_speed_voltage); //CW, ACTIVATE, slowstart, write speed to pwm
+            }
+            if (rotate_ccw_pwm)
+            {
+            	analogWrite(rotate_ccw_pwm,  0);  //CW, ACTIVATE, slowstart, write zero to pwm, turn off
+            	digitalWrite(rotate_ccw_pwm, LOW);
+            }
+            if (rotate_cw_ccw_pwm)
+            {
+            	analogWrite(rotate_cw_ccw_pwm, normal_az_speed_voltage);
+            }
+            if (rotate_cw_freq)
+            {
+            	tone(rotate_cw_freq,
+            		 map(normal_az_speed_voltage,
+            		     0,
+						 255,
+						 AZ_VARIABLE_FREQ_OUTPUT_LOW,
+						 AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+            }
+            if (rotate_ccw_freq)
+            {
+            	noTone(rotate_ccw_freq);
+            }
+          } // if slow start active, else
+
+          // CW, Activate, not pwm
+          if (rotate_cw)
+          {
+        	  digitalWrite(rotate_cw,  ROTATE_PIN_ACTIVE_VALUE  );  // CW, ACTIVATE, start or continue
+        	  digitalWrite(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE);
           }
-          if (rotate_cw)  {digitalWrite(rotate_cw, ROTATE_PIN_ACTIVE_VALUE);}
-          if (rotate_ccw) {digitalWrite(rotate_ccw,ROTATE_PIN_INACTIVE_VALUE);}   
+          if (rotate_ccw)
+          {
+        	  digitalWrite(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE  );  //CCW, ACTIVATE, stop
+        	  digitalWrite(rotate_cw,  ROTATE_PIN_INACTIVE_VALUE);
+          }
+
           #ifdef DEBUG_ROTATOR     
           if (debug_mode) 
           {
@@ -4032,17 +4105,33 @@ void rotator(byte rotation_action, byte rotation_type)
             Serial.flush();
           }
           #endif //DEBUG_ROTATOR
-      } else 
+
+      } else // rotation_action not ACTIVATE, implies DEACTIVATE
       {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {Serial.println(F("DEACTIVATE"));Serial.flush();}
         #endif //DEBUG_ROTATOR
-        if (rotate_cw_pwm) {analogWrite(rotate_cw_pwm,0);digitalWrite(rotate_cw_pwm,LOW);}
-        if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm,0);}
-        if (rotate_cw) {digitalWrite(rotate_cw,ROTATE_PIN_INACTIVE_VALUE);}
-        if (rotate_cw_freq) {noTone(rotate_cw_freq);}
+
+        // all the different ways to stop
+        if (rotate_cw_pwm)
+        {
+        	analogWrite(rotate_cw_pwm,0);
+        	digitalWrite(rotate_cw_pwm,LOW);
+        }
+        if (rotate_cw_ccw_pwm)
+        {
+        	analogWrite(rotate_cw_ccw_pwm,0);
+        }
+        if (rotate_cw)
+        {
+        	digitalWrite(rotate_cw,ROTATE_PIN_INACTIVE_VALUE);
+        }
+        if (rotate_cw_freq)
+        {
+        	noTone(rotate_cw_freq);
+        }
       } 
-      break;
+      break; // case CW
     case CCW:
       #ifdef DEBUG_ROTATOR
       if (debug_mode) {Serial.print(F("CCW "));Serial.flush();}
@@ -4053,22 +4142,66 @@ void rotator(byte rotation_action, byte rotation_type)
           if (debug_mode) {Serial.println(F("ACTIVATE"));Serial.flush();}
           #endif //DEBUG_ROTATOR
           brake_release(AZ, true);
-          if (az_slowstart_active) {
-            if (rotate_cw_pwm) {analogWrite(rotate_cw_pwm,0);digitalWrite(rotate_cw_pwm,LOW);}
-            if (rotate_ccw_pwm) {analogWrite(rotate_ccw_pwm,0);} 
-            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm,0);} 
-            if (rotate_cw_freq) {noTone(rotate_cw_freq);}
-            if (rotate_ccw_freq) {noTone(rotate_ccw_freq);}            
-          } else 
+          if (az_slowstart_active)
           {
-            if (rotate_cw_pwm) {analogWrite(rotate_cw_pwm,0);digitalWrite(rotate_cw_pwm,LOW);}
-            if (rotate_ccw_pwm) {analogWrite(rotate_ccw_pwm,normal_az_speed_voltage);}  
-            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm,normal_az_speed_voltage);}
-            if (rotate_cw_freq) {noTone(rotate_cw_freq);}            
-            if (rotate_ccw_freq) {tone(rotate_ccw_freq,map(normal_az_speed_voltage,0,255,AZ_VARIABLE_FREQ_OUTPUT_LOW,AZ_VARIABLE_FREQ_OUTPUT_HIGH));}            
+            if (rotate_cw_pwm)
+            {
+            	analogWrite(rotate_cw_pwm,0);
+            	digitalWrite(rotate_cw_pwm,LOW);
+            }
+            if (rotate_ccw_pwm)
+            {
+            	analogWrite(rotate_ccw_pwm,0);
+            }
+            if (rotate_cw_ccw_pwm)
+            {
+            	analogWrite(rotate_cw_ccw_pwm,0);
+            }
+            if (rotate_cw_freq)
+            {
+            	noTone(rotate_cw_freq);
+            }
+            if (rotate_ccw_freq)
+            {
+            	noTone(rotate_ccw_freq);
+            }
+          }
+          else //not slow start active
+          {
+            if (rotate_cw_pwm)
+            {
+            	analogWrite(rotate_cw_pwm,0);
+            	digitalWrite(rotate_cw_pwm,LOW);
+            }
+            if (rotate_ccw_pwm)
+            {
+            	analogWrite(rotate_ccw_pwm,normal_az_speed_voltage);
+            }
+            if (rotate_cw_ccw_pwm)
+            {
+            	analogWrite(rotate_cw_ccw_pwm,normal_az_speed_voltage);
+            }
+            if (rotate_cw_freq)
+            {
+            	noTone(rotate_cw_freq);
+            }
+            if (rotate_ccw_freq)
+            {
+            	tone(rotate_ccw_freq,map(normal_az_speed_voltage,
+            			                 0,
+										 255,
+										 AZ_VARIABLE_FREQ_OUTPUT_LOW,
+										 AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+            }
           }    
-          if (rotate_cw) {digitalWrite(rotate_cw,ROTATE_PIN_INACTIVE_VALUE);}
-          if (rotate_ccw) {digitalWrite(rotate_ccw,ROTATE_PIN_ACTIVE_VALUE);}
+          if (rotate_cw)
+          {
+        	  digitalWrite(rotate_cw,  ROTATE_PIN_INACTIVE_VALUE);
+          }
+          if (rotate_ccw)
+          {
+        	  digitalWrite(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE);
+          }
           #ifdef DEBUG_ROTATOR
           if (debug_mode) 
           {
@@ -4077,17 +4210,28 @@ void rotator(byte rotation_action, byte rotation_type)
             Serial.flush();
           }     
           #endif //DEBUG_ROTATOR
-      } else 
+      }
+      else // rotation action not ACTIVATE
       {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {Serial.println(F("DEACTIVATE"));Serial.flush();}
         #endif //DEBUG_ROTATOR
-        if (rotate_ccw_pwm) {analogWrite(rotate_ccw_pwm,0);digitalWrite(rotate_ccw_pwm,LOW);}
-        if (rotate_ccw) {digitalWrite(rotate_ccw,ROTATE_PIN_INACTIVE_VALUE);}
-        if (rotate_ccw_freq) {noTone(rotate_ccw_freq);}
+        if (rotate_ccw_pwm)
+        {
+        	analogWrite(rotate_ccw_pwm,0);
+        	digitalWrite(rotate_ccw_pwm,LOW);
+        }
+        if (rotate_ccw)
+        {
+        	digitalWrite(rotate_ccw,ROTATE_PIN_INACTIVE_VALUE);
+        }
+        if (rotate_ccw_freq)
+        {
+        	noTone(rotate_ccw_freq);
+        }
       }    
       break; 
-    
+
     #ifdef FEATURE_ELEVATION_CONTROL
     
     //TODO: add pwm and freq pins
@@ -4103,32 +4247,32 @@ void rotator(byte rotation_action, byte rotation_type)
           brake_release(EL, true);
           if (el_slowstart_active) 
           {
-            if (rotate_up_pwm) {analogWrite(rotate_up_pwm,0);}
-            if (rotate_down_pwm) {analogWrite(rotate_down_pwm,0);digitalWrite(rotate_down_pwm,LOW);}
+            if (rotate_up_pwm)      {analogWrite(rotate_up_pwm,0);}
+            if (rotate_down_pwm)    {analogWrite(rotate_down_pwm,0);digitalWrite(rotate_down_pwm,LOW);}
             if (rotate_up_down_pwm) {analogWrite(rotate_up_down_pwm,0);}
-            if (rotate_up_freq) {noTone(rotate_up_freq);}
-            if (rotate_down_freq) {noTone(rotate_down_freq);}
+            if (rotate_up_freq)     {noTone(rotate_up_freq);}
+            if (rotate_down_freq)   {noTone(rotate_down_freq);}
           } else 
           {
-            if (rotate_up_pwm) {analogWrite(rotate_up_pwm,normal_el_speed_voltage);}
-            if (rotate_down_pwm) {analogWrite(rotate_down_pwm,0);digitalWrite(rotate_down_pwm,LOW);}
+            if (rotate_up_pwm)      {analogWrite(rotate_up_pwm,normal_el_speed_voltage);}
+            if (rotate_down_pwm)    {analogWrite(rotate_down_pwm,0);digitalWrite(rotate_down_pwm,LOW);}
             if (rotate_up_down_pwm) {analogWrite(rotate_up_down_pwm,normal_el_speed_voltage);}
-            if (rotate_up_freq) {tone(rotate_up_freq,map(normal_el_speed_voltage,0,255,EL_VARIABLE_FREQ_OUTPUT_LOW,EL_VARIABLE_FREQ_OUTPUT_HIGH));}
-            if (rotate_down_freq) {noTone(rotate_down_freq);}
+            if (rotate_up_freq)     {tone(rotate_up_freq,map(normal_el_speed_voltage,0,255,EL_VARIABLE_FREQ_OUTPUT_LOW,EL_VARIABLE_FREQ_OUTPUT_HIGH));}
+            if (rotate_down_freq)   {noTone(rotate_down_freq);}
           }          
-          if (rotate_up) {digitalWrite(rotate_up,ROTATE_PIN_ACTIVE_VALUE);}
-          if (rotate_down) {digitalWrite(rotate_down,ROTATE_PIN_INACTIVE_VALUE);}
+          if (rotate_up)         {digitalWrite(rotate_up,ROTATE_PIN_ACTIVE_VALUE);}
+          if (rotate_down)       {digitalWrite(rotate_down,ROTATE_PIN_INACTIVE_VALUE);}
           if (rotate_up_or_down) {digitalWrite(rotate_up_or_down,ROTATE_PIN_ACTIVE_VALUE);}
       } else 
       {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) { Serial.println(F("DEACTIVATE"));Serial.flush(); }
         #endif //DEBUG_ROTATOR
-        if (rotate_up) {digitalWrite(rotate_up,ROTATE_PIN_INACTIVE_VALUE);}
-        if (rotate_up_pwm) {analogWrite(rotate_up_pwm,0);digitalWrite(rotate_up_pwm,LOW);}
+        if (rotate_up)          {digitalWrite(rotate_up,ROTATE_PIN_INACTIVE_VALUE);}
+        if (rotate_up_pwm)      {analogWrite(rotate_up_pwm,0);digitalWrite(rotate_up_pwm,LOW);}
         if (rotate_up_down_pwm) {analogWrite(rotate_up_down_pwm,0);}
-        if (rotate_up_freq) {noTone(rotate_up_freq);}   
-        if (rotate_up_or_down) {digitalWrite(rotate_up_or_down,ROTATE_PIN_INACTIVE_VALUE);}     
+        if (rotate_up_freq)     {noTone(rotate_up_freq);}
+        if (rotate_up_or_down)  {digitalWrite(rotate_up_or_down,ROTATE_PIN_INACTIVE_VALUE);}
       } 
       break;
       
@@ -4143,32 +4287,32 @@ void rotator(byte rotation_action, byte rotation_type)
           brake_release(EL, true);
           if (el_slowstart_active) 
           {
-            if (rotate_down_pwm) {analogWrite(rotate_down_pwm,0);}
-            if (rotate_up_pwm) {analogWrite(rotate_up_pwm,0);digitalWrite(rotate_up_pwm,LOW);}
+            if (rotate_down_pwm)    {analogWrite(rotate_down_pwm,0);}
+            if (rotate_up_pwm)      {analogWrite(rotate_up_pwm,0);digitalWrite(rotate_up_pwm,LOW);}
             if (rotate_up_down_pwm) {analogWrite(rotate_up_down_pwm,0);}
-            if (rotate_up_freq) {noTone(rotate_up_freq);}
-            if (rotate_down_freq) {noTone(rotate_down_freq);}
+            if (rotate_up_freq)     {noTone(rotate_up_freq);}
+            if (rotate_down_freq)   {noTone(rotate_down_freq);}
           } else 
           {
-            if (rotate_down_pwm) {analogWrite(rotate_down_pwm,normal_el_speed_voltage);}
-            if (rotate_up_pwm) {analogWrite(rotate_up_pwm,0);digitalWrite(rotate_up_pwm,LOW);}
+            if (rotate_down_pwm)    {analogWrite(rotate_down_pwm,normal_el_speed_voltage);}
+            if (rotate_up_pwm)      {analogWrite(rotate_up_pwm,0);digitalWrite(rotate_up_pwm,LOW);}
             if (rotate_up_down_pwm) {analogWrite(rotate_up_down_pwm,normal_el_speed_voltage);}
-            if (rotate_down_freq) {tone(rotate_down_freq,map(normal_el_speed_voltage,0,255,EL_VARIABLE_FREQ_OUTPUT_LOW,EL_VARIABLE_FREQ_OUTPUT_HIGH));}
-            if (rotate_up_freq) {noTone(rotate_up_freq);}
+            if (rotate_down_freq)   {tone(rotate_down_freq,map(normal_el_speed_voltage,0,255,EL_VARIABLE_FREQ_OUTPUT_LOW,EL_VARIABLE_FREQ_OUTPUT_HIGH));}
+            if (rotate_up_freq)     {noTone(rotate_up_freq);}
           }          
-          if (rotate_up) {digitalWrite(rotate_up,ROTATE_PIN_INACTIVE_VALUE);}
-          if (rotate_down) {digitalWrite(rotate_down,ROTATE_PIN_ACTIVE_VALUE);}
+          if (rotate_up)         {digitalWrite(rotate_up,ROTATE_PIN_INACTIVE_VALUE);}
+          if (rotate_down)       {digitalWrite(rotate_down,ROTATE_PIN_ACTIVE_VALUE);}
           if (rotate_up_or_down) {digitalWrite(rotate_up_or_down,ROTATE_PIN_ACTIVE_VALUE);}
       } else 
       {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) { Serial.println(F("DEACTIVATE"));Serial.flush(); }
         #endif //DEBUG_ROTATOR
-        if (rotate_down) {digitalWrite(rotate_down,ROTATE_PIN_INACTIVE_VALUE);}
-        if (rotate_down_pwm) {analogWrite(rotate_down_pwm,0);digitalWrite(rotate_down_pwm,LOW);}
+        if (rotate_down)        {digitalWrite(rotate_down,ROTATE_PIN_INACTIVE_VALUE);}
+        if (rotate_down_pwm)    {analogWrite(rotate_down_pwm,0);digitalWrite(rotate_down_pwm,LOW);}
         if (rotate_up_down_pwm) {analogWrite(rotate_up_down_pwm,0);}
-        if (rotate_down_freq) {noTone(rotate_down_freq);}   
-        if (rotate_up_or_down) {digitalWrite(rotate_up_or_down,ROTATE_PIN_INACTIVE_VALUE);}     
+        if (rotate_down_freq)   {noTone(rotate_down_freq);}
+        if (rotate_up_or_down)  {digitalWrite(rotate_up_or_down,ROTATE_PIN_INACTIVE_VALUE);}
       }    
       break; 
      #endif //FEATURE_ELEVATION_CONTROL
@@ -4183,6 +4327,39 @@ void rotator(byte rotation_action, byte rotation_type)
   #endif //DEBUG_ROTATOR  
 }
 
+// code for a DC motor with PID controller
+// L298n has IN1, IN2, PWM pins, the two IN pins control H bridge totem poles
+void rotator_PID()
+{
+
+}
+
+//-----------------------------------------------------------------
+// write to L298N motor control chip
+// L298N is a dual H bridge motor controller
+// IN1 defined as high side for positive rotation
+// PWM on Teensy is 488.28 Hz
+void rotator_speed(byte speed)
+{
+	if (speed > 0)
+	{
+		digitalWrite(IN1Pin,      1);
+		digitalWrite(IN2Pin,      0);
+		analogWrite( ENAPin,  speed);
+	}
+	if (speed < 0)
+	{
+		digitalWrite(IN1Pin,      1);
+		digitalWrite(IN2Pin,      0);
+		analogWrite( ENAPin, -speed);
+	}
+	if (speed == 0)
+	{
+		digitalWrite(IN1Pin,      0);
+		digitalWrite(IN2Pin,      0);
+		digitalWrite(ENAPin,      0);
+	}
+}
 //--------------------------------------------------------------
 void initialize_interrupts()
 { 
@@ -4256,8 +4433,8 @@ void initialize_pins()
   if (rotate_cw_freq)    {pinMode(rotate_cw_freq,    OUTPUT);}
   if (rotate_ccw_freq)   {pinMode(rotate_ccw_freq,   OUTPUT);}  
   
-  rotator(DEACTIVATE,CW);
-  rotator(DEACTIVATE,CCW);
+  rotator(DEACTIVATE,  CW);
+  rotator(DEACTIVATE, CCW);
 
   #ifndef FEATURE_AZ_POSITION_HMC5883L
   pinMode(rotator_analog_az, INPUT);
@@ -4380,7 +4557,6 @@ void initialize_serial()
   #endif //OPTION_SERIAL2_SUPPORT   
 }
 
-
 //--------------------------------------------------------------
 void initialize_peripherals()
 {  
@@ -4459,16 +4635,13 @@ void submit_request(byte axis, byte request, int parm)
 }
 
 //--------------------------------------------------------------
-void service_rotation()
+// State Machine: Initialize, Start Up, Slow Down, Normal
+// manage state machine, call rotator()
+void service_rotation_azimuth()
 {   
   static byte az_direction_change_flag = 0;
   static byte az_initial_slow_down_voltage = 0;
   
-  #ifdef FEATURE_ELEVATION_CONTROL
-  static byte el_direction_change_flag = 0;
-  static byte el_initial_slow_down_voltage = 0;   
-  #endif //FEATURE_ELEVATION_CONTROL  
-
   if (az_state == INITIALIZE_NORMAL_CW) 
   {
     update_az_variable_outputs(normal_az_speed_voltage);
@@ -4682,7 +4855,6 @@ void service_rotation()
     {
       az_initial_slow_down_voltage = current_az_speed_voltage;
     }
-    
   }
   
   // check rotation target --------------------------------------------------------------------------------------------------------
@@ -4726,264 +4898,7 @@ void service_rotation()
       }        
     }
   }
-
-  #ifdef FEATURE_ELEVATION_CONTROL
-  if (el_state == INITIALIZE_NORMAL_UP) 
-  {
-    update_el_variable_outputs(normal_el_speed_voltage);
-    rotator(ACTIVATE,UP);        
-    el_state = NORMAL_UP;
-  }
-  if (el_state == INITIALIZE_NORMAL_DOWN) 
-  {
-    update_el_variable_outputs(normal_el_speed_voltage);
-    rotator(ACTIVATE,DOWN);        
-    el_state = NORMAL_DOWN;
-  }
-  if (el_state == INITIALIZE_SLOW_START_UP)
-  {
-    update_el_variable_outputs(EL_SLOW_START_STARTING_PWM);
-    rotator(ACTIVATE,UP);
-    el_slowstart_start_time = millis();
-    el_last_step_time = 0;
-    el_slow_start_step = 0;
-    el_state = SLOW_START_UP;
-    #ifdef DEBUG_SERVICE_ROTATION
-    if (debug_mode) {Serial.println(F("service_rotation: INITIALIZE_SLOW_START_UP -> SLOW_START_UP"));}
-    #endif //DEBUG_SERVICE_ROTATION
-  }
-  
-  if (el_state == INITIALIZE_SLOW_START_DOWN)
-  {
-    update_el_variable_outputs(EL_SLOW_START_STARTING_PWM);
-    rotator(ACTIVATE,DOWN);    
-    el_slowstart_start_time = millis();
-    el_last_step_time = 0;
-    el_slow_start_step = 0;
-    el_state = SLOW_START_DOWN;
-    #ifdef DEBUG_SERVICE_ROTATION
-    if (debug_mode) {Serial.println(F("service_rotation: INITIALIZE_SLOW_START_DOWN -> SLOW_START_DOWN"));}
-    #endif //DEBUG_SERVICE_ROTATION
-  }  
-  
-  if (el_state == INITIALIZE_TIMED_SLOW_DOWN_UP) 
-  {
-    el_direction_change_flag = 0;
-    el_timed_slow_down_start_time = millis();
-    el_last_step_time = millis();
-    el_slow_down_step = EL_SLOW_DOWN_STEPS-1;
-    el_state = TIMED_SLOW_DOWN_UP;
-  }
-  
-  if (el_state == INITIALIZE_TIMED_SLOW_DOWN_DOWN) 
-  {
-    el_direction_change_flag = 0;
-    el_timed_slow_down_start_time = millis();
-    el_last_step_time = millis();
-    el_slow_down_step = EL_SLOW_DOWN_STEPS-1;
-    el_state = TIMED_SLOW_DOWN_DOWN;
-  }  
-  
-  if (el_state == INITIALIZE_DIR_CHANGE_TO_UP) 
-  {
-    el_direction_change_flag = 1;
-    el_timed_slow_down_start_time = millis();
-    el_last_step_time = millis();
-    el_slow_down_step = EL_SLOW_DOWN_STEPS-1;
-    el_state = TIMED_SLOW_DOWN_DOWN;    
-  }
-  
-  if (el_state == INITIALIZE_DIR_CHANGE_TO_DOWN) 
-  {
-    el_direction_change_flag = 1;
-    el_timed_slow_down_start_time = millis();
-    el_last_step_time = millis();
-    el_slow_down_step = EL_SLOW_DOWN_STEPS-1;
-    el_state = TIMED_SLOW_DOWN_UP;    
-  }
-
-  // slow start-------------------------------------------------------------------------------------------------
-  if ((el_state == SLOW_START_UP) || (el_state == SLOW_START_DOWN)) 
-  { 
-    if ((millis() - el_slowstart_start_time) >= EL_SLOW_START_UP_TIME) 
-    {  // is it time to end slow start?  
-      #ifdef DEBUG_SERVICE_ROTATION
-      if (debug_mode) {Serial.print(F("service_rotation: NORMAL_"));}
-      #endif //DEBUG_SERVICE_ROTATION
-      if (el_state == SLOW_START_UP) 
-      {
-        el_state = NORMAL_UP;
-        #ifdef DEBUG_SERVICE_ROTATION
-        if (debug_mode) {Serial.println(F("UP"));}
-        #endif //DEBUG_SERVICE_ROTATION
-      } else 
-      {
-        el_state = NORMAL_DOWN;
-        #ifdef DEBUG_SERVICE_ROTATION
-        if (debug_mode) {Serial.println(F("DOWN"));}
-        #endif //DEBUG_SERVICE_ROTATION
-      }         
-      update_el_variable_outputs(normal_el_speed_voltage); 
-    } else 
-    {  // it's not time to end slow start yet, but let's check if it's time to step up the speed voltage
-      if (((millis() - el_last_step_time) > (EL_SLOW_START_UP_TIME/EL_SLOW_START_STEPS)) && (normal_el_speed_voltage > EL_SLOW_START_STARTING_PWM))
-      {
-        #ifdef DEBUG_SERVICE_ROTATION
-        if (debug_mode) {
-          Serial.print(F("service_rotation: step up: "));
-          Serial.print(el_slow_start_step);
-          Serial.print(F(" pwm: "));
-          Serial.println((int)(EL_SLOW_START_STARTING_PWM+((normal_el_speed_voltage-EL_SLOW_START_STARTING_PWM)*((float)el_slow_start_step/(float)(EL_SLOW_START_STEPS-1)))));
-        }
-        #endif //DEBUG_SERVICE_ROTATION
-        update_el_variable_outputs((EL_SLOW_START_STARTING_PWM+((normal_el_speed_voltage-EL_SLOW_START_STARTING_PWM)*((float)el_slow_start_step/(float)(EL_SLOW_START_STEPS-1)))));
-        el_last_step_time = millis();  
-        el_slow_start_step++;
-      }   
-    }    
-  } //((el_state == SLOW_START_UP) || (el_state == SLOW_START_DOWN))
-
-
-  // timed slow down ------------------------------------------------------------------------------------------------------
-  if (((el_state == TIMED_SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_DOWN)) && ((millis() - el_last_step_time) >= (TIMED_SLOW_DOWN_TIME/EL_SLOW_DOWN_STEPS))) 
-  {
-    #ifdef DEBUG_SERVICE_ROTATION
-    if (debug_mode) 
-    {
-      Serial.print(F("service_rotation: TIMED_SLOW_DOWN step down: "));
-      Serial.print(el_slow_down_step);
-      Serial.print(F(" pwm: "));
-      Serial.println((int)(normal_el_speed_voltage*((float)el_slow_down_step/(float)EL_SLOW_DOWN_STEPS)));
-    }
-    #endif //DEBUG_SERVICE_ROTATION
-    update_el_variable_outputs((int)(normal_el_speed_voltage*((float)el_slow_down_step/(float)EL_SLOW_DOWN_STEPS)));
-    el_last_step_time = millis();  
-    el_slow_down_step--;
-    
-    if (el_slow_down_step == 0) 
-    { // is it time to exit timed slow down?
-      #ifdef DEBUG_SERVICE_ROTATION
-      if (debug_mode) {Serial.println(F("service_rotation: TIMED_SLOW_DOWN->IDLE"));}
-      #endif //DEBUG_SERVICE_ROTATION
-      rotator(DEACTIVATE,UP);
-      rotator(DEACTIVATE,DOWN);
-      if (el_direction_change_flag) 
-      {
-        if (el_state == TIMED_SLOW_DOWN_UP)
-        {
-          rotator(ACTIVATE,DOWN);
-          if (el_slowstart_active) {el_state = INITIALIZE_SLOW_START_DOWN;} else {el_state = NORMAL_DOWN;};
-          el_direction_change_flag = 0;
-        }
-        if (el_state == TIMED_SLOW_DOWN_DOWN) 
-        {
-          rotator(ACTIVATE,UP);
-          if (el_slowstart_active) {el_state = INITIALIZE_SLOW_START_UP;} else {el_state = NORMAL_UP;};
-          el_direction_change_flag = 0;
-        }
-      } else 
-      {
-        el_state = IDLE;
-        el_request_queue_state = NONE; 
-      }           
-    }
-  }  //((el_state == TIMED_SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_DOWN))
-
-  // slow down ---------------------------------------------------------------------------------------------------------------
-  if ((el_state == SLOW_DOWN_UP) || (el_state == SLOW_DOWN_DOWN)) 
-  {     
-    // is it time to do another step down?
-    if (abs((target_elevation - elevation)/HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_EL*((float)el_slow_down_step/(float)EL_SLOW_DOWN_STEPS))))
-    {
-      #ifdef DEBUG_SERVICE_ROTATION
-      if (debug_mode) 
-      {
-        Serial.print(F("service_rotation: step down: "));
-        Serial.print(el_slow_down_step);
-        Serial.print(F(" pwm: "));
-        Serial.println((int)(EL_SLOW_DOWN_PWM_STOP+((el_initial_slow_down_voltage-EL_SLOW_DOWN_PWM_STOP)*((float)el_slow_down_step/(float)EL_SLOW_DOWN_STEPS))));
-      }
-      #endif //DEBUG_SERVICE_ROTATION
-      update_el_variable_outputs((EL_SLOW_DOWN_PWM_STOP+((el_initial_slow_down_voltage-EL_SLOW_DOWN_PWM_STOP)*((float)el_slow_down_step/(float)EL_SLOW_DOWN_STEPS))));
-      el_slow_down_step--;      
-    }   
-  }  //((el_state == SLOW_DOWN_UP) || (el_state == SLOW_DOWN_DOWN))
-  
-  // normal -------------------------------------------------------------------------------------------------------------------
-  // if slow down is enabled, see if we're ready to go into slowdown
-  if (((el_state == NORMAL_UP) || (el_state == SLOW_START_UP) || (el_state == NORMAL_DOWN) || (el_state == SLOW_START_DOWN)) && 
-  (el_request_queue_state == IN_PROGRESS_TO_TARGET) && el_slowdown_active && (abs((target_elevation - elevation)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_EL))  
-  { 
-    #ifdef DEBUG_SERVICE_ROTATION
-    if (debug_mode) {Serial.print(F("service_rotation: SLOW_DOWN_"));}  
-    #endif //DEBUG_SERVICE_ROTATION    
-    el_slow_down_step = EL_SLOW_DOWN_STEPS-1;    
-    if ((el_state == NORMAL_UP) || (el_state == SLOW_START_UP))
-    {
-      el_state = SLOW_DOWN_UP;
-      #ifdef DEBUG_SERVICE_ROTATION
-      if (debug_mode) {Serial.println(F("UP"));}
-      #endif //DEBUG_SERVICE_ROTATION
-    } else 
-    {
-      el_state = SLOW_DOWN_DOWN;
-      #ifdef DEBUG_SERVICE_ROTATION
-      if (debug_mode) {Serial.println(F("DOWN"));}
-      #endif //DEBUG_SERVICE_ROTATION
-    }
-    if (EL_SLOW_DOWN_PWM_START < current_el_speed_voltage) 
-    {
-      update_el_variable_outputs(EL_SLOW_DOWN_PWM_START);
-      el_initial_slow_down_voltage = EL_SLOW_DOWN_PWM_START;
-    } else 
-    {
-      el_initial_slow_down_voltage = current_el_speed_voltage;
-    }
-  }
-  
-  // check rotation target --------------------------------------------------------------------------------------------------------
-  if ((el_state != IDLE) && (el_request_queue_state == IN_PROGRESS_TO_TARGET) )  
-  {
-    if ((el_state == NORMAL_UP) || (el_state == SLOW_START_UP) || (el_state == SLOW_DOWN_UP))
-    {
-      if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE*HEADING_MULTIPLIER)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
-      {
-        delay(50);
-        read_elevation();
-        if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE*HEADING_MULTIPLIER)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
-        {
-          rotator(DEACTIVATE,UP);
-          rotator(DEACTIVATE,DOWN);
-          el_state = IDLE;
-          el_request_queue_state = NONE;
-          #ifdef DEBUG_SERVICE_ROTATION
-          if (debug_mode) {Serial.println(F("service_rotation: IDLE"));}
-          #endif //DEBUG_SERVICE_ROTATION
-        }
-      }      
-    } else 
-    {
-      if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE*HEADING_MULTIPLIER)) || 
-          ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
-      {
-        delay(50);
-        read_elevation();
-        if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE*HEADING_MULTIPLIER)) || 
-            ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
-        {
-          rotator(DEACTIVATE,UP);
-          rotator(DEACTIVATE,DOWN);
-          el_state = IDLE;
-          el_request_queue_state = NONE;
-          #ifdef DEBUG_SERVICE_ROTATION
-          if (debug_mode) {Serial.println(F("service_rotation: IDLE"));}
-          #endif //DEBUG_SERVICE_ROTATION
-        }
-      }        
-    }
-  }
-  #endif //FEATURE_ELEVATION_CONTROL  
-}
+} //service_rotation()
 
 //--------------------------------------------------------------
 void service_request_queue()
