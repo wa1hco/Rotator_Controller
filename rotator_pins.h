@@ -21,7 +21,8 @@
 // Relays   | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   |   |   |   |
 // L298N    | | | |E|1|2| | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   |   |   |   |
 // Key      | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |KY|  |  |   |   |   |   |   |
-// Pots     | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |PT1|PT2|   |   |   |
+// Pots     | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |PT1|   |   |   |   |
+// Rotator  | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |pot|   |   |   |
 // Buttons  | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   |BTN|   |   |
 // ALC      | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   |   |ALC|   |
 //--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|---|---|---|---|---|
@@ -63,13 +64,15 @@
 #define   RotatorAz  A14
 
 /* azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator) */
-#define rotate_cw               IN1Pin      // asserted to activate rotator R ( CW) rotation - pin 1 on Yaesu connector
-#define rotate_ccw              IN2Pin      // asserted to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
+#define rotate_cw               0           // asserted to activate rotator R ( CW) rotation - pin 1 on Yaesu connector
+#define rotate_ccw              0           // asserted to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
 #define rotate_cw_pwm           0           // optional - PWM CW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_ccw_pwm          0           // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_ccw_pwm       ENAPin      // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_freq          0           // optional - CW variable frequency output
 #define rotate_ccw_freq         0           // optional - CCW variable frequency output
+#define rotate_h1               IN1Pin      // L298 H Bridge In 1 Pin, High means rotate cw
+#define rotate_h2               IN2Pin      // L298 H Bridge In 2 Pin, High means rotate ccw
 #define button_cw               0           // normally open button to ground for manual CW rotation (schematic pin: A1)
 #define button_ccw              0           // normally open button to ground for manual CCW rotation (schematic pin: A2)
 #define serial_led              0           // LED blinks when command is received on serial port (set to 0 to disable)

@@ -372,7 +372,7 @@ volatile unsigned int el_pulse_counter_ambiguous = 0;
 #endif //DEBUG_POSITION_PULSE_INPUT
 
 /*
-  Azimuth and Elevation calibraton tables - use with FEATURE_AZIMUTH_CORRECTION and/or FEATURE_ELEVATION_CORRECTION
+  Azimuth and Elevation calibration tables - use with FEATURE_AZIMUTH_CORRECTION and/or FEATURE_ELEVATION_CORRECTION
   You must have the same number of entries in the _from and _to arrays!
 */
 #ifdef FEATURE_AZIMUTH_CORRECTION
@@ -4001,6 +4001,10 @@ void update_az_variable_outputs(byte speed_voltage)
 // rotator(), write the rotator controls, analogWrite(), digitalWrite()
 // action: ACTIVATE, DEACTIVATE
 // type: CW, CCW, UP, DOWN
+
+//TODO This code sets the I/O for the brake and direction of rotation
+//     Code above sets the speed for rotation
+//     Layers, K3NG concept, I/O, Rotator type...needs more isolation
 void rotator(byte rotation_action, byte rotation_type) 
 {  
   #ifdef DEBUG_ROTATOR
@@ -4030,9 +4034,8 @@ void rotator(byte rotation_action, byte rotation_type)
         if (debug_mode) { Serial.println(F("ACTIVATE")); Serial.flush();}
         #endif //DEBUG_ROTATOR
           brake_release(AZ, true);
-          if (az_slowstart_active) 
+          if (az_slowstart_active) // CW, Activate, slow start
           {
-            // CW, Activate, slow start
         	if (rotate_cw_pwm)
             {
             	analogWrite(rotate_cw_pwm,    0); //CW, ACTIVATE, slow start, write 0 to pwm
@@ -4054,9 +4057,9 @@ void rotator(byte rotation_action, byte rotation_type)
             {
             	noTone(rotate_ccw_freq);
             }
-          } else // !az_slowstart_active
+          } else // CW, Activate, not slow start
           {
-        	// CW, Activate, fast start
+        	// CW, Activate, not slow start
         	if (rotate_cw_pwm)
             {
             	analogWrite(rotate_cw_pwm, normal_az_speed_voltage); //CW, ACTIVATE, slowstart, write speed to pwm
@@ -4089,12 +4092,16 @@ void rotator(byte rotation_action, byte rotation_type)
           if (rotate_cw)
           {
         	  digitalWrite(rotate_cw,  ROTATE_PIN_ACTIVE_VALUE  );  // CW, ACTIVATE, start or continue
-        	  digitalWrite(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE);
           }
           if (rotate_ccw)
           {
-        	  digitalWrite(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE  );  //CCW, ACTIVATE, stop
-        	  digitalWrite(rotate_cw,  ROTATE_PIN_INACTIVE_VALUE);
+        	  digitalWrite(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE  );  //CCW, ACTIVATE, stop
+          }
+
+          if (rotate_h1 & rotate_h2) // if pins defined CW, Activate, pwm or not
+          {
+        	  digitalWrite(rotate_h1, 1);
+              digitalWrite(rotate_h2, 0);
           }
 
           #ifdef DEBUG_ROTATOR     
@@ -4104,9 +4111,9 @@ void rotator(byte rotation_action, byte rotation_type)
             Serial.println(normal_az_speed_voltage);
             Serial.flush();
           }
-          #endif //DEBUG_ROTATOR
+          #endif
 
-      } else // rotation_action not ACTIVATE, implies DEACTIVATE
+      } else // CW, not ACTIVATE
       {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {Serial.println(F("DEACTIVATE"));Serial.flush();}
@@ -4130,6 +4137,12 @@ void rotator(byte rotation_action, byte rotation_type)
         {
         	noTone(rotate_cw_freq);
         }
+        if (rotate_h1 & rotate_h2) // if pins defined CW, Activate, pwm or not
+        {
+      	  digitalWrite(rotate_h1, 0);
+          digitalWrite(rotate_h2, 0);
+        }
+
       } 
       break; // case CW
     case CCW:
@@ -4142,7 +4155,8 @@ void rotator(byte rotation_action, byte rotation_type)
           if (debug_mode) {Serial.println(F("ACTIVATE"));Serial.flush();}
           #endif //DEBUG_ROTATOR
           brake_release(AZ, true);
-          if (az_slowstart_active)
+
+          if (az_slowstart_active) // CCW, Activate, slow satart
           {
             if (rotate_cw_pwm)
             {
@@ -4166,7 +4180,7 @@ void rotator(byte rotation_action, byte rotation_type)
             	noTone(rotate_ccw_freq);
             }
           }
-          else //not slow start active
+          else // CCW, activate, not slow start
           {
             if (rotate_cw_pwm)
             {
@@ -4193,7 +4207,8 @@ void rotator(byte rotation_action, byte rotation_type)
 										 AZ_VARIABLE_FREQ_OUTPUT_LOW,
 										 AZ_VARIABLE_FREQ_OUTPUT_HIGH));
             }
-          }    
+          }
+          // CCW, Activate
           if (rotate_cw)
           {
         	  digitalWrite(rotate_cw,  ROTATE_PIN_INACTIVE_VALUE);
@@ -4202,6 +4217,12 @@ void rotator(byte rotation_action, byte rotation_type)
           {
         	  digitalWrite(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE);
           }
+          if (rotate_h1 & rotate_h2) // CCW, Activate, pwm or not, if pins defined
+          {
+        	  digitalWrite(rotate_h1, 0);
+              digitalWrite(rotate_h2, 1);
+          }
+
           #ifdef DEBUG_ROTATOR
           if (debug_mode) 
           {
@@ -4210,8 +4231,7 @@ void rotator(byte rotation_action, byte rotation_type)
             Serial.flush();
           }     
           #endif //DEBUG_ROTATOR
-      }
-      else // rotation action not ACTIVATE
+      } else // CCW, DEACTIVATE
       {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {Serial.println(F("DEACTIVATE"));Serial.flush();}
@@ -4229,7 +4249,12 @@ void rotator(byte rotation_action, byte rotation_type)
         {
         	noTone(rotate_ccw_freq);
         }
-      }    
+        if (rotate_h1 & rotate_h2) // CCW, Activate, pwm or not, if pins defined
+        {
+      	  digitalWrite(rotate_h1, 0);
+          digitalWrite(rotate_h2, 0);
+        }
+      } // CCW, DEACTIVATE
       break; 
 
     #ifdef FEATURE_ELEVATION_CONTROL
@@ -4432,7 +4457,9 @@ void initialize_pins()
   if (rotate_cw_ccw_pwm) {pinMode(rotate_cw_ccw_pwm, OUTPUT);}  
   if (rotate_cw_freq)    {pinMode(rotate_cw_freq,    OUTPUT);}
   if (rotate_ccw_freq)   {pinMode(rotate_ccw_freq,   OUTPUT);}  
-  
+  if (rotate_h1)         {pinMode(rotate_h1,         OUTPUT);}
+  if (rotate_h2)         {pinMode(rotate_h2,         OUTPUT);}
+
   rotator(DEACTIVATE,  CW);
   rotator(DEACTIVATE, CCW);
 
@@ -4901,6 +4928,9 @@ void service_rotation_azimuth()
 } //service_rotation()
 
 //--------------------------------------------------------------
+// Called from loop(), before service_rotator_azimuth()
+// if request in queue, process request
+// queue means a single request, a pending operation
 void service_request_queue()
 { 
   int work_target_raw_azimuth = 0;
@@ -4912,6 +4942,8 @@ void service_request_queue()
     if (debug_mode) {Serial.print(F("service_request_queue: AZ "));}
     #endif //DEBUG_SERVICE_REQUEST_QUEUE
     
+    // REQUEST_STOP, REQUEST_AZIMUTH, REQUEST_AZIMUTH_RAW
+    // REQUEST_CW, REQUEST_CCW, REQUEST_KILL
     switch(az_request)
     {
       case(REQUEST_STOP):
@@ -4920,7 +4952,7 @@ void service_request_queue()
         #endif //DEBUG_SERVICE_REQUEST_QUEUE
         if (az_state != IDLE)
         {
-          if (az_slowdown_active) 
+          if (az_slowdown_active) //request stop, not idle, slow down
           {
             if ((az_state == TIMED_SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CCW)) 
             {  // if we're already in timed slow down and we get another stop, do a hard stop
@@ -4942,14 +4974,14 @@ void service_request_queue()
               az_last_rotate_initiation = millis();  
             }            
          
-          } else 
+          } else // request stop, not idle, not slow down
           {
             rotator(DEACTIVATE,CW);
             rotator(DEACTIVATE,CCW);
             az_state = IDLE;
             az_request_queue_state = NONE;      
           }
-        } else 
+        } else // request stop, az IDLE
         {
           az_request_queue_state = NONE; // nothing to do - we clear the queue 
         }
@@ -5243,8 +5275,8 @@ void service_request_queue()
         if (debug_mode) {Serial.println();}
         #endif //DEBUG_SERVICE_REQUEST_QUEUE                
         break; //REQUEST_KILL        
-    }
-  }
+    } // switch az request
+  } // if az request in QUEUE
   
   #ifdef FEATURE_ELEVATION_CONTROL
   if (el_request_queue_state == IN_QUEUE)
