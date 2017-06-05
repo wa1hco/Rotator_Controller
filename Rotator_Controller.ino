@@ -3911,6 +3911,8 @@ void update_el_variable_outputs(byte speed_voltage)
 #endif //FEATURE_ELEVATION_CONTROL
 
 //--------------------------------------------------------------
+// Write the speed_voltage to the PWM control pin
+// depends on which pin is configured
 void update_az_variable_outputs(byte speed_voltage)
 {
   #ifdef DEBUG_VARIABLE_OUTPUTS
@@ -4907,7 +4909,9 @@ void service_rotation_azimuth()
     } else 
     {
       if ( (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
-           ( (raw_azimuth < target_raw_azimuth) && ( (target_raw_azimuth - raw_azimuth) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) ) )
+           ( (raw_azimuth < target_raw_azimuth) &&
+             ( (target_raw_azimuth - raw_azimuth) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+		   )
          ) 
       {
         delay(50);

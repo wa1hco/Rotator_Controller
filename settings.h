@@ -87,7 +87,7 @@ You can tweak these, but read the online documentation!
 // Azimuth preset pot settings
 #define AZ_PRESET_POT_FULL_CW            0
 #define AZ_PRESET_POT_FULL_CCW        1023
-#define AZ_PRESET_POT_FULL_CW_MAP        0    // azimuth pot fully counter-clockwise degrees
+#define AZ_PRESET_POT_FULL_CW_MAP        0     // azimuth pot fully counter-clockwise degrees
 #define AZ_PRESET_POT_FULL_CCW_MAP     450     // azimuth pot fully clockwise degrees
 
 #define ENCODER_PRESET_TIMEOUT 5000
