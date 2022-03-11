@@ -28,76 +28,52 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 extern int azimuth;
 extern byte az_state;
 extern byte push_lcd_update;
-extern int target_azimuth;
-extern byte debug_mode;
 
 //-----------------------------------Display private variables--------------------------
 unsigned long last_lcd_update;
+extern int target_azimuth;
 String last_direction_string;
 
 //----------------------------------------------------------------------------------------
 // Azimuth Pre-set value at Col 16 and row 2
-void display_az_preset(int target_azimuth)
+void display_az_preset(int target)
 {
-  String direction_string; // temporary string, not really direction
-  char workstring[7];
+	int hundreds;
+	int tens;
+	int ones;
 
-  #ifdef FEATURE_AZ_PRESET_ENCODER
-  unsigned int target = 0;
-  #endif
+	hundreds =  target / 100;
+	tens     = (target - 100 * hundreds) / 10;
+	ones     = (target - 100 * hundreds  - 10 * tens);
 
-  #ifdef FEATURE_AZ_PRESET_ENCODER
-  target = az_encoder_raw_degrees;
-  // wrap, twice if necessary
-  if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360 * LCD_HEADING_MULTIPLIER);}
-  if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360 * LCD_HEADING_MULTIPLIER);}
+	// position and blank the target display
+	lcd.setCursor(16, 2);
 
-  if (preset_encoders_state == ENCODER_AZ_PENDING)
-  {
-    // position and blank the target display
-    lcd.setCursor(16, 2);
-    lcd.print("    ");
-    direction_string = "";
-    dtostrf(target/LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring);
-    direction_string.concat(workstring);
-    direction_string.concat(char(223)); // deg symbol
-    lcd.setCursor(17, 2);
-    lcd.print(direction_string);
+	if(target < 100)
+	{
+		lcd.print(' ');
+	} else
+	{
+		lcd.print(hundreds);
+	}
 
-    lcd_state_row_0 = LCD_TARGET_AZ;
-    #ifdef DEBUG_DISPLAY
-    if (debug_mode)
-    {
-      Serial.print(F("update_display: "));
-      Serial.println(direction_string);
-    }
-    #endif //DEBUG_DISPLAY
+	if(target < 10)
+	{
+		lcd.print(' ');
+	} else
+	{
+		lcd.print(tens);
+	}
+	lcd.print(ones);
+	lcd.print(char(223));
 
-  } else // not state = ENCODER_AZ_PENDING
-  {
-  #endif // not FEATURE_AZ_PRESET_ENCODER, display azimuth preset pot value
-
-    // display the target azimuth all the time
-    lcd.setCursor(16, 2);
-    lcd.print("    ");
-    direction_string = "";
-    dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring);
-    direction_string.concat(workstring);
-    direction_string.concat(char(223)); // deg symbol
-    lcd.setCursor(16, 2);
-    lcd.print(direction_string);
-
-    #ifdef DEBUG_DISPLAY
-    if (debug_mode)
-    {
-      Serial.print(F("update_display: "));
-      Serial.println(direction_string);
-    }
-    #endif //DEBUG_DISPLAY
-
-  #ifdef FEATURE_AZ_PRESET_ENCODER
-  } //(preset_encoders_state == ENCODER_AZ_PENDING)
-  #endif //FEATURE_AZ_PRESET_ENCODER
+	#ifdef DEBUG_DISPLAY
+	if (debug_mode)
+	{
+		Serial.print(F("update_display: "));
+		Serial.println(target);
+	}
+	#endif //DEBUG_DISPLAY
 }
 
 //----------------------------------------------------------------
