@@ -185,214 +185,69 @@
 
 */
 
-#include "Arduino.h"
+// Arduino environment
+#include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
-#include <math.h> 
+#include <Wire.h>
 #include <avr/wdt.h>
+
+// C++ functions
+#include <math.h> 
+
+// Project configuration
 #include "rotator_features.h"
-#include "rotator_pins.h"
-
-#include "Service_Blink_LED.h"
-#include "Display.h"
-
-//#define CODE_VERSION "2013091101"
-#define CODE_VERSION "2017021101"
-
+#include "rotator_pins_custom_board.h"
 #include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
 
-/*----------------------- global variables -----------------------------*/
-int azimuth            = 0;
-int raw_azimuth        = 0;
-int target_azimuth     = 0;
-int target_raw_azimuth = 0;
+// #include "PID.h"
 
-byte incoming_serial_byte = 0;
-byte serial0_buffer[COMMAND_BUFFER_SIZE];
-int serial0_buffer_index = 0;
-byte az_state = IDLE;
-byte debug_mode = DEFAULT_DEBUG_STATE;
-int analog_az = 0;
-unsigned long last_debug_output_time = 0;
-unsigned long az_last_rotate_initiation = 0;
-byte azimuth_button_was_pushed = 0;
-byte brake_az_engaged = 0;
-byte brake_el_engaged = 0;
-byte configuration_dirty = 0;
-unsigned long last_serial_receive_time = 0;
+//#define CODE_VERSION "2013091101"
+//#define CODE_VERSION "2017021101"
+#define CODE_VERSION "2021031501"
 
-byte az_slowstart_active = AZ_SLOWSTART_DEFAULT;
-byte az_slowdown_active  = AZ_SLOWDOWN_DEFAULT;
+// Project functions
+#include "global_variables.h"
+#include "Service_Blink_LED.h"
+#include "Display.h"
+#include "check_serial.h"
+#include "eeprom_local.h"
+#include "utilities_local.h"
 
-byte az_request = 0;
-int az_request_parm = 0;
-byte az_request_queue_state = NONE;
+void initialize_serial();
+void initialize_peripherals();
+void read_settings_from_eeprom();
+void initialize_pins();
+//void initialize_PID();
+void initialize_rotary_encoders();
+void check_serial();
+void read_headings();
+void service_request_queue();
+void service_rotation_azimuth();
+void az_check_operation_timeout();
+void check_buttons();
+void check_overlap();
+void check_az_speed_pot();
+void check_az_preset_potentiometer();
+void output_debug();
+void initialize_interrupts();
+void output_debug();
+void profile_loop_time();
 
-unsigned long az_slowstart_start_time = 0;
-byte az_slow_start_step = 0;
-unsigned long az_last_step_time = 0;
-byte az_slow_down_step = 0;
-unsigned long az_timed_slow_down_start_time = 0;
-byte backslash_command = 0;
-
-struct config_t
-{
-  byte magic_number;
-  int analog_az_full_ccw;
-  int analog_az_full_cw;
-  int analog_el_0_degrees;
-  int analog_el_max_elevation;
-  int azimuth_starting_point;
-  int azimuth_rotation_capability;
-  float last_azimuth;
-  float last_elevation;
-} configuration;
-
-#ifdef FEATURE_TIMED_BUFFER
-int timed_buffer_azimuths[TIMED_INTERVAL_ARRAY_SIZE];
-int timed_buffer_number_entries_loaded = 0;
-int timed_buffer_entry_pointer = 0;
-int timed_buffer_interval_value_seconds = 0;
-unsigned long last_timed_buffer_action_time = 0;
-byte timed_buffer_status = 0;
-#endif //FEATURE_TIMED_BUFFER
-
-byte normal_az_speed_voltage = 0;
-byte current_az_speed_voltage = 0;
-
-byte push_lcd_update = 0;
-
-#ifdef FEATURE_ELEVATION_CONTROL
-int elevation = 0;
-int target_elevation = 0;
-
-byte el_request = 0;
-int el_request_parm = 0;
-byte el_request_queue_state = NONE;
-byte el_slowstart_active = EL_SLOWSTART_DEFAULT;
-byte el_slowdown_active = EL_SLOWDOWN_DEFAULT;
-unsigned long el_slowstart_start_time = 0;
-byte el_slow_start_step = 0;
-unsigned long el_last_step_time = 0;
-byte el_slow_down_step = 0;
-unsigned long el_timed_slow_down_start_time = 0;
-byte normal_el_speed_voltage = 0;
-byte current_el_speed_voltage = 0;
-
-int display_elevation = 0;   // Variable added to handle elevation beyond 90 degrees.  /// W3SA
-byte el_state = IDLE;
-int analog_el = 0;
-
-unsigned long el_last_rotate_initiation = 0;
-#ifdef FEATURE_TIMED_BUFFER
-int timed_buffer_elevations[TIMED_INTERVAL_ARRAY_SIZE];
-#endif //FEATURE_TIMED_BUFFER
-byte elevation_button_was_pushed = 0;
-#endif
-
-#ifdef FEATURE_ROTARY_ENCODER_SUPPORT
-#ifdef OPTION_ENCODER_HALF_STEP_MODE      // Use the half-step state table (emits a code at 00 and 11)
-const unsigned char ttable[6][4] =
-{
-  {0x03, 0x02, 0x01, 0x00}, {0x23, 0x00, 0x01, 0x00},
-  {0x13, 0x02, 0x00, 0x00}, {0x03, 0x05, 0x04, 0x00},
-  {0x03, 0x03, 0x04, 0x10}, {0x03, 0x05, 0x03, 0x20}
-};
-#else                                     // Use the full-step state table (emits a code at 00 only)
-const unsigned char ttable[7][4] =
-{
-  {0x00, 0x02, 0x04,  0x00}, {0x03, 0x00, 0x01, 0x10},
-  {0x03, 0x02, 0x00,  0x00}, {0x03, 0x02, 0x01, 0x00},
-  {0x06, 0x00, 0x04,  0x00}, {0x06, 0x05, 0x00, 0x10},
-  {0x06, 0x05, 0x04,  0x00},
-};
-
-#endif //OPTION_ENCODER_HALF_STEP_MODE
-#ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
-int az_encoder_raw_degrees = 0;
-#define ENCODER_IDLE 0
-#define ENCODER_AZ_PENDING 1
-#define ENCODER_EL_PENDING 2
-#define ENCODER_AZ_EL_PENDING 3
-volatile unsigned char az_encoder_state = 0;
-#ifdef FEATURE_EL_PRESET_ENCODER
-volatile unsigned char el_encoder_state = 0;
-int el_encoder_degrees = 0;
-#endif //FEATURE_EL_PRESET_ENCODER
-byte preset_encoders_state = ENCODER_IDLE;
-#endif //FEATURE_AZ_PRESET_ENCODER
-#endif //FEATURE_ROTARY_ENCODER_SUPPORT
-
-#ifdef DEBUG_PROFILE_LOOP_TIME
-float average_loop_time = 0;
-#endif //DEBUG_PROFILE_LOOP_TIME
-
-#ifdef FEATURE_AZ_POSITION_PULSE_INPUT
-volatile float az_position_pulse_input_azimuth = 0;
-volatile byte last_known_az_state = 0;
-#endif //FEATURE_AZ_POSITION_PULSE_INPUT
-
-#ifdef FEATURE_EL_POSITION_PULSE_INPUT
-volatile float el_position_pulse_input_elevation = 0;
-volatile byte last_known_el_state = 0;
-#endif //FEATURE_EL_POSITION_PULSE_INPUT
-
-#ifdef FEATURE_REMOTE_UNIT_SLAVE
-byte serial_read_event_flag[] = {0,0,0,0,0};
-byte serial0_buffer_carriage_return_flag = 0;
-#endif
-
-#ifdef FEATURE_HOST_REMOTE_PROTOCOL
-byte serial1_buffer[COMMAND_BUFFER_SIZE];
-int serial1_buffer_index = 0;
-byte serial1_buffer_carriage_return_flag = 0;
-unsigned long serial1_last_receive_time = 0;
-byte remote_unit_command_submitted = 0;
-unsigned long last_remote_unit_command_time = 0;
-unsigned int remote_unit_command_timeouts = 0;
-unsigned int remote_unit_bad_results = 0;
-unsigned int remote_unit_good_results = 0;
-unsigned int remote_unit_incoming_buffer_timeouts = 0;
-byte remote_unit_command_results_available = 0;
-float remote_unit_command_result_float = 0;
-byte remote_port_rx_sniff = 0;
-byte remote_port_tx_sniff = 0;
-byte suspend_remote_commands = 0;
-#endif
-
-#ifdef DEBUG_POSITION_PULSE_INPUT
-//unsigned int az_position_pule_interrupt_handler_flag = 0;
-//unsigned int el_position_pule_interrupt_handler_flag = 0;
-volatile unsigned long az_pulse_counter = 0;
-volatile unsigned long el_pulse_counter = 0;
-volatile unsigned int az_pulse_counter_ambiguous = 0;
-volatile unsigned int el_pulse_counter_ambiguous = 0;
-#endif //DEBUG_POSITION_PULSE_INPUT
-
-/*
-  Azimuth and Elevation calibration tables - use with FEATURE_AZIMUTH_CORRECTION and/or FEATURE_ELEVATION_CORRECTION
-  You must have the same number of entries in the _from and _to arrays!
-*/
-#ifdef FEATURE_AZIMUTH_CORRECTION
-float azimuth_calibration_from[]    = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
-float azimuth_calibration_to[]      = {180, 630};
-#endif //FEATURE_AZIMUTH_CORRECTION
-
-#ifdef FEATURE_ELEVATION_CORRECTION
-float elevation_calibration_from[]  = {-180, 0, 180};
-float elevation_calibration_to[]    = { 180, 0, 180};
-#endif //FEATURE_ELEVATION_CORRECTION
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 void setup() 
 {
   delay(1000);
+  //set_global_variables();
   initialize_serial();
   initialize_peripherals();
   read_settings_from_eeprom(); 
   initialize_pins();
+  //initialize_PID();
+
   read_azimuth();
   #ifdef FEATURE_YAESU_EMULATION
   report_current_azimuth();      // Yaesu - report the azimuth right off the bat without a C command; the Arduino doesn't wake up quick enough
@@ -405,6 +260,10 @@ void setup()
   
   #ifdef FEATURE_LCD_DISPLAY
   initialize_display();
+  #endif
+
+  #ifdef FEATURE_NUMERIC_DISPLAY
+  initialize_numeric_display();
   #endif
   
   initialize_rotary_encoders(); 
@@ -449,7 +308,9 @@ void loop()
   check_el_manual_rotate_limit();
   #endif
  
+  #ifdef OPTION_AZIMUTH_SPEED_CONTROL
   check_az_speed_pot();
+  #endif
   
   #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder or Preset Selector
   check_preset_encoders();
@@ -524,6 +385,7 @@ void profile_loop_time()
 //--------------------------------------------------------------
 void check_az_speed_pot() 
 {
+#ifdef OPTION_AZIMUTH_SPEED_CONTROL
   static unsigned long last_pot_check_time = 0;
   int pot_read = 0;
   byte new_azimuth_speed_voltage = 0;
@@ -553,6 +415,7 @@ void check_az_speed_pot()
     }
     last_pot_check_time = millis();  
   }
+#endif
 }
 
 //--------------------------------------------------------------
@@ -695,9 +558,9 @@ void initialize_rotary_encoders()
 }
 
 //--------------------------------------------------------------
-#ifdef FEATURE_AZ_PRESET_ENCODER
 void check_preset_encoders()
 {
+  #ifdef FEATURE_AZ_PRESET_ENCODER
   static unsigned long last_encoder_change_time = 0;
   byte button_read = 0;
   byte number_columns = 0;
@@ -794,9 +657,9 @@ void check_preset_encoders()
       Serial.println(az_encoder_raw_degrees/HEADING_MULTIPLIER,1);
     }
     #endif //DEBUG_PRESET_ENCODERS
+  #endif //FEATURE_AZ_PRESET_ENCODER
     
   } // if (az_encoder_result)
-  #endif //FEATURE_AZ_PRESET_ENCODER
   
   #ifdef FEATURE_EL_PRESET_ENCODER
   
@@ -937,8 +800,8 @@ void check_preset_encoders()
     push_lcd_update = 1;                     // push an LCD update
     #endif //FEATURE_LCD_DISPLAY    
   }
-} 
 #endif //FEATURE_AZ_PRESET_ENCODER
+} 
 
 //--------------------------------------------------------------
 #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
@@ -998,110 +861,6 @@ void check_el_manual_rotate_limit()
 }
 #endif //#ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
 
-//--------------------------------------------------------------
-void check_brake_release() 
-{
-  static byte in_az_brake_release_delay = 0;
-  static unsigned long az_brake_delay_start_time = 0;
-  #ifdef FEATURE_ELEVATION_CONTROL
-  static byte in_el_brake_release_delay = 0;
-  static unsigned long el_brake_delay_start_time = 0;
-  #endif //FEATURE_ELEVATION_CONTROL
- 
-  if ((az_state == IDLE) && (brake_az_engaged)) 
-  {
-    if (in_az_brake_release_delay) 
-    {
-      if ((millis() - az_brake_delay_start_time) > AZ_BRAKE_DELAY) 
-      {
-        brake_release(AZ, false);
-        in_az_brake_release_delay = 0; 
-      }    
-    } else 
-    {
-      az_brake_delay_start_time = millis();
-      in_az_brake_release_delay = 1;
-    }
-  } 
- 
-  #ifdef FEATURE_ELEVATION_CONTROL
-  if ((el_state == IDLE) && (brake_el_engaged)) 
-  {
-    if (in_el_brake_release_delay) 
-    {
-      if ((millis() - el_brake_delay_start_time) > EL_BRAKE_DELAY) 
-      {
-        brake_release(EL, false);
-        in_el_brake_release_delay = 0; 
-      }    
-    } else 
-    {
-      el_brake_delay_start_time = millis();
-      in_el_brake_release_delay = 1;
-    }  
-  } 
-  #endif //FEATURE_ELEVATION_CONTROL  
-}
-
-//--------------------------------------------------------------
-// Brake release on means to apply power to release the brake
-// default condition is braked, meaning brake release off
-// BRAKE_RELEASE_{on,off} defined according to controller polarity
-void brake_release(byte az_or_el, boolean brake_release)
-{ 
-  if (az_or_el == AZ) 
-  {
-    if (brake_az) 
-    {
-      if (brake_release) 
-      {
-        digitalWrite(brake_az, BRAKE_RELEASE_ON);
-        brake_az_engaged = 1;
-        #ifdef DEBUG_BRAKE
-        if (debug_mode) 
-        {
-          Serial.println(F("brake_release: brake_az BRAKE_RELEASE_ON"));
-        }
-        #endif //DEBUG_BRAKE
-      } else 
-      {
-        digitalWrite(brake_az,BRAKE_RELEASE_OFF);
-        brake_az_engaged = 0;      
-        #ifdef DEBUG_BRAKE
-        if (debug_mode) 
-        {
-          Serial.println(F("brake_release: brake_az BRAKE_RELEASE_OFF"));
-        }  
-        #endif //DEBUG_BRAKE  
-     } 
-   }
-  } else 
-  {
-    #ifdef FEATURE_ELEVATION_CONTROL
-    if (brake_el) 
-    {
-      digitalWrite(brake_el,HIGH);
-      brake_el_engaged = 1;
-      #ifdef DEBUG_BRAKE
-      if (debug_mode) 
-      {
-        Serial.println(F("brake_release: brake_el BRAKE_RELEASE_ON"));
-      }   
-      #endif //DEBUG_BRAKE    
-    } else 
-    {
-      digitalWrite(brake_el,LOW);
-      brake_el_engaged = 0;   
-      #ifdef DEBUG_BRAKE
-      if (debug_mode) 
-      {
-        Serial.println(F("brake_release: brake_el BRAKE_RELEASE_OFF"));
-      }       
-      #endif //DEBUG_BRAKE
-    }
-    #endif //FEATURE_ELEVATION_CONTROL
-  }   
-}
 
 //--------------------------------------------------------------
 void check_overlap()
@@ -1141,178 +900,6 @@ void check_overlap()
   }
 }
 
-//--------------------------------------------------------------
-#ifdef FEATURE_YAESU_EMULATION
-void yaesu_serial_command()
-{
-  if (incoming_serial_byte == 10) { return; }  // ignore carriage returns
-  if ((incoming_serial_byte != 13) && (serial0_buffer_index < COMMAND_BUFFER_SIZE)) 
-  {               // if it's not a carriage return, add it to the buffer
-    serial0_buffer[serial0_buffer_index] = incoming_serial_byte;
-    serial0_buffer_index++;
-  } else 
-  {                       // we got a carriage return, time to get to work on the command
-    if ((serial0_buffer[0] > 96) && (serial0_buffer[0] < 123)) 
-    {
-      serial0_buffer[0] = serial0_buffer[0] - 32;
-    }
-    switch (serial0_buffer[0]) 
-    {                  // look at the first character of the command
-      case 'C':                                   // C - return current azimuth
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: C cmd"));}
-        #endif //DEBUG_SERIAL
-        #ifdef OPTION_DELAY_C_CMD_OUTPUT
-        delay(400);
-        #endif
-        report_current_azimuth();
-        break;
-      case 'F': // F - full scale calibration
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: F cmd"));}
-        #endif //DEBUG_SERIAL
-        yaesu_f_command();
-        break;                      
-
-      case 'H': print_help(); break;                     // H - print help (simulated Yaesu GS-232A help - not all commands are supported
-      case 'L':  // L - manual left (CCW) rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: L cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(AZ,REQUEST_CCW,0);
-        Serial.println();
-        break;         
-      case 'O':  // O - offset calibration
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: O cmd"));}
-        #endif //DEBUG_SERIAL
-        yaesu_o_command();
-        break;                      
-      case 'R':  // R - manual right (CW) rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: R cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(AZ,REQUEST_CW,0);
-        Serial.println();
-        break;        
-      case 'A':  // A - CW/CCW rotation stop
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: A cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(AZ,REQUEST_STOP,0);
-        Serial.println();
-        break;         
-      case 'S':         // S - all stop
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: S cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(AZ,REQUEST_STOP,0);
-        #ifdef FEATURE_ELEVATION_CONTROL
-        submit_request(EL,REQUEST_STOP,0);
-        #endif
-        #ifdef FEATURE_TIMED_BUFFER
-        clear_timed_buffer();
-        #endif //FEATURE_TIMED_BUFFER
-        Serial.println();
-        break;
-      case 'M': // M - auto azimuth rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: M cmd"));}
-        #endif //DEBUG_SERIAL
-        yaesu_m_command();
-        break;     
-      #ifdef FEATURE_TIMED_BUFFER 
-      case 'N': // N - number of loaded timed interval entries
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: N cmd"));}
-        #endif //DEBUG_SERIAL
-        Serial.println(timed_buffer_number_entries_loaded);
-        break;     
-      #endif //FEATURE_TIMED_BUFFER  
-      #ifdef FEATURE_TIMED_BUFFER      
-      case 'T': initiate_timed_buffer(); break;           // T - initiate timed tracking
-      #endif //FEATURE_TIMED_BUFFER
-      case 'X':  // X - azimuth speed change
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: X cmd"));}
-        #endif //DEBUG_SERIAL
-        yaesu_x_command();
-        break;                               
-      #ifdef FEATURE_ELEVATION_CONTROL
-      case 'U':  // U - manual up rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: U cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(EL,REQUEST_UP,0);
-        Serial.println();
-        break;            
-      case 'D':  // D - manual down rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: D cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(EL,REQUEST_DOWN,0);
-        Serial.println();
-        break;          
-      case 'E':  // E - stop elevation rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: E cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(EL,REQUEST_STOP,0);
-        Serial.println();
-        break;          
-      case 'B': report_current_elevation(); break;        // B - return current elevation   
-      #endif
-      case 'W':  // W - auto elevation rotation
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: W cmd"));}
-        #endif //DEBUG_SERIAL
-        yaesu_w_command();
-        break;       
-      #ifdef OPTION_GS_232B_EMULATION
-      case 'P': yaesu_p_command(); break;                       // P - switch between 360 and 450 degree mode
-      case 'Z':                                           // Z - Starting point toggle
-        if (configuration.azimuth_starting_point == 180) 
-        {
-          configuration.azimuth_starting_point = 0;
-          Serial.println(F("N Center"));
-        } else 
-        {
-          configuration.azimuth_starting_point = 180;
-          Serial.println(F("S Center"));
-        }
-        write_settings_to_eeprom();
-        break;
-      #endif
-      default: 
-        Serial.println(F("?>"));
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {
-          Serial.print(F("check_serial: serial0_buffer_index: "));
-          Serial.println(serial0_buffer_index);
-          for (int debug_x = 0; debug_x < serial0_buffer_index; debug_x++) 
-          {
-            Serial.print(F("check_serial: serial0_buffer["));
-            Serial.print(debug_x);
-            Serial.print(F("]: "));
-            Serial.print(serial0_buffer[debug_x]);
-            Serial.print(F(" "));
-            Serial.write(serial0_buffer[debug_x]);
-            Serial.println();
-          }
-        }
-        #endif //DEBUG_SERIAL
-    }
-    clear_command_buffer();
-  }  
-}
-#endif //FEATURE_YAESU_EMULATION
-
-//--------------------------------------------------------------
-void clear_command_buffer()
-{
-  serial0_buffer_index = 0;
-  serial0_buffer[0] = 0;
-}
 
 //--------------------------------------------------------------
 #ifdef FEATURE_EASYCOM_EMULATION
@@ -1876,273 +1463,6 @@ void service_remote_unit_serial_buffer()
 #endif //FEATURE_REMOTE_UNIT_SLAVE
 
 //--------------------------------------------------------------
-void check_serial(){
-  if (Serial.available()) 
-  {
-    if (serial_led) 
-    {
-      digitalWrite(serial_led, HIGH);                      // blink the LED just to say we got something
-    }
-    
-    incoming_serial_byte = Serial.read();
-    last_serial_receive_time = millis();
-        
-    if ((incoming_serial_byte == 92) && (serial0_buffer_index == 0)) 
-    { // do we have a backslash command?
-      serial0_buffer[serial0_buffer_index] = incoming_serial_byte;
-      serial0_buffer_index++;
-      backslash_command = 1;
-      return;
-    }
-  
-    if (backslash_command) 
-    {
-      if (incoming_serial_byte == 13) 
-      {  // do we have a carriage return?
-        switch(serial0_buffer[1]){
-          case 'D': if (debug_mode) {debug_mode = 0;} else {debug_mode = 1;} break;    // D - Debug
-          case 'E' :                                                                   // E - Initialize eeprom
-            initialize_eeprom_with_defaults();
-            Serial.println(F("Initialized eeprom, please reset..."));
-            break;
-          case 'L':                                                                    // L - rotate to long path
-            if (azimuth < (180*HEADING_MULTIPLIER))
-            {
-              submit_request(AZ,REQUEST_AZIMUTH,(azimuth+(180*HEADING_MULTIPLIER)));
-            } else 
-            {
-              submit_request(AZ,REQUEST_AZIMUTH,(azimuth-(180*HEADING_MULTIPLIER)));
-            }
-            break;
-              
-          #ifdef FEATURE_HOST_REMOTE_PROTOCOL
-          case 'R' :
-            Serial.print(F("Remote port rx sniff o"));
-            if (remote_port_rx_sniff)
-            {
-              remote_port_rx_sniff = 0;
-              Serial.println("ff");
-            } else 
-            {
-              remote_port_rx_sniff = 1;
-              Serial.println("n");
-            }
-            break;
-          case 'S':
-            for (int x = 2;x < serial0_buffer_index;x++)
-            {
-              Serial1.write(serial0_buffer[x]); 
-              if (remote_port_tx_sniff)
-              {
-                Serial.write(serial0_buffer[x]);              
-              }
-            }
-            Serial1.write(13);
-            if (remote_port_tx_sniff)
-            {
-              Serial.write(13);              
-            }            
-            break;
-          case 'T' :
-            Serial.print(F("Remote port tx sniff o"));
-            if (remote_port_tx_sniff)
-            {
-              remote_port_tx_sniff = 0;
-              Serial.println("ff");
-            } else 
-            {
-              remote_port_tx_sniff = 1;
-              Serial.println("n");
-            }
-            break;            
-          case 'Z' :
-            Serial.print(F("Suspend auto remote commands o"));
-            if (suspend_remote_commands)
-            {
-              suspend_remote_commands = 0;
-              Serial.println("ff");
-            } else 
-            {
-              suspend_remote_commands = 1;
-              Serial.println("n");
-            }
-            break;              
-          #endif //FEATURE_HOST_REMOTE_PROTOCOL
-          
-          #ifdef FEATURE_ANCILLARY_PIN_CONTROL
-          case 'N' :  // \Nxx - turn pin on; xx = pin number
-            if ((((serial0_buffer[2] > 47) && (serial0_buffer[2] < 58)) || (toupper(serial0_buffer[2]) == 'A')) && (serial0_buffer[3] > 47) && (serial0_buffer[3] < 58) && (serial0_buffer_index == 4)){           
-              byte pin_value = 0;
-              if (toupper(serial0_buffer[2]) == 'A')
-              {
-                pin_value = get_analog_pin(serial0_buffer[3]-48);
-              } else 
-              {
-                pin_value = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48);
-              }
-              pinMode(pin_value,OUTPUT);
-              digitalWrite(pin_value,HIGH);
-              Serial.println("OK");                          
-            } else 
-            {
-              Serial.println(F("Error"));  
-            }       
-            break;
-          case 'F' :  // \Fxx - turn pin off; xx = pin number
-            if ((((serial0_buffer[2] > 47) && (serial0_buffer[2] < 58)) || (toupper(serial0_buffer[2]) == 'A')) && (serial0_buffer[3] > 47) && (serial0_buffer[3] < 58) && (serial0_buffer_index == 4)){           
-              byte pin_value = 0;
-              if (toupper(serial0_buffer[2]) == 'A')
-              {
-                pin_value = get_analog_pin(serial0_buffer[3]-48);
-              } else 
-              {
-                pin_value = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48);
-              }
-              pinMode(pin_value,OUTPUT);
-              digitalWrite(pin_value,LOW);
-              Serial.println("OK");                          
-            } else 
-            {
-              Serial.println(F("Error"));  
-            }       
-            break;         
-        case 'P' :  // \Pxxyyy - turn on pin PWM; xx = pin number, yyy = PWM value (0-255)
-          if (((serial0_buffer[2] > 47) && (serial0_buffer[2] < 58)) && (serial0_buffer[3] > 47) && (serial0_buffer[3] < 58)  && (serial0_buffer_index == 7)){
-            byte pin_value = 0;
-            if (toupper(serial0_buffer[2]) == 'A')
-            {
-              pin_value = get_analog_pin(serial0_buffer[3]-48);
-            } else 
-            {
-              pin_value = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48);
-            }
-            int write_value = ((serial0_buffer[4]-48)*100) + ((serial0_buffer[5]-48)*10) + (serial0_buffer[6]-48);
-            if ((write_value >= 0) && (write_value < 256))
-            {
-              pinMode(pin_value,OUTPUT);
-              analogWrite(pin_value,write_value);
-              Serial.println("OK");
-            } else 
-            {
-              Serial.println(F("Error"));               
-            }
-          } else 
-          {
-            Serial.println(F("Error")); 
-          }
-          break;         
-          #endif //FEATURE_ANCILLARY_PIN_CONTROL 
-          
-          default: Serial.println(F("error"));        
-        }
-        clear_command_buffer();
-        backslash_command = 0;
-        
-      } else // no, add the character to the buffer
-      { 
-        if ((incoming_serial_byte > 96) && (incoming_serial_byte < 123)) {incoming_serial_byte = incoming_serial_byte - 32;} //uppercase it
-        if (incoming_serial_byte != 10) // add it to the buffer if it's not a line feed
-        { 
-          serial0_buffer[serial0_buffer_index] = incoming_serial_byte;
-          serial0_buffer_index++;
-        }
-      }
-      
-    } else 
-    {       
-      #ifdef FEATURE_YAESU_EMULATION
-      yaesu_serial_command();
-      #endif //FEATURE_YAESU_EMULATION
-      
-      #ifdef FEATURE_EASYCOM_EMULATION
-      easycom_serial_commmand();
-      #endif //FEATURE_EASYCOM_EMULATION
-      
-      #ifdef FEATURE_REMOTE_UNIT_SLAVE
-      remote_unit_serial_command();
-      #endif //FEATURE_REMOTE_UNIT_SLAVE
-    }
-    
-    if (serial_led) 
-    {
-      digitalWrite(serial_led, LOW);
-    }
-  } //if (Serial.available())
-
-  
-  #ifdef OPTION_SERIAL1_SUPPORT
-  if (Serial1.available()){
-    incoming_serial_byte = Serial1.read();
-    #ifdef FEATURE_REMOTE_UNIT_SLAVE 
-    if (serial_read_event_flag[1])
-    {
-      Serial.print("EVS1");
-      Serial.write(incoming_serial_byte); 
-      Serial.println();
-    } 
-    #endif //FEATURE_REMOTE_UNIT_SLAVE
-    #ifdef FEATURE_HOST_REMOTE_PROTOCOL
-    if (remote_port_rx_sniff) {Serial.write(incoming_serial_byte);}
-    if ((incoming_serial_byte != 10) && (serial1_buffer_index < COMMAND_BUFFER_SIZE))
-    {
-      //incoming_serial_byte = toupper(incoming_serial_byte);
-      serial1_buffer[serial1_buffer_index] = incoming_serial_byte;
-      serial1_buffer_index++;
-      if ((incoming_serial_byte == 13) || (serial1_buffer_index == COMMAND_BUFFER_SIZE))
-      {
-        serial1_buffer_carriage_return_flag = 1;
-      } 
-    }
-    serial1_last_receive_time = millis();
-    #endif //FEATURE_HOST_REMOTE_PROTOCOL
-  }
-  #endif //OPTION_SERIAL1_SUPPORT
-
-  #ifdef OPTION_SERIAL2_SUPPORT
-  if (Serial2.available())
-  {
-    incoming_serial_byte = Serial2.read(); 
-    #ifdef FEATURE_REMOTE_UNIT_SLAVE   
-    if (serial_read_event_flag[2]
-    ){
-      Serial.print("EVS1");
-      Serial.write(incoming_serial_byte); 
-      Serial.println();
-    }  
-    #endif //FEATURE_REMOTE_UNIT_SLAVE
-  }
-  #endif //OPTION_SERIAL2_SUPPORT
-  
-  #ifdef OPTION_SERIAL3_SUPPORT
-  if (Serial3.available())
-  {
-    incoming_serial_byte = Serial3.read();  
-    #ifdef FEATURE_REMOTE_UNIT_SLAVE 
-    if (serial_read_event_flag[3])
-    {
-      Serial.print("EVS3");
-      Serial.write(incoming_serial_byte); 
-      Serial.println();
-    }  
-    #endif //FEATURE_REMOTE_UNIT_SLAVE
-  }
-  #endif //OPTION_SERIAL3_SUPPORT 
-  
-  #ifdef OPTION_SERIAL4_SUPPORT
-  if (Serial4.available())
-  {
-    incoming_serial_byte = Serial4.read(); 
-    #ifdef FEATURE_REMOTE_UNIT_SLAVE   
-    if (serial_read_event_flag[4])
-    {
-      Serial.print("EVS4");
-      Serial.write(incoming_serial_byte); 
-      Serial.println();
-    }  
-    #endif //FEATURE_REMOTE_UNIT_SLAVE
-  }
-  #endif //OPTION_SERIAL4_SUPPORT  
-}
 
 //--------------------------------------------------------------
 void check_buttons()
@@ -2372,188 +1692,6 @@ void check_buttons()
 }
 
 //--------------------------------------------------------------
-void get_keystroke()
-{
-    while (Serial.available() == 0) {}
-    while (Serial.available() > 0) 
-    {
-      incoming_serial_byte = Serial.read();
-    }
-}
-
-//--------------------------------------------------------------
-#ifdef FEATURE_YAESU_EMULATION
-void yaesu_x_command() 
-{  
-  if (serial0_buffer_index > 1) 
-  {
-    switch (serial0_buffer[1]) 
-    {
-      case '4':
-        normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X4;        
-        update_az_variable_outputs(PWM_SPEED_VOLTAGE_X4);
-        #if defined(FEATURE_ELEVATION_CONTROL) && defined(OPTION_EL_SPEED_FOLLOWS_AZ_SPEED)
-        normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X4;        
-        update_el_variable_outputs(PWM_SPEED_VOLTAGE_X4);        
-        #endif
-        Serial.print(F("Speed X4\r\n")); 
-        break; 
-      case '3':
-        normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X3;  
-        update_az_variable_outputs(PWM_SPEED_VOLTAGE_X3);
-        #if defined(FEATURE_ELEVATION_CONTROL) && defined(OPTION_EL_SPEED_FOLLOWS_AZ_SPEED)
-        normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X3;        
-        update_el_variable_outputs(PWM_SPEED_VOLTAGE_X3);        
-        #endif        
-        Serial.print(F("Speed X3\r\n"));          
-        break; 
-      case '2':
-        normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X2;  
-        update_az_variable_outputs(PWM_SPEED_VOLTAGE_X2);  
-        #if defined(FEATURE_ELEVATION_CONTROL) && defined(OPTION_EL_SPEED_FOLLOWS_AZ_SPEED)
-        normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X2;        
-        update_el_variable_outputs(PWM_SPEED_VOLTAGE_X2);        
-        #endif        
-        Serial.print(F("Speed X2\r\n"));          
-        break; 
-      case '1':
-        normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X1;
-        update_az_variable_outputs(PWM_SPEED_VOLTAGE_X1); 
-        #if defined(FEATURE_ELEVATION_CONTROL) && defined(OPTION_EL_SPEED_FOLLOWS_AZ_SPEED)
-        normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X1;        
-        update_el_variable_outputs(PWM_SPEED_VOLTAGE_X1);        
-        #endif        
-        Serial.print(F("Speed X1\r\n"));          
-        break; 
-      default: Serial.println(F("?>")); break;            
-    }     
-  } else 
-  {
-      Serial.println(F("?>"));  
-  }  
-}
-#endif //FEATURE_YAESU_EMULATION
-
-//--------------------------------------------------------------
-#ifdef FEATURE_YAESU_EMULATION
-#ifdef OPTION_GS_232B_EMULATION
-void yaesu_p_command()
-{
-  if ((serial0_buffer[1] == '3') && (serial0_buffer_index > 2)) 
-  {  // P36 command
-    configuration.azimuth_rotation_capability = 360;
-    Serial.print(F("Mode 360 degree\r\n"));
-    write_settings_to_eeprom();  
-  } else 
-  {
-    if ((serial0_buffer[1] == '4') && (serial0_buffer_index > 2)) 
-    { // P45 command
-      configuration.azimuth_rotation_capability = 450;
-      Serial.print(F("Mode 450 degree\r\n"));
-      write_settings_to_eeprom();
-    } else {
-      Serial.println(F("?>"));  
-    }
-  }
-}
-#endif //OPTION_GS_232B_EMULATION
-#endif //FEATURE_YAESU_EMULATION
-//--------------------------------------------------------------
-
-#ifdef FEATURE_YAESU_EMULATION
-void yaesu_o_command()
-{
-
-  #ifdef FEATURE_ELEVATION_CONTROL
-  if ((serial0_buffer[1] == '2') && (serial0_buffer_index > 1)) 
-  {     // did we get the O2 command?
-    yaesu_o2_command();
-    return;
-  }
-  #endif
-
-  clear_serial_buffer();
-
-  Serial.println(F("Rotate to full CCW and send keystroke..."));
-  get_keystroke();
-  read_azimuth();
-  configuration.analog_az_full_ccw = analog_az;
-  write_settings_to_eeprom();
-  print_wrote_to_memory();
-}
-#endif //FEATURE_YAESU_EMULATION
-
-//--------------------------------------------------------------
-#ifdef FEATURE_YAESU_EMULATION
-void print_wrote_to_memory()
-{
-  Serial.println(F("Wrote to memory"));
-}
-
-#endif //FEATURE_YAESU_EMULATION
-
-//--------------------------------------------------------------
-#ifdef FEATURE_YAESU_EMULATION
-void clear_serial_buffer()
-{
-  delay(200);
-  while (Serial.available()) {incoming_serial_byte = Serial.read();}  
-}
-
-#endif //FEATURE_YAESU_EMULATION
-
-//--------------------------------------------------------------
-#ifdef FEATURE_YAESU_EMULATION
-void yaesu_f_command()
-{
-  #ifdef FEATURE_ELEVATION_CONTROL
-  if ((serial0_buffer[1] == '2') && (serial0_buffer_index > 1)) 
-  {     // did we get the F2 command?
-    yaesu_f2_command();
-    return;
-  }
-  #endif
-
-  clear_serial_buffer();
-
-  Serial.println(F("Rotate to full CW and send keystroke..."));
-  get_keystroke();
-  read_azimuth();
-  configuration.analog_az_full_cw = analog_az;
-  write_settings_to_eeprom();
-  print_wrote_to_memory();
-}
-#endif //FEATURE_YAESU_EMULATION
-
-//--------------------------------------------------------------
-#if defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
-void yaesu_o2_command()
-{
-  clear_serial_buffer();
-  Serial.println(F("Elevate to 0 degrees and send keystroke..."));
-  get_keystroke();
-  read_elevation();
-  configuration.analog_el_0_degrees = analog_el;
-  write_settings_to_eeprom();
-  print_wrote_to_memory();
-}
-#endif //defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
-
-//--------------------------------------------------------------
-#if defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
-void yaesu_f2_command()
-{
-  clear_serial_buffer();
-  Serial.println(F("Elevate to 180 (or max elevation) and send keystroke..."));
-  get_keystroke();
-  read_elevation();
-  configuration.analog_el_max_elevation = analog_el;
-  write_settings_to_eeprom();
-  print_wrote_to_memory();
-}
-#endif //defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
-
-//--------------------------------------------------------------
 void read_settings_from_eeprom()
 {
   //EEPROM_readAnything(0,configuration);
@@ -2636,54 +1774,6 @@ void read_settings_from_eeprom()
     #endif //DEBUG_EEPROM  
     initialize_eeprom_with_defaults();
   }
-}
-
-//--------------------------------------------------------------
-void initialize_eeprom_with_defaults()
-{
-  #ifdef DEBUG_EEPROM
-  if (debug_mode) 
-  {
-    Serial.println(F("initialize_eeprom_with_defaults: writing eeprom"));
-  }
-  #endif //DEBUG_EEPROM
-
-  configuration.analog_az_full_ccw          = ANALOG_AZ_FULL_CCW;
-  configuration.analog_az_full_cw           = ANALOG_AZ_FULL_CW;
-  configuration.analog_el_0_degrees         = ANALOG_EL_0_DEGREES;
-  configuration.analog_el_max_elevation     = ANALOG_EL_MAX_ELEVATION;   
-  configuration.azimuth_starting_point      = AZIMUTH_STARTING_POINT_DEFAULT;
-  configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
-  configuration.last_azimuth                = raw_azimuth;
-  #ifdef FEATURE_ELEVATION_CONTROL
-  configuration.last_elevation              = elevation; 
-  #else    
-  configuration.last_elevation              = 0;
-  #endif
-  write_settings_to_eeprom();
-}
-
-//--------------------------------------------------------------
-void write_settings_to_eeprom()
-{
-  #ifdef DEBUG_EEPROM
-  if (debug_mode) 
-  {
-    Serial.print(F("write_settings_to_eeprom: writing settings to eeprom\n"));
-  }
-  #endif //DEBUG_EEPROM
-  
-  configuration.magic_number = EEPROM_MAGIC_NUMBER;
-  
-  const byte* p = (const byte*)(const void*)&configuration;
-  unsigned int i;
-  int ee = 0;
-  for (i = 0; i < sizeof(configuration); i++)
-  {
-    EEPROM.write(ee++, *p++);  
-  }
-  //EEPROM_writeAnything(0,configuration);
-  configuration_dirty = 0;
 }
 
 //--------------------------------------------------------------
@@ -2866,266 +1956,6 @@ void yaesu_az_load_timed_intervals()
 }
 #endif //FEATURE_TIMED_BUFFER
 
-//--------------------------------------------------------------
-void read_azimuth()
-{
-  unsigned int previous_raw_azimuth = raw_azimuth;
-  static unsigned long last_measurement_time = 0;
-
-  #ifdef DEBUG_HEADING_READING_TIME
-  static unsigned long last_time = 0;
-  static unsigned long last_print_time = 0;
-  static float average_read_time = 0;
-  #endif //DEBUG_HEADING_READING_TIME
-
-  #ifndef FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
-  if ((millis() - last_measurement_time) > AZIMUTH_MEASUREMENT_FREQUENCY_MS){
-  #else
-  if (1)
-  {
-  #endif
-    
-    #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
-    // read analog input and convert it to degrees; this gets funky because of 450 degree rotation
-    // Bearings:  180-------359-0--------270
-    // Voltage:    0----------------------5
-    // ADC:        0--------------------1023
-
-    analog_az = analogRead(rotator_analog_az);
-    raw_azimuth = (map(  analog_az,
-    		             configuration.analog_az_full_ccw,
-                         configuration.analog_az_full_cw,
-                       ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
-                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
-    
-    #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
-    #endif //FEATURE_AZIMUTH_CORRECTION
-    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
-    {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
-    }  
-    if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
-    {
-      azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-      if (azimuth >= (360 * HEADING_MULTIPLIER)) 
-      {
-        azimuth = azimuth - (360 * HEADING_MULTIPLIER);
-      }
-    } else 
-    {
-      if (raw_azimuth < 0) 
-      {
-        azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
-      } else 
-      {
-        azimuth = raw_azimuth;
-      }
-    }
-    #endif //FEATURE_AZ_POSITION_POTENTIOMETER
-    
-    #ifdef FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
-    static unsigned long last_remote_unit_az_query_time = 0;
-    
-    // do we have a command result waiting for us?
-    if (remote_unit_command_results_available == REMOTE_UNIT_AZ_COMMAND) 
-    {
-      #ifdef DEBUG_HEADING_READING_TIME
-      average_read_time = (average_read_time + (millis()-last_time))/2.0;
-      last_time = millis();
-    
-      if (debug_mode)
-      {
-        if ((millis()-last_print_time) > 1000)
-        {
-          Serial.print(F("read_azimuth: avg read frequency: "));
-          Serial.println(average_read_time,2);
-         last_print_time = millis();
-        }
-      }
-      #endif //DEBUG_HEADING_READING_TIME
-      raw_azimuth = remote_unit_command_result_float * HEADING_MULTIPLIER;
-      
-      #ifdef FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
-      #endif //FEATURE_AZIMUTH_CORRECTION      
-      
-      if (AZIMUTH_SMOOTHING_FACTOR > 0) 
-      {
-        raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
-      }      
-      if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
-      {
-        azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-        if (azimuth >= (360 * HEADING_MULTIPLIER)) 
-        {
-          azimuth = azimuth - (360 * HEADING_MULTIPLIER);
-        }
-      } else 
-      {
-        if (raw_azimuth < 0) 
-        {
-          azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
-        } else 
-        {
-          azimuth = raw_azimuth;
-        }
-      }    
-      remote_unit_command_results_available = 0;  
-    } else 
-    {
-      // is it time to request the azimuth?
-      if ((millis() - last_remote_unit_az_query_time) > AZ_REMOTE_UNIT_QUERY_TIME_MS)
-      {
-        if (submit_remote_command(REMOTE_UNIT_AZ_COMMAND)) 
-        {
-          last_remote_unit_az_query_time = millis();
-        }
-      }
-    }
-    #endif //FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
-  
-    #ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
-    static byte az_position_encoder_state = 0;
-    
-    az_position_encoder_state = ttable[az_position_encoder_state & 0xf][((digitalRead(az_rotary_position_pin2) << 1) | digitalRead(az_rotary_position_pin1))];
-    byte az_position_encoder_result = az_position_encoder_state & 0x30;
-    if (az_position_encoder_result) 
-    {
-      if (az_position_encoder_result == DIR_CW) 
-      {
-        configuration.last_azimuth = configuration.last_azimuth + AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
-        #ifdef DEBUG_POSITION_ROTARY_ENCODER
-        if (debug_mode){Serial.println(F("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CW"));}
-        #endif //DEBUG_POSITION_ROTARY_ENCODER
-      }
-      if (az_position_encoder_result == DIR_CCW) 
-      {
-        configuration.last_azimuth = configuration.last_azimuth - AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
-        #ifdef DEBUG_POSITION_ROTARY_ENCODER
-        if (debug_mode){Serial.println(F("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CCW"));}   
-        #endif //DEBUG_POSITION_ROTARY_ENCODER   
-      }
-      
-      #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
-      if (configuration.last_azimuth < configuration.azimuth_starting_point)
-      {
-        configuration.last_azimuth = configuration.azimuth_starting_point;
-      }
-      if (configuration.last_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability))
-      {
-        configuration.last_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
-      }    
-      #else
-      if (configuration.last_azimuth < 0)
-      {
-        configuration.last_azimuth += 360;
-      }
-      if (configuration.last_azimuth >= 360)
-      {
-        configuration.last_azimuth -= 360;
-      }       
-      #endif //OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
-      
-      
-      raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
-      
-      #ifdef FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
-      #endif //FEATURE_AZIMUTH_CORRECTION    
-      
-      if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
-      {
-        azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-      } else 
-      {
-        azimuth = raw_azimuth;
-      }
-      configuration_dirty = 1;
-    }
-    #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
-    
-    #ifdef FEATURE_AZ_POSITION_HMC5883L
-    MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
-    float heading = atan2(scaled.YAxis, scaled.XAxis);
-    //  heading += declinationAngle;
-    // Correct for when signs are reversed.
-    if(heading < 0) heading += 2*PI;
-    if(heading > 2*PI) heading -= 2*PI;
-    raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; //radians to degree
-    if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
-    }    
-    #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
-    #endif //FEATURE_AZIMUTH_CORRECTION
-    azimuth = raw_azimuth;
-    #endif // FEATURE_AZ_POSITION_HMC5883L
-
-    #ifdef FEATURE_AZ_POSITION_LSM303
-    lsm.read();
-    float heading = atan2(lsm.magData.y,lsm.magData.x);
-    //  heading += declinationAngle;
-    // Correct for when signs are reversed.
-    if(heading < 0) heading += 2*PI;
-    if(heading > 2*PI) heading -= 2*PI;
-    raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; //radians to degree
-    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
-    {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
-    }    
-    #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
-    #endif //FEATURE_AZIMUTH_CORRECTION
-    azimuth = raw_azimuth;
-    #endif // FEATURE_AZ_POSITION_LSM303
-    
-    #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
-    #ifdef DEBUG_POSITION_PULSE_INPUT
-//    if (az_position_pule_interrupt_handler_flag) {
-//      Serial.print(F("read_azimuth: az_position_pusle_interrupt_handler_flag: "));
-//      Serial.println(az_position_pule_interrupt_handler_flag);
-//      az_position_pule_interrupt_handler_flag = 0;
-//    }
-    #endif //DEBUG_POSITION_PULSE_INPUT
-    
-    //dddd
-    
-    static float last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
-    
-    if (az_position_pulse_input_azimuth != last_az_position_pulse_input_azimuth)
-    {
-        #ifdef DEBUG_POSITION_PULSE_INPUT
-//        if (debug_mode)
-//        {
-//          Serial.print(F("read_azimuth: last_az_position_pulse_input_azimuth:"));
-//          Serial.print(last_az_position_pulse_input_azimuth);
-//          Serial.print(F(" az_position_pulse_input_azimuth:"));
-//          Serial.print(az_position_pulse_input_azimuth);
-//          Serial.print(F(" az_pulse_counter:"));
-//          Serial.println(az_pulse_counter);
-//        }   
-        #endif //DEBUG_POSITION_PULSE_INPUT     
-       configuration.last_azimuth = az_position_pulse_input_azimuth;
-       configuration_dirty = 1;
-       last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
-       raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
-       #ifdef FEATURE_AZIMUTH_CORRECTION
-       raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
-       #endif //FEATURE_AZIMUTH_CORRECTION     
-       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
-       {
-         azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-       } else 
-       {
-        azimuth = raw_azimuth;
-       }    
-    }
-    #endif //FEATURE_AZ_POSITION_PULSE_INPUT
-    
-    last_measurement_time = millis();
-  }
-}
 
 //--------------------------------------------------------------
 void output_debug()
@@ -3160,7 +1990,7 @@ void output_debug()
     #ifndef OPTION_GS_232B_EMULATION
     Serial.print(F("A"));
     #endif
-    #endif //FEATURE_YAESU_EMULATIO
+    #endif //FEATURE_YAESU_EMULATION
 
     Serial.println();
        
@@ -3192,16 +2022,16 @@ void output_debug()
     }
     
     Serial.print(F("\tAZ: "));
-    Serial.print(azimuth/LCD_HEADING_MULTIPLIER,LCD_DECIMAL_PLACES);
+    Serial.print(azimuth            / HEADING_MULTIPLIER, DECIMAL_PLACES);
     Serial.print(F(" (raw: "));
-    Serial.print(raw_azimuth/LCD_HEADING_MULTIPLIER,LCD_DECIMAL_PLACES);
+    Serial.print(raw_azimuth        / HEADING_MULTIPLIER, DECIMAL_PLACES);
     Serial.print(")");
     
     Serial.print(F("\tTarget: "));
-    Serial.print(target_azimuth/LCD_HEADING_MULTIPLIER,LCD_DECIMAL_PLACES);
+    Serial.print(target_azimuth     / HEADING_MULTIPLIER, DECIMAL_PLACES);
     
     Serial.print(F(" (raw: "));
-    Serial.print(target_raw_azimuth/LCD_HEADING_MULTIPLIER,LCD_DECIMAL_PLACES);
+    Serial.print(target_raw_azimuth / HEADING_MULTIPLIER, DECIMAL_PLACES);
     Serial.print(")");
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
@@ -3209,7 +2039,7 @@ void output_debug()
     Serial.println(analog_az);
     #endif //FEATURE_AZ_POSITION_POTENTIOMETER
     
-    //if (azimuth_speed_voltage) 
+    if (normal_az_speed_voltage) 
     //{
       Serial.print(F("\tAZ Speed Norm: "));
       Serial.print(normal_az_speed_voltage, DEC);
@@ -3366,98 +2196,7 @@ void output_debug()
   }
 }
 
-//--------------------------------------------------------------
-void report_current_azimuth() 
-{
-  #ifdef FEATURE_YAESU_EMULATION
-  // The C command that reports azimuth
 
-  String azimuth_string;
-
-  #ifndef OPTION_GS_232B_EMULATION
-  Serial.print(F("+0"));
-  #endif
-  #ifdef OPTION_GS_232B_EMULATION
-  Serial.print(F("AZ="));
-  #endif
-  //Serial.write("report_current_azimith: azimuth=");
-  //Serial.println(azimuth);
-  azimuth_string = String(int(azimuth/HEADING_MULTIPLIER), DEC);
-  if (azimuth_string.length() == 1) {
-    Serial.print(F("00"));
-  } else 
-  {
-    if (azimuth_string.length() == 2) 
-    {
-      Serial.print(F("0"));
-    }
-  }
-  Serial.print(azimuth_string);
-
-  #ifdef FEATURE_ELEVATION_CONTROL
-  #ifndef OPTION_C_COMMAND_SENDS_AZ_AND_EL
-  if ((serial0_buffer[1] == '2') && (serial0_buffer_index > 1)) 
-  {     // did we get the C2 command?
-  #endif
-    report_current_elevation();
-  #ifndef OPTION_C_COMMAND_SENDS_AZ_AND_EL
-  } else 
-  {
-    Serial.println();
-  }
-  #endif //OPTION_C_COMMAND_SENDS_AZ_AND_EL
-  #endif //FEATURE_ELEVATION_CONTROL
-  
-  #ifndef FEATURE_ELEVATION_CONTROL
-  if ((serial0_buffer[1] == '2') && (serial0_buffer_index > 1)) 
-  {     // did we get the C2 command?
-    #ifndef OPTION_GS_232B_EMULATION
-    Serial.println(F("+0000"));    // return a dummy elevation since we don't have the elevation feature turned on
-    #else
-    Serial.println(F("EL=000"));
-    #endif
-  } else 
-  {
-    Serial.println();
-  }
-  #endif //FEATURE_ELEVATION_CONTROL
-  #endif //FEATURE_YAESU_EMULATION
-}
-
-//--------------------------------------------------------------
-void print_help()
-{
-  // The H command
-
-  #ifdef OPTION_SERIAL_HELP_TEXT
-  #ifdef FEATURE_YAESU_EMULATION
-  Serial.println(F("R Rotate Azimuth Clockwise"));
-  Serial.println(F("L Rotate Azimuth Counter Clockwise"));
-  Serial.println(F("A Stop"));
-  Serial.println(F("C Report Azimuth in Degrees"));
-  Serial.println(F("M### Rotate to ### degrees"));
-  Serial.println(F("MTTT XXX XXX XXX ... Timed Interval Direction Setting  (TTT = Step value in seconds, XXX = Azimuth in degrees)"));
-  Serial.println(F("T Start Timed Interval Tracking"));
-  Serial.println(F("N Report Total Number of M Timed Interval Azimuths"));
-  Serial.println(F("X1 Horizontal Rotation Low Speed"));
-  Serial.println(F("X2 Horizontal Rotation Middle 1 Speed"));
-  Serial.println(F("X3 Horizontal Rotation Middle 2 Speed"));
-  Serial.println(F("X4 Horizontal Rotation High Speed"));
-  Serial.println(F("S Stop"));
-  Serial.println(F("O Offset Calibration"));
-  Serial.println(F("F Full Scale Calibration"));
-  #ifdef FEATURE_ELEVATION_CONTROL
-  Serial.println(F("U Rotate Elevation Up"));
-  Serial.println(F("D Rotate Elevation Down"));
-  Serial.println(F("E Stop Elevation Rotation"));
-  Serial.println(F("B Report Elevation in Degrees"));
-  Serial.println(F("Wxxx yyy Rotate Azimuth to xxx Degrees and Elevation to yyy Degrees\r\r"));
-  Serial.println(F("O2 Elevation Offset Calibration (0 degrees)"));
-  Serial.println(F("F2 Elevation Full Scale Calibration (180 degrees (or maximum))"));
-  #endif //FEATURE_ELEVATION_CONTROL
-  #endif //FEATURE_YAESU_EMULATION  
-  #endif //OPTION_SERIAL_HELP_TEXT
-}
 
 //--------------- Elevation -----------------------
 #ifdef FEATURE_ELEVATION_CONTROL
@@ -3910,94 +2649,6 @@ void update_el_variable_outputs(byte speed_voltage)
 }
 #endif //FEATURE_ELEVATION_CONTROL
 
-//--------------------------------------------------------------
-// Write the speed_voltage to the PWM control pin
-// depends on which pin is configured
-void update_az_variable_outputs(byte speed_voltage)
-{
-  #ifdef DEBUG_VARIABLE_OUTPUTS
-  if (debug_mode) 
-  {
-    Serial.print(F("update_az_variable_outputs: speed_voltage: "));
-    Serial.print(speed_voltage);
-  }
-  #endif //DEBUG_VARIABLE_OUTPUTS
-
-  if (((az_state == SLOW_START_CW)       || 
-       (az_state == NORMAL_CW)           || 
-       (az_state == SLOW_DOWN_CW)        || 
-       (az_state == TIMED_SLOW_DOWN_CW)) && 
-       (rotate_cw_pwm))
-  {
-    #ifdef DEBUG_VARIABLE_OUTPUTS
-    if (debug_mode) {Serial.print(F("\trotate_cw_pwm"));}
-    #endif //DEBUG_VARIABLE_OUTPUTS
-    analogWrite(rotate_cw_pwm, speed_voltage);
-  }
-  
-  if (((az_state == SLOW_START_CCW)       ||
-	   (az_state == NORMAL_CCW)           ||
-	   (az_state == SLOW_DOWN_CCW)        ||
-	   (az_state == TIMED_SLOW_DOWN_CCW)) &&
-	   (rotate_ccw_pwm))
-  {
-    #ifdef DEBUG_VARIABLE_OUTPUTS
-    if (debug_mode) {Serial.print(F("\trotate_ccw_pwm"));}
-    #endif //DEBUG_VARIABLE_OUTPUTS
-    analogWrite(rotate_ccw_pwm, speed_voltage);
-  }
-  
-  if (((az_state == SLOW_START_CW)        || 
-       (az_state == NORMAL_CW)            || 
-       (az_state == SLOW_DOWN_CW)         || 
-       (az_state == TIMED_SLOW_DOWN_CW)   || 
-       (az_state == SLOW_START_CCW)       || 
-       (az_state == NORMAL_CCW)           || 
-       (az_state == SLOW_DOWN_CCW)        || 
-       (az_state == TIMED_SLOW_DOWN_CCW)) && 
-       (rotate_cw_ccw_pwm))
-  {
-    #ifdef DEBUG_VARIABLE_OUTPUTS
-    if (debug_mode) {Serial.print(F("\trotate_cw_ccw_pwm"));}
-    #endif //DEBUG_VARIABLE_OUTPUTS
-    analogWrite(rotate_cw_ccw_pwm, speed_voltage);
-  }  
-  
-  if (((az_state == SLOW_START_CW)       || 
-       (az_state == NORMAL_CW)           || 
-       (az_state == SLOW_DOWN_CW)        || 
-       (az_state == TIMED_SLOW_DOWN_CW)) && 
-       (rotate_cw_freq))
-  {
-    #ifdef DEBUG_VARIABLE_OUTPUTS
-    if (debug_mode) {Serial.print(F("\trotate_cw_freq"));}  
-    #endif //DEBUG_VARIABLE_OUTPUTS
-    tone(rotate_cw_freq,map(speed_voltage,0,255,AZ_VARIABLE_FREQ_OUTPUT_LOW,AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-  }
-  
-  if (((az_state == SLOW_START_CCW)       || 
-       (az_state == NORMAL_CCW)           || 
-       (az_state == SLOW_DOWN_CCW)        || 
-       (az_state == TIMED_SLOW_DOWN_CCW)) && 
-       (rotate_ccw_freq))
-  {
-    #ifdef DEBUG_VARIABLE_OUTPUTS
-    if (debug_mode) {Serial.print(F("\trotate_ccw_freq"));}  
-    #endif //DEBUG_VARIABLE_OUTPUTS
-    tone(rotate_ccw_freq,map(speed_voltage,0,255,AZ_VARIABLE_FREQ_OUTPUT_LOW,AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-  }  
-  
-  if (azimuth_speed_voltage) 
-  {
-    analogWrite(azimuth_speed_voltage, speed_voltage);
-  }
-  
-  #ifdef DEBUG_VARIABLE_OUTPUTS
-  if (debug_mode) {Serial.println();}
-  #endif //DEBUG_VARIABLE_OUTPUTS
-  
-  current_az_speed_voltage = speed_voltage;
-}
 
 //--------------------------------------------------------------
 // rotator(), write the rotator controls, analogWrite(), digitalWrite()
@@ -4007,6 +2658,9 @@ void update_az_variable_outputs(byte speed_voltage)
 //TODO This code sets the I/O for the brake and direction of rotation
 //     Code above sets the speed for rotation
 //     Layers, K3NG concept, I/O, Rotator type...needs more isolation
+// rotation_action is activate or deactivate
+// rotation_type is CW or CCW
+// rotate_cw, rotate_ccw, rotate_cw_pwn, etc are pin numbers
 void rotator(byte rotation_action, byte rotation_type) 
 {  
   #ifdef DEBUG_ROTATOR
@@ -4354,18 +3008,12 @@ void rotator(byte rotation_action, byte rotation_type)
   #endif //DEBUG_ROTATOR  
 }
 
-// code for a DC motor with PID controller
-// L298n has IN1, IN2, PWM pins, the two IN pins control H bridge totem poles
-void rotator_PID()
-{
-
-}
-
 //-----------------------------------------------------------------
 // write to L298N motor control chip
 // L298N is a dual H bridge motor controller
 // IN1 defined as high side for positive rotation
 // PWM on Teensy is 488.28 Hz
+#ifdef OPTION_AZIMUTH_SPEED_CONTROL
 void rotator_speed(byte speed)
 {
 	if (speed > 0)
@@ -4387,6 +3035,8 @@ void rotator_speed(byte speed)
 		digitalWrite(ENAPin,      0);
 	}
 }
+#endif
+
 //--------------------------------------------------------------
 void initialize_interrupts()
 { 
@@ -4567,7 +3217,7 @@ void initialize_pins()
 void initialize_serial()
 {  
   Serial.begin(SERIAL_BAUD_RATE);
-  
+ 
   #ifdef FEATURE_REMOTE_UNIT_SLAVE
   Serial.print(F("CS"));
   Serial.println(CODE_VERSION);
@@ -4631,36 +3281,6 @@ void initialize_peripherals()
     Serial.println(F("setup: LSM303 error"));
   }  
   #endif //FEATURE_EL_POSITION_LSM303 || FEATURE_AZ_POSITION_LSM303 
-}
-
-//--------------------------------------------------------------
-void submit_request(byte axis, byte request, int parm)
-{ 
-  #ifdef DEBUG_SUBMIT_REQUEST 
-  if (debug_mode) {Serial.print(F("submit_request: "));}
-  #endif //DEBUG_SUBMIT_REQUEST
-  
-  if (axis == AZ) 
-  {
-    #ifdef DEBUG_SUBMIT_REQUEST
-    if (debug_mode) {Serial.print(F("AZ "));Serial.print(request);Serial.print(F(" "));Serial.println(parm);}
-    #endif //DEBUG_SUBMIT_REQUEST
-    az_request = request;
-    az_request_parm = parm;
-    az_request_queue_state = IN_QUEUE;
-  } 
-
-  #ifdef FEATURE_ELEVATION_CONTROL
-  if (axis == EL) 
-  {
-    #ifdef DEBUG_SUBMIT_REQUEST
-    if (debug_mode) {Serial.print(F("EL "));Serial.print(request);Serial.print(F(" "));Serial.println(parm);}
-    #endif //DEBUG_SUBMIT_REQUEST
-    el_request = request;
-    el_request_parm = parm;
-    el_request_queue_state = IN_QUEUE;
-  }   
-  #endif //FEATURE_ELEVATION_CONTROL 
 }
 
 //--------------------------------------------------------------
@@ -5474,17 +4094,6 @@ void service_request_queue()
     }    
   } //(el_request_queue_state == IN_QUEUE)
   #endif //FEATURE_ELEVATION_CONTROL  
-}
-
-//--------------------------------------------------------------
-void check_for_dirty_configuration()
-{  
-  static unsigned long last_config_write_time = 0;
-  
-  if ((configuration_dirty) && ((millis() - last_config_write_time) > (EEPROM_WRITE_DIRTY_CONFIG_TIME*1000))){
-    write_settings_to_eeprom();
-    last_config_write_time = millis(); 
-  } 
 }
 
 //--------------------------------------------------------------

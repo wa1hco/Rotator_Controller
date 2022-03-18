@@ -13,6 +13,8 @@
 #include "settings.h"
 #include "macros.h"
 
+#include "global_variables.h"
+
 #include "Display.h"
 #include <LiquidCrystal.h>
 
@@ -25,79 +27,55 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 /* end of classic 4 bit interface LCD display section */
 
 // global variables referenced below
-extern int azimuth;
+// extern int azimuth;
 extern byte az_state;
 extern byte push_lcd_update;
-extern int target_azimuth;
-extern byte debug_mode;
 
 //-----------------------------------Display private variables--------------------------
 unsigned long last_lcd_update;
+extern int target_azimuth;
 String last_direction_string;
 
 //----------------------------------------------------------------------------------------
 // Azimuth Pre-set value at Col 16 and row 2
-void display_az_preset(int target_azimuth)
+void display_az_preset(int target)
 {
-  String direction_string; // temporary string, not really direction
-  char workstring[7];
+	int hundreds;
+	int tens;
+	int ones;
 
-  #ifdef FEATURE_AZ_PRESET_ENCODER
-  unsigned int target = 0;
-  #endif
+	hundreds =  target / 100;
+	tens     = (target - 100 * hundreds) / 10;
+	ones     = (target - 100 * hundreds  - 10 * tens);
 
-  #ifdef FEATURE_AZ_PRESET_ENCODER
-  target = az_encoder_raw_degrees;
-  // wrap, twice if necessary
-  if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360 * LCD_HEADING_MULTIPLIER);}
-  if (target > (359*LCD_HEADING_MULTIPLIER)) {target = target - (360 * LCD_HEADING_MULTIPLIER);}
+	// position and blank the target display
+	lcd.setCursor(16, 2);
 
-  if (preset_encoders_state == ENCODER_AZ_PENDING)
-  {
-    // position and blank the target display
-    lcd.setCursor(16, 2);
-    lcd.print("    ");
-    direction_string = "";
-    dtostrf(target/LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring);
-    direction_string.concat(workstring);
-    direction_string.concat(char(223)); // deg symbol
-    lcd.setCursor(17, 2);
-    lcd.print(direction_string);
+	if(target < 100)
+	{
+		lcd.print(' ');
+	} else
+	{
+		lcd.print(hundreds);
+	}
 
-    lcd_state_row_0 = LCD_TARGET_AZ;
-    #ifdef DEBUG_DISPLAY
-    if (debug_mode)
-    {
-      Serial.print(F("update_display: "));
-      Serial.println(direction_string);
-    }
-    #endif //DEBUG_DISPLAY
+	if(target < 10)
+	{
+		lcd.print(' ');
+	} else
+	{
+		lcd.print(tens);
+	}
+	lcd.print(ones);
+	lcd.print(char(223));
 
-  } else // not state = ENCODER_AZ_PENDING
-  {
-  #endif // not FEATURE_AZ_PRESET_ENCODER, display azimuth preset pot value
-
-    // display the target azimuth all the time
-    lcd.setCursor(16, 2);
-    lcd.print("    ");
-    direction_string = "";
-    dtostrf(target_azimuth/LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring);
-    direction_string.concat(workstring);
-    direction_string.concat(char(223)); // deg symbol
-    lcd.setCursor(16, 2);
-    lcd.print(direction_string);
-
-    #ifdef DEBUG_DISPLAY
-    if (debug_mode)
-    {
-      Serial.print(F("update_display: "));
-      Serial.println(direction_string);
-    }
-    #endif //DEBUG_DISPLAY
-
-  #ifdef FEATURE_AZ_PRESET_ENCODER
-  } //(preset_encoders_state == ENCODER_AZ_PENDING)
-  #endif //FEATURE_AZ_PRESET_ENCODER
+	#ifdef DEBUG_DISPLAY
+	if (debug_mode)
+	{
+		Serial.print(F("update_display: "));
+		Serial.println(target);
+	}
+	#endif //DEBUG_DISPLAY
 }
 
 //----------------------------------------------------------------
@@ -176,6 +154,60 @@ void initialize_display()
  delay(3000);  // display intro screen for 3 seconds
 }
 
+// MAX6959 7 segment controller, connected to 4 digit display
+void initialize_MAX6959()
+{
+  // Slave address 0x68
+  // Register           Command Address
+  // NOP                0x00
+  // Decode mode        0x01
+  // Intensity          0x02  0 to 63 maps to pwm 1 to 63 out of 64
+  // Scan Limit         0x03  Number of digits displayed
+  // Config             0x04  D0=1 normal operation, D1 readback
+  // Do not use         0x05
+  // GPIO               0x06
+  // Display test       0x07
+  // Read key debounce  0x08
+  // Read key pressed   0x0C
+  // Digit 0            0x20
+  // Digit 1            0x21
+  // Digit 2            0x22
+  // Digit 3            0x23
+  // Segments           0x24
+
+  // Register   D7 D6 D5 D4 D3 D2 D1 D0
+  // Segment     x  a  b  c  d  e  f  g
+
+
+}
+
+//--------------------------------------------------------------
+// 7 segment display on I2C bus using MAX6959
+void initialize_numeric_display()
+{
+  initialize_MAX6959();
+
+  // set brightness
+
+  // display 'hco' or 'HCO'
+
+  delay(3000);  // display intro screen for 3 seconds
+}
+
+//
+#ifdef FEATURE__DISPLAY
+void update_numeric_display()
+{
+  // get the azimuth
+  if ((millis()-last_lcd_update) > DISPLAY_UPDATE_TIME)
+  {
+    
+      // write to 7 segment driver
+
+  } // if time to update digits
+} // update_numeric_display()
+#endif
+
 //--------------------------------------------------------------
 // started from update_display(), stripped elevation options
 
@@ -190,6 +222,7 @@ void initialize_display()
 // Col 16-20, Row 2,   {000 to 359}, Preset knob position
 // Col 16-20, Row 3,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
 //-----------------------------------------------------------------------
+#ifdef FEATURE_LCD_DISPLAY
 void update_display()
 {
   // update the LCD display
@@ -204,7 +237,7 @@ void update_display()
   // target from preset knob
   // azimuth_direction(azimuth)
 
-  if (((millis() - last_lcd_update) > LCD_UPDATE_TIME) || (push_lcd_update))
+  if (((millis() - last_lcd_update) > DISPLAY_UPDATE_TIME) || (push_lcd_update))
   {
     // initialization
     if ((lcd_state_row_0 == 0) && (lcd_state_row_1 == 0))
@@ -223,7 +256,7 @@ void update_display()
   }
 
   // Large Azimuth Characters
-  if ((millis()-last_lcd_update) > LCD_UPDATE_TIME)
+  if ((millis()-last_lcd_update) > DISPLAY_UPDATE_TIME)
   {
     if (last_azimuth != azimuth)
     {
@@ -232,11 +265,13 @@ void update_display()
       lcd_state_row_1 = LCD_HEADING;
     }
   }
-  if ((millis() - last_lcd_update) > LCD_UPDATE_TIME) {last_lcd_update = millis();}
+  if ((millis() - last_lcd_update) > DISPLAY_UPDATE_TIME) {last_lcd_update = millis();}
   last_direction_string = direction_string;
 } // update_big_display()
+#endif
 
 //----------------------------------------------------------------
+#ifdef FEATURE_LCD_DISPLAY
 void display_turning()
 {
   String direction_string;
@@ -300,8 +335,10 @@ void display_turning()
     #endif //DEBUG_TURNING
   }
 }
+#endif
 
 //--------------------------------------------------------------
+#ifdef FEATURE_LCD_DISPLAY
 void clear_display_row(byte row_number)
 {
   lcd.setCursor(0,row_number);
@@ -400,6 +437,7 @@ void loadchars()
   lcd.createChar(6, custchar[6]);
   lcd.createChar(7, custchar[7]);
 }
+#endif
 
 //------------------------------------------------------------------------
 // digit 0-9; col, row in LCD character, symbol
@@ -410,6 +448,7 @@ void loadchars()
 // row, col define the upper left corner of the digit display
 // symbol put a deg symbol on the character
 //
+#ifdef FEATURE_LCD_DISPLAY
 void printbigchar(int digit, int col, int row, int symbol = 0)
 {
   // Define the large fonts, borrowed from GreenHerron RT-21 pictures
@@ -518,11 +557,13 @@ void printbigchar(int digit, int col, int row, int symbol = 0)
 	}
   }
 }
+#endif
 
 //-----------------------------------------------------------------------
 // print the azimuth big characters
 // blank most significant zero
 // add degree symbol at the end
+#ifdef FEATURE_LCD_DISPLAY
 void printbigazimuth(int azimuth)
 {
   int hundreds;
@@ -538,6 +579,7 @@ void printbigazimuth(int azimuth)
   printbigchar(tens,     5,   0,  0);
   printbigchar(ones,    10,   0,  1);  // flag degree symbol
 }
+#endif
 
 // adafruit has a build in readbuttons() for their LCD on I2C
 #ifdef FEATURE_ADAFRUIT_BUTTONS

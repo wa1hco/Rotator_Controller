@@ -19,7 +19,7 @@ You can tweak these, but read the online documentation!
 #define ANALOG_EL_0_DEGREES              2
 #define ANALOG_EL_MAX_ELEVATION       1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
-#define ANALOG_AZ_OVERLAP_DEGREES      360  // if overlap_led above is enabled, turn on overlap led line if azimuth is greater than this setting
+#define ANALOG_AZ_OVERLAP_DEGREES      360  // if overlap_led is enabled, turn on overlap led line if azimuth is greater than this setting
                                             // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
                                             // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
                                             // turning on when going CW and crossing 180, ANALOG_AZ_OVERLAP_DEGREES should be set for 540 (180 + 360)
@@ -101,7 +101,7 @@ You can tweak these, but read the online documentation!
 #define SERIAL1_BAUD_RATE             9600     // 9600
 #define SERIAL2_BAUD_RATE             9600     // 9600
 #define SERIAL3_BAUD_RATE             9600     // 9600
-#define LCD_UPDATE_TIME                200     // LCD update time in milliseconds
+#define DISPLAY_UPDATE_TIME            200     // display update time, LCD or 7 segment
 #define AZ_BRAKE_DELAY                1000     // in milliseconds
 #define EL_BRAKE_DELAY                1000     // in milliseconds
 
@@ -115,8 +115,7 @@ You can tweak these, but read the online documentation!
 #define LCD_DECIMAL_PLACES               1
 #else //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 #define HEADING_MULTIPLIER               1
-#define LCD_HEADING_MULTIPLIER           1.0
-#define LCD_DECIMAL_PLACES               0
+#define DECIMAL_PLACES                   0
 #endif //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
@@ -155,7 +154,5 @@ You can tweak these, but read the online documentation!
 #define ROTATION_INDICATOR_PIN_INACTIVE_STATE LOW
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
-
-
 
 #endif /* SETTINGS_H_ */

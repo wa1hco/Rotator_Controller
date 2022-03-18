@@ -13,6 +13,7 @@ void display_az_string();
 char *azimuth_direction(int azimuth_in);
 
 void initialize_display();
+void initialize_numeric_display();
 void update_display();
 void display_turning();
 void clear_display_row(byte row_number);
