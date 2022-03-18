@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include "rotator_features.h"
-#include "rotator_pins.h"
+#include "rotator_pins_custom_board.h"
 #include "settings.h"
 #include "macros.h"
 
@@ -640,6 +640,36 @@ void yaesu_f_command()
 #endif //FEATURE_YAESU_EMULATION
 
 //--------------------------------------------------------------
+void yaesu_m_command()
+{
+  int parsed_azimuth = 0;
+  
+  // parse out M command
+  if (serial0_buffer_index > 4) 
+  {  // if there are more than 4 characters in the command buffer, we got a timed interval command
+    #ifdef FEATURE_TIMED_BUFFER
+    yaesu_az_load_timed_intervals();
+    #else
+    Serial.println(F("Feature not activated ?>"));
+    #endif //FEATURE_TIMED_BUFFER
+    return;
+  } else 
+  {                         // if there are four characters, this is just a single direction setting
+    if (serial0_buffer_index == 4){
+      parsed_azimuth = ((int(serial0_buffer[1])-48)*100) + ((int(serial0_buffer[2])-48)*10) + (int(serial0_buffer[3])-48);
+      #ifdef FEATURE_TIMED_BUFFER
+      clear_timed_buffer();
+      #endif //FEATURE_TIMED_BUFFER
+      if ((parsed_azimuth > -1) && (parsed_azimuth <= (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability))) 
+      {    
+        submit_request(AZ,REQUEST_AZIMUTH,(parsed_azimuth*HEADING_MULTIPLIER));
+        return;
+      }
+    }
+  }
+  Serial.println(F("?>"));
+
+}//--------------------------------------------------------------
 #if defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_ELEVATION_CONTROL)
 void yaesu_o2_command()
 {

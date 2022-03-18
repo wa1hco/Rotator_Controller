@@ -5,38 +5,39 @@
 #include <avr/pgmspace.h>
 
 #include "rotator_features.h"
-#include "rotator_pins.h"
+#include "rotator_pins_custom_board.h"
 #include "settings.h"
 #include "macros.h"
 
 // -------------global variable declarations -----------------------
 
 // azimuth globals
-int azimuth                 = 0;
-int raw_azimuth             = 0;
-int target_azimuth          = 0;
-int target_raw_azimuth      = 0;
-byte az_request             = 0;
-int az_request_parm         = 0;
+int azimuth                     = 0;
+int raw_azimuth                 = 0;
+int analog_az                   = 0;
+
+int target_azimuth              = 0;
+int target_raw_azimuth          = 0;
+
+byte az_request                 = 0;
+int az_request_parm             = 0;
 byte az_request_queue_state = NONE;
 
 byte az_state = IDLE;
-int analog_az                   = 0;
 unsigned long az_last_rotate_initiation   = 0;
 byte azimuth_button_was_pushed   = 0;
 byte brake_az_engaged            = 0;
-byte brake_el_engaged            = 0;
 
-unsigned long az_slowstart_start_time     = 0;
-byte az_slow_start_step          = 0;
-unsigned long az_last_step_time           = 0;
+unsigned long az_slowstart_start_time   = 0;
+byte az_slow_start_step                 = 0;
+unsigned long az_last_step_time         = 0;
 byte az_slow_down_step = 0;
 unsigned long az_timed_slow_down_start_time = 0;
 
-byte normal_az_speed_voltage = 0;
-byte current_az_speed_voltage = 0;
-byte az_slowstart_active = AZ_SLOWSTART_DEFAULT;
-byte az_slowdown_active  = AZ_SLOWDOWN_DEFAULT;
+byte normal_az_speed_voltage    = 0;
+byte current_az_speed_voltage   = 0;
+byte az_slowstart_active        = AZ_SLOWSTART_DEFAULT;
+byte az_slowdown_active         = AZ_SLOWDOWN_DEFAULT;
 
 byte debug_mode = DEFAULT_DEBUG_STATE;
 unsigned long last_debug_output_time = 0;
@@ -64,9 +65,6 @@ byte backslash_command;
 
 byte configuration_dirty;
 
-
-//struct config_t configuration;
-
 #ifdef FEATURE_TIMED_BUFFER
 int timed_buffer_azimuths[TIMED_INTERVAL_ARRAY_SIZE];
 int timed_buffer_number_entries_loaded = 0;
@@ -80,10 +78,11 @@ byte push_lcd_update = 0;
 
 #ifdef FEATURE_ELEVATION_CONTROL
 int elevation = 0;
-int target_elevation = 0;
+int target_elevation    = 0;
 
-byte el_request = 0;
-int el_request_parm = 0;
+byte brake_el_engaged   = 0;
+byte el_request         = 0;
+int el_request_parm     = 0;
 byte el_request_queue_state = NONE;
 byte el_slowstart_active = EL_SLOWSTART_DEFAULT;
 byte el_slowdown_active = EL_SLOWDOWN_DEFAULT;

@@ -2,7 +2,7 @@
 #include "EEPROM.h"
 
 #include "rotator_features.h"
-#include "rotator_pins.h"
+#include "rotator_pins_custom_board.h"
 #include "settings.h"
 #include "macros.h"
 #include "serial_command_processing.h"
@@ -147,12 +147,52 @@ void read_azimuth()
   #endif //DEBUG_HEADING_READING_TIME
 
   #ifndef FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
-  if ((millis() - last_measurement_time) > AZIMUTH_MEASUREMENT_FREQUENCY_MS){
+  if ((millis() - last_measurement_time) > AZIMUTH_MEASUREMENT_FREQUENCY_MS)
+  {
   #else
   if (1)
   {
   #endif
-    
+
+
+    #ifdef FEATURE_AZ_POSITION_POT_TOP_BOT // read + and - ends of pot with grounded wiper
+
+      int analog_az_pos = analogRead(PositionPosPin);
+      int analog_az_neg = analogRead(PositionNegPin);
+
+      analog_az = analog_az_pos - analog_az_neg;
+      
+
+    raw_azimuth = (map(  analog_az,
+    		                 configuration.analog_az_full_ccw,
+                         configuration.analog_az_full_cw,
+                       ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
+                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
+                      
+    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
+    {
+      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+    }  
+    if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+    {
+      azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+      if (azimuth >= (360 * HEADING_MULTIPLIER)) 
+      {
+        azimuth = azimuth - (360 * HEADING_MULTIPLIER);
+      }
+    } else 
+    {
+      if (raw_azimuth < 0) 
+      {
+        azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
+      } else 
+      {
+        azimuth = raw_azimuth;
+      }
+    }
+#endif
+
+
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
     // read analog input and convert it to degrees; this gets funky because of 450 degree rotation
     // Bearings:  180-------359-0--------270
@@ -160,8 +200,10 @@ void read_azimuth()
     // ADC:        0--------------------1023
 
     analog_az = analogRead(rotator_analog_az);
+
+    // map(value, fromLow, fromHigh, toLow, toHigh)
     raw_azimuth = (map(  analog_az,
-    		             configuration.analog_az_full_ccw,
+    		                 configuration.analog_az_full_ccw,
                          configuration.analog_az_full_cw,
                        ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
                        ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
@@ -169,6 +211,8 @@ void read_azimuth()
     #ifdef FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
     #endif //FEATURE_AZIMUTH_CORRECTION
+
+    
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
     {
       raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
@@ -313,7 +357,7 @@ void read_azimuth()
     }
     #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
     
-    #ifdef FEATURE_AZ_POSITION_HMC5883L
+    #ifdef FEATURE_AZ_POSITION_HMC5883L // compass magnetometer
     MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
     float heading = atan2(scaled.YAxis, scaled.XAxis);
     //  heading += declinationAngle;
@@ -330,7 +374,7 @@ void read_azimuth()
     azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L
 
-    #ifdef FEATURE_AZ_POSITION_LSM303
+    #ifdef FEATURE_AZ_POSITION_LSM303 // compass magnetometer and accelerometer
     lsm.read();
     float heading = atan2(lsm.magData.y,lsm.magData.x);
     //  heading += declinationAngle;

@@ -18,7 +18,8 @@
 #define FEATURE_NUMERIC_DISPLAY
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
-#define FEATURE_AZ_POSITION_POTENTIOMETER          //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+//#define FEATURE_AZ_POSITION_POTENTIOMETER          //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+#define FEATURE_AZ_POSITION_POT_TOP_BOT            // read + and - ends of pot with grounded wiper
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
 //#define FEATURE_AZ_POSITION_PULSE_INPUT
 //#define FEATURE_AZ_POSITION_HMC5883L             // HMC5883L digital compass support (also uncomment object declaration below)

@@ -9,7 +9,7 @@
 #include <LiquidCrystal.h>
 
 #include "rotator_features.h"
-#include "rotator_pins.h"
+#include "rotator_pins_custom_board.h"
 #include "settings.h"
 #include "macros.h"
 

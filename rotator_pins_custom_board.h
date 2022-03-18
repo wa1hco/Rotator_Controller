@@ -120,6 +120,16 @@
 #define button_park 0
 #endif
 
+#define    LCDRsPin   99
+#define    LCDEnPin   99
+#define    LCDD7Pin   99
+#define    LCDD6Pin   99
+#define    LCDD5Pin   99
+#define    LCDD4Pin   99
+#define   LCDDimPin   99
+
+#define    KeyInPin   99
+
 //classic 4 bit LCD pins
 #define lcd_4_bit_rs_pin                LCDRsPin
 #define lcd_4_bit_enable_pin            LCDEnPin
