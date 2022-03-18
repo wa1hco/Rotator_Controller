@@ -7,7 +7,7 @@
 #include "macros.h"
 
 #include "global_variables.h"
-#include "check_serial.h"
+#include "serial_command_processing.h"
 #include "eeprom_local.h"
 
 //--------------------------------------------------------------

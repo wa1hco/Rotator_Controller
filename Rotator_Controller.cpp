@@ -212,7 +212,7 @@
 #include "global_variables.h"
 #include "Service_Blink_LED.h"
 #include "Display.h"
-#include "check_serial.h"
+#include "serial_command_processing.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"
 
@@ -241,7 +241,6 @@ void profile_loop_time();
 void setup() 
 {
   delay(1000);
-  //set_global_variables();
   initialize_serial();
   initialize_peripherals();
   read_settings_from_eeprom(); 

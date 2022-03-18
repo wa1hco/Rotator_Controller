@@ -204,5 +204,3 @@ extern byte debug_mode;
 extern byte configuration_dirty;
 
 #endif
-
-void set_global_variables();

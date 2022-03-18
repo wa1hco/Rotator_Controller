@@ -5,7 +5,7 @@
 #include "rotator_pins.h"
 #include "settings.h"
 #include "macros.h"
-#include "check_serial.h"
+#include "serial_command_processing.h"
 #include "global_variables.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"
