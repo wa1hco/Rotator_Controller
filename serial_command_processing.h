@@ -29,7 +29,12 @@ void yaesu_w_command();
 void yaesu_p_command();
 void clear_serial_buffer();
 
+#ifdef FEATURE_EASYCOM_EMULATION
+void easycom_serial_commmand();
+#endif
+
 void update_az_variable_outputs(byte);
 void print_wrote_to_memory();
+
 
 #endif /* SERIAL_COMMAND_PROCESSING_H_ */

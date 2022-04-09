@@ -6,7 +6,8 @@
  */
 
 #include <Arduino.h>
-#include <LiquidCrystal.h>
+
+
 
 #include "rotator_features.h"
 #include "rotator_pins_custom_board.h"
@@ -16,8 +17,20 @@
 #include "global_variables.h"
 
 #include "Display.h"
-#include <LiquidCrystal.h>
 
+#ifdef FEATURE_LCD_DISPLAY
+#include <LiquidCrystal.h>
+#endif
+
+#ifdef FEATURE_WIRE_SUPPORT
+#include <Wire.h>
+#endif
+
+#ifdef FEATURE_MAX6959_DISPLAY
+#define MAX6959A 0x38
+#endif
+
+#ifdef FEATURE_LCD_DISPLAY
 LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_enable_pin,
                   lcd_4_bit_d4_pin,
@@ -25,6 +38,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_d6_pin,
                   lcd_4_bit_d7_pin);
 /* end of classic 4 bit interface LCD display section */
+#endif
 
 // global variables referenced below
 // extern int azimuth;
@@ -40,6 +54,7 @@ String last_direction_string;
 // Azimuth Pre-set value at Col 16 and row 2
 void display_az_preset(int target)
 {
+  #ifdef FEATURE_LCD_DISPLAY
 	int hundreds;
 	int tens;
 	int ones;
@@ -76,11 +91,13 @@ void display_az_preset(int target)
 		Serial.println(target);
 	}
 	#endif //DEBUG_DISPLAY
+  #endif // feature lcd display
 }
 
 //----------------------------------------------------------------
 void display_az_string()
 {
+  #ifdef FEATURE_LCD_DISPLAY
   String direction_string;
   direction_string = azimuth_direction(azimuth);  // NE, ENE, NNE, etc
 
@@ -95,6 +112,7 @@ void display_az_string()
     Serial.println(direction_string);
   }
   #endif //DEBUG_AZ_STR
+  #endif // feature lcd display
 }
 
 //--------------------------------------------------------------
@@ -123,8 +141,9 @@ char *azimuth_direction(int azimuth_in)
 
 
 //--------------------------------------------------------------
-void initialize_display()
+void initialize_lcd_display()
 {
+  #ifdef FEATURE_LCD_DISPLAY
   #ifndef OPTION_INITIALIZE_YOURDUINO_I2C
   lcd.begin(LCD_COLUMNS, LCD_ROWS);
   #endif
@@ -152,12 +171,13 @@ void initialize_display()
  loadchars(); // configure the LCD for Big Fonts
 
  delay(3000);  // display intro screen for 3 seconds
+ #endif // feature lcd display
 }
 
 // MAX6959 7 segment controller, connected to 4 digit display
 void initialize_MAX6959()
 {
-  // Slave address 0x68
+  #ifdef FEATURE_MAX6959_DISPLAY
   // Register           Command Address
   // NOP                0x00
   // Decode mode        0x01
@@ -175,38 +195,189 @@ void initialize_MAX6959()
   // Digit 3            0x23
   // Segments           0x24
 
+  int result;
+  Serial.println("init MAX6959A");
+
   // Register   D7 D6 D5 D4 D3 D2 D1 D0
   // Segment     x  a  b  c  d  e  f  g
+  Wire.beginTransmission(MAX6959A); 
+  Wire.write(byte(0x04)); // configuration register
+  Wire.write(byte(0x21)); // 20 reset, 00 shutdown, 01 normal
+  result = Wire.endTransmission();
+  //delay(70);  
+  Serial.print("init Max6959A: config reg write status ");
+  Serial.println(result);
 
+  #if 1
+    Wire.beginTransmission(MAX6959A); 
+    Wire.write(byte(0x04)); // Configuration register address
+    Wire.write(byte(0x01)); // 20 reset, 00 shutdown, 01 normal
+    Wire.endTransmission();
+  //delay(70);  
+  #endif
 
+  Wire.beginTransmission(MAX6959A); 
+  Wire.write(byte(0x01)); // decode mode register address
+  Wire.write(byte(0x0F)); // Hex decode for digits 3-0
+  Wire.endTransmission();
+  //delay(70);  
+
+  Wire.beginTransmission(MAX6959A);
+  Wire.write(byte(0x02)); // intensity register address
+  Wire.write(byte(0x10)); // intensity value 0 to 3F
+  result = Wire.endTransmission();
+  Serial.print("intensity ");
+  Serial.println(result);
+  //delay(70);  
+
+  Wire.beginTransmission(MAX6959A); 
+  Wire.write(byte(0x03)); // scan limit register address
+  Wire.write(byte(0x02)); // 4 digits, 8 segments
+  Wire.endTransmission();
+  //delay(70);  
+
+  #endif
+
+  # if 0
+  Wire.beginTransmission(MAX6959A); 
+  Wire.write(byte(0x07)); // Display test register
+  Wire.write(byte(0x01)); // test mode bit D0
+  result = Wire.endTransmission();
+  delay(70);  
+  Serial.print("Test ");
+  Serial.println(result);
+  #endif
 }
 
 //--------------------------------------------------------------
 // 7 segment display on I2C bus using MAX6959
-void initialize_numeric_display()
+void initialize_MAX6959_display()
 {
+  byte decodeMode = 0;
   initialize_MAX6959();
 
   // set brightness
+  Wire.beginTransmission(MAX6959A_ADDR);
+  Wire.write(byte(0x02)); // intensity register address
+  Wire.write(byte(0x10)); // intensity value 0 to 3F
+  Wire.endTransmission();
 
-  // display 'hco' or 'HCO'
+  Wire.beginTransmission(MAX6959A_ADDR);
+  Wire.write(byte(0x01));  // decode mode
+  Wire.endTransmission();
 
-  delay(3000);  // display intro screen for 3 seconds
+  Wire.requestFrom(MAX6959A_ADDR, 1);
+
+  // initialize the port configuration register
+  Wire.beginTransmission(MAX6959A_ADDR);
+  Wire.write(MAX6959_PORT_CONFIG); // 
+  Wire.write(byte(0x18)); // irq high, in1 and in2 in keyscan
+  Wire.endTransmission();
+
+
+  // get the current decode mode
+  if (Wire.available() >= 1) 
+  {
+    decodeMode = Wire.read();
+  } else 
+  {
+    Serial.println("init numeric display: can't read decode mode");
+  }
+  
+  // display 'hco' or 'HCO' with decode turned off
+  Wire.beginTransmission(MAX6959A_ADDR); 
+  Wire.write(byte(0x01)); // decode mode register address
+  Wire.write(byte(0x00)); // Hex decode for digits 3-0
+  Wire.endTransmission();
+
+  Wire.beginTransmission(MAX6959A_ADDR); 
+  Wire.write(byte(0x20)); // left digit data register address
+  Wire.write(byte(0x17)); // h
+  Wire.write(byte(0x0d)); // c
+  Wire.write(byte(0x1b)); // o
+  Wire.endTransmission();
+  delay(2000); // 2 seconds
+
+  // restore the previous decode mode
+  Wire.beginTransmission(MAX6959A_ADDR);
+  Wire.write(byte(0x01));  // decode mode address
+  Wire.write(decodeMode);  // restore decode mode
+  Wire.endTransmission();
+
+  //delay(3000);  // display intro screen for 3 seconds
 }
 
 //
-#ifdef FEATURE__DISPLAY
-void update_numeric_display()
+#ifdef FEATURE_MAX6959_DISPLAY
+void update_MAX6959_display()
 {
   // get the azimuth
-  if ((millis()-last_lcd_update) > DISPLAY_UPDATE_TIME)
-  {
-    
-      // write to 7 segment driver
+  static uint32_t last_numeric_update = 0;
+  uint32_t millis_now = millis();
 
+  if ((millis_now - last_numeric_update) > DISPLAY_UPDATE_INTERVAL)
+  { 
+    uint16_t binaryTemp;
+    uint8_t digitAddr = 0x20; // most significant digit address
+    uint8_t digit[3]; // bcd digits
+
+    last_numeric_update = millis_now;
+
+    // binary to bcd and write to led
+    binaryTemp = azimuth;
+    digit[2] = (uint8_t) binaryTemp % 10; // least significant digit
+    binaryTemp /= 10;
+    digit[1] = (uint8_t) binaryTemp % 10;  
+    binaryTemp /= 10;
+    digit[0] = (uint8_t) binaryTemp % 10;  // most significant digit
+    binaryTemp /= 10;
+ 
+    Wire.beginTransmission(MAX6959A); 
+    Wire.write(digitAddr); // digit register address
+    Wire.write(digit[0]);  // digit value, auto increment address
+    Wire.write(digit[1]);
+    Wire.write(digit[2]);
+    Wire.endTransmission();
+
+    #if 0
+      Serial.print("update_MAX6959_display: num ");
+      Serial.println(num);
+    #endif
   } // if time to update digits
-} // update_numeric_display()
+} // update_MAX6959_display()
 #endif
+
+//--------------------------------------------------------------
+int read_MAX6959_buttons()
+{
+  int buttons = 0;
+
+  Wire.beginTransmission(MAX6959A_ADDR);      // i2c chip address
+  Wire.write(MAX6959_READ_BUTTONS_PRESSED); // read button address
+  Wire.endTransmission();
+
+
+  Wire.requestFrom(MAX6959A_ADDR, 1);         // execute the read
+
+  int count = Wire.available();               // check data received
+  if (count > 0) 
+  {
+    buttons = Wire.read();                    // get the data
+
+    #ifdef DEBUG_MAX6959_BUTTONS
+    Serial.print("read_max6959_buttons: count: ");
+    Serial.print(count);
+    Serial.print(", buttons: ");
+    Serial.print(buttons);
+    Serial.println();
+    #endif
+
+  } else 
+  {
+    Serial.println("init numeric display: can't read debounced buttons");
+  }
+  return buttons;
+}
 
 //--------------------------------------------------------------
 // started from update_display(), stripped elevation options
@@ -223,7 +394,7 @@ void update_numeric_display()
 // Col 16-20, Row 3,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
 //-----------------------------------------------------------------------
 #ifdef FEATURE_LCD_DISPLAY
-void update_display()
+void update_lcd_display()
 {
   // update the LCD display
   static byte lcd_state_row_0 = 0;

@@ -137,6 +137,7 @@ void update_az_variable_outputs(byte speed_voltage)
 //--------------------------------------------------------------
 void read_azimuth()
 {
+  #ifndef AZIMUTH_INTERRUPT
   unsigned int previous_raw_azimuth = raw_azimuth;
   static unsigned long last_measurement_time = 0;
 
@@ -154,42 +155,97 @@ void read_azimuth()
   {
   #endif
 
+    #ifdef HCO_BOARD // read + and - ends of pot with grounded wiper
+      //measured 3.3v rail 3.29V
+      //static const float Vmax = 3.3 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT); // 1.98 max voltage expected
+      // TODO adc read 653, but calculation says 616
 
-    #ifdef FEATURE_AZ_POSITION_POT_TOP_BOT // read + and - ends of pot with grounded wiper
+      #define ROTOR_POT 823.0
+      #define HCO_BOARD_RESISTOR 330.0
+      static const int ADCmax = (int) (1023 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT));  //  616 max ADC reading expected
 
-      int analog_az_pos = analogRead(PositionPosPin);
-      int analog_az_neg = analogRead(PositionNegPin);
+      int   Az_adc_top = analogRead(PositionPosPin); // adc reading for top    of azimuth pot
+      int   Az_adc_bot = analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+      float Az_top     = 99.0; // init to uninitialized flag value
+      float Az_bot     = 99.0;
+      float Az_avg     = 99.0;
 
-      analog_az = analog_az_pos - analog_az_neg;
-      
+      // test for open wiper using fix point techniques
+      if( (Az_adc_top < (ADCmax + (ADCmax >> 2))) | (Az_adc_bot < (ADCmax + (ADCmax >> 2)))) 
+      {
+        // convert top and bottom ADC reading to azimuth
+        Az_top = (360 * Az_adc_top)            / ADCmax;
+        Az_bot = (360 * (ADCmax - Az_adc_bot)) / ADCmax;
 
-    raw_azimuth = (map(  analog_az,
-    		                 configuration.analog_az_full_ccw,
-                         configuration.analog_az_full_cw,
-                       ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
-                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
-                      
+        Az_avg = (Az_top + Az_bot) / 2.0; //average the two readings, probably not that helpful
+        analog_az = Az_avg;  // global for other
+        previous_analog_az = Az_avg; // remember the az in case wiper glitches
+      } else // wiper has gone intermittent, skip update
+      {
+        Az_top = 99.0; // flag variables not used
+        Az_bot = 99.0;
+        Az_avg = previous_analog_az; // wiper glitched, use previous az
+        analog_az = Az_avg;
+      }
+
+    // map(value, fromLow, fromHigh, toLow, toHigh)
+    
+    //raw_azimuth = map(Az_avg, 0, 360, 0, 360);
+    float ADC_ccw = configuration.analog_az_full_ccw;
+    float ADC_cw  = configuration.analog_az_full_cw;
+    float Az_start = configuration.azimuth_starting_point * HEADING_MULTIPLIER;
+    float Az_capability = configuration.azimuth_rotation_capability;
+    float Az_stop  = Az_start + Az_capability * HEADING_MULTIPLIER;
+
+    raw_azimuth = map( Az_avg, ADC_ccw, ADC_cw, Az_start, Az_stop);
+
+    #ifdef DEBUG_HCO_BOARD
+      Serial.print("read_az: config, ccw, cw, start, capabilty, stop ");
+      Serial.print(ADC_ccw);
+      Serial.print(", ");
+      Serial.print(ADC_cw);
+      Serial.print(", ");
+      Serial.print(Az_start);
+      Serial.print(", ");
+      Serial.print(Az_capability);
+      Serial.print(", ");
+      Serial.print(Az_stop);
+      Serial.println("");
+    #endif
+
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
     {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+      raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
     }  
-    if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+
+    // wrap raw azimuth into azimuth
+    azimuth = (int) raw_azimuth;
+    if (azimuth >= 360) 
     {
-      azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
-      if (azimuth >= (360 * HEADING_MULTIPLIER)) 
-      {
-        azimuth = azimuth - (360 * HEADING_MULTIPLIER);
-      }
-    } else 
+      azimuth -= 360;
+    } else if (raw_azimuth < 0) 
     {
-      if (raw_azimuth < 0) 
-      {
-        azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
-      } else 
-      {
-        azimuth = raw_azimuth;
-      }
+      azimuth += 360;
     }
+
+    #if 0 //#ifdef DEBUG_HCO_BOARD
+      Serial.print("HCO Board analog ADCtop, ADCbot, Aztop, Azbot, raw, az ");
+      Serial.print(Az_adc_top);
+      Serial.print(", ");
+      Serial.print(Az_adc_bot);
+      Serial.print(", ");
+      Serial.print(Az_top);
+      Serial.print(", ");
+      Serial.print(Az_bot);
+      Serial.print(", ");
+      Serial.print(raw_azimuth);
+      Serial.print(", ");
+      Serial.print(azimuth);
+
+      Serial.println(" adc counts");
+    #endif
+
+
 #endif
 
 
@@ -199,10 +255,10 @@ void read_azimuth()
     // Voltage:    0----------------------5
     // ADC:        0--------------------1023
 
-    analog_az = analogRead(rotator_analog_az);
+    ADC_az = analogRead(rotator_analog_az);
 
     // map(value, fromLow, fromHigh, toLow, toHigh)
-    raw_azimuth = (map(  analog_az,
+    raw_azimuth = (map(  ADC_az,
     		                 configuration.analog_az_full_ccw,
                          configuration.analog_az_full_cw,
                        ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
@@ -437,6 +493,7 @@ void read_azimuth()
     
     last_measurement_time = millis();
   }
+  #endif // AZIMUTH_INTERRUPT
 }
 
 //--------------------------------------------------------------

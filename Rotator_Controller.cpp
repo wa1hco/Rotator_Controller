@@ -191,6 +191,9 @@
 #include <EEPROM.h>
 #include <Wire.h>
 #include <avr/wdt.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <MsTimer2.h>
 
 // C++ functions
 #include <math.h> 
@@ -206,7 +209,7 @@
 
 //#define CODE_VERSION "2013091101"
 //#define CODE_VERSION "2017021101"
-#define CODE_VERSION "2021031501"
+#define CODE_VERSION "2021040701"
 
 // Project functions
 #include "global_variables.h"
@@ -233,10 +236,390 @@ void check_az_speed_pot();
 void check_az_preset_potentiometer();
 void output_debug();
 void initialize_interrupts();
-void output_debug();
 void profile_loop_time();
+void TimedService();
+void ReadAzimuthISR();
 
+#ifdef FEATURE_ROTATION_INDICATOR_PIN
+void service_rotation_indicator_pin();
+#endif //FEATURE_ROTATION_INDICATOR_PIN  
 
+// Enter at TimeInterval specified in global
+// calls ReadAzimuthISR() to read ADCs
+// Sets DisplayFlag when it's time to update Display
+void TimedService() 
+{
+  ReadAzimuthISR();
+}
+
+//*********************************************************************************
+// Entered at TimeBetweenInterrupt intervals, 
+// Called from interrupt context, ADC reads occur at 2 ms, 500 Hz
+// read both ADC input close together in time
+// then do the peak processing
+// This function is called from MsTimer2 every TIMEBETWEENINTERRUPTS msec
+void ReadAzimuthISR() 
+{
+  #ifdef AZIMUTH_INTERRUPT
+  unsigned int previous_raw_azimuth = raw_azimuth;
+
+  #ifdef DEBUG_HEADING_READING_TIME
+  static unsigned long last_time = 0;
+  static unsigned long last_print_time = 0;
+  static float average_read_time = 0;
+  #endif //DEBUG_HEADING_READING_TIME
+
+  #ifdef HCO_BOARD // read + and - ends of pot with grounded wiper
+  //measured 3.3v rail 3.29V
+  //static const float Vmax = 3.3 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT); // 1.98 max voltage expected
+  // TODO adc read 653, but calculation says 616
+
+  #define ROTOR_POT 823.0
+  #define HCO_BOARD_RESISTOR 330.0
+
+  static const int ADCmax = (int) (1023 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT));  //  616 max ADC reading expected
+
+  int   Az_adc_top = analogRead(PositionPosPin); // adc reading for top    of azimuth pot
+  int   Az_adc_bot = analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+  
+  float Az_top     = 99.0; // init to uninitialized flag value
+  float Az_bot     = 99.0;
+  float Az_avg     = 99.0;
+
+  // test for open wiper using fix point techniques
+  if( (Az_adc_top < (ADCmax + (ADCmax >> 2))) | (Az_adc_bot < (ADCmax + (ADCmax >> 2)))) 
+  {
+    // convert top and bottom ADC reading to azimuth
+    Az_top = (360 * Az_adc_top)            / ADCmax;
+    Az_bot = (360 * (ADCmax - Az_adc_bot)) / ADCmax;
+
+    Az_avg = (Az_top + Az_bot) / 2.0; //average the two readings, probably not that helpful
+    analog_az = Az_avg;  // global for other
+    previous_analog_az = Az_avg; // remember the az in case wiper glitches
+  } else // wiper has gone intermittent, skip update
+  {
+    Az_top = 99.0; // flag variables not used
+    Az_bot = 99.0;
+    Az_avg = previous_analog_az; // wiper glitched, use previous az
+    analog_az = Az_avg;
+  }
+
+  // map(value, fromLow, fromHigh, toLow, toHigh)
+  
+  //raw_azimuth = map(Az_avg, 0, 360, 0, 360);
+  float ADC_ccw       = configuration.analog_az_full_ccw;
+  float ADC_cw        = configuration.analog_az_full_cw;
+  float Az_start      = configuration.azimuth_starting_point * HEADING_MULTIPLIER;
+  float Az_capability = configuration.azimuth_rotation_capability;
+  float Az_stop       = Az_start + Az_capability * HEADING_MULTIPLIER;
+
+  raw_azimuth = map( Az_avg, ADC_ccw, ADC_cw, Az_start, Az_stop);
+
+  #if 0 //#ifdef DEBUG_HCO_BOARD
+  Serial.print("read_az: config, ccw, cw, start, capabilty, stop ");
+  Serial.print(ADC_ccw);
+  Serial.print(", ");
+  Serial.print(ADC_cw);
+  Serial.print(", ");
+  Serial.print(Az_start);
+  Serial.print(", ");
+  Serial.print(Az_capability);
+  Serial.print(", ");
+  Serial.print(Az_stop);
+  Serial.println("");
+  #endif
+
+    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
+    {
+      raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+    }  
+
+    // wrap raw azimuth into azimuth
+    azimuth = (int) raw_azimuth;
+    if (azimuth >= 360) 
+    {
+      azimuth -= 360;
+    } else if (raw_azimuth < 0) 
+    {
+      azimuth += 360;
+    }
+
+    #ifdef DEBUG_HCO_BOARD
+    {
+      static bool isFirstWrite = true;
+      float Time_usec;
+      // format for csv file with header
+      if (isFirstWrite)
+      {
+        Serial.println("HCO Board analog");
+        Serial.println("Time, adcTop, adcBot, azTop, azBot, raw, az "); // header line
+        isFirstWrite = false;
+      }
+      Time_usec = micros();;
+      Serial.print(Time_usec);
+      Serial.print(", ");
+      Serial.print(Az_adc_top);
+      Serial.print(", ");
+      Serial.print(Az_adc_bot);
+      Serial.print(", ");
+      Serial.print(Az_top);
+      Serial.print(", ");
+      Serial.print(Az_bot);
+      Serial.print(", ");
+      Serial.print(raw_azimuth);
+      Serial.print(", ");
+      Serial.print(azimuth);
+
+      Serial.println("");
+    }
+    #endif // ifdef debug HCO
+
+#endif
+
+    #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
+    // read analog input and convert it to degrees; this gets funky because of 450 degree rotation
+    // Bearings:  180-------359-0--------270
+    // Voltage:    0----------------------5
+    // ADC:        0--------------------1023
+
+    ADC_az = analogRead(rotator_analog_az);
+
+    // map(value, fromLow, fromHigh, toLow, toHigh)
+    raw_azimuth = (map(  ADC_az,
+    		                 configuration.analog_az_full_ccw,
+                         configuration.analog_az_full_cw,
+                       ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
+                       ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
+    
+    #ifdef FEATURE_AZIMUTH_CORRECTION
+    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+    #endif //FEATURE_AZIMUTH_CORRECTION
+
+    
+    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
+    {
+      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+    }  
+    if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+    {
+      azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+      if (azimuth >= (360 * HEADING_MULTIPLIER)) 
+      {
+        azimuth = azimuth - (360 * HEADING_MULTIPLIER);
+      }
+    } else 
+    {
+      if (raw_azimuth < 0) 
+      {
+        azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
+      } else 
+      {
+        azimuth = raw_azimuth;
+      }
+    }
+    #endif //FEATURE_AZ_POSITION_POTENTIOMETER
+    
+    #ifdef FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
+    static unsigned long last_remote_unit_az_query_time = 0;
+    
+    // do we have a command result waiting for us?
+    if (remote_unit_command_results_available == REMOTE_UNIT_AZ_COMMAND) 
+    {
+      #ifdef DEBUG_HEADING_READING_TIME
+      average_read_time = (average_read_time + (millis()-last_time))/2.0;
+      last_time = millis();
+    
+      if (debug_mode)
+      {
+        if ((millis()-last_print_time) > 1000)
+        {
+          Serial.print(F("read_azimuth: avg read frequency: "));
+          Serial.println(average_read_time,2);
+         last_print_time = millis();
+        }
+      }
+      #endif //DEBUG_HEADING_READING_TIME
+      raw_azimuth = remote_unit_command_result_float * HEADING_MULTIPLIER;
+      
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+      #endif //FEATURE_AZIMUTH_CORRECTION      
+      
+      if (AZIMUTH_SMOOTHING_FACTOR > 0) 
+      {
+        raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+      }      
+      if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+      {
+        azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+        if (azimuth >= (360 * HEADING_MULTIPLIER)) 
+        {
+          azimuth = azimuth - (360 * HEADING_MULTIPLIER);
+        }
+      } else 
+      {
+        if (raw_azimuth < 0) 
+        {
+          azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
+        } else 
+        {
+          azimuth = raw_azimuth;
+        }
+      }    
+      remote_unit_command_results_available = 0;  
+    } else 
+    {
+      // is it time to request the azimuth?
+      if ((millis() - last_remote_unit_az_query_time) > AZ_REMOTE_UNIT_QUERY_TIME_MS)
+      {
+        if (submit_remote_command(REMOTE_UNIT_AZ_COMMAND)) 
+        {
+          last_remote_unit_az_query_time = millis();
+        }
+      }
+    }
+    #endif //FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
+  
+    #ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
+    static byte az_position_encoder_state = 0;
+    
+    az_position_encoder_state = ttable[az_position_encoder_state & 0xf][((digitalRead(az_rotary_position_pin2) << 1) | digitalRead(az_rotary_position_pin1))];
+    byte az_position_encoder_result = az_position_encoder_state & 0x30;
+    if (az_position_encoder_result) 
+    {
+      if (az_position_encoder_result == DIR_CW) 
+      {
+        configuration.last_azimuth = configuration.last_azimuth + AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+        #ifdef DEBUG_POSITION_ROTARY_ENCODER
+        if (debug_mode){Serial.println(F("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CW"));}
+        #endif //DEBUG_POSITION_ROTARY_ENCODER
+      }
+      if (az_position_encoder_result == DIR_CCW) 
+      {
+        configuration.last_azimuth = configuration.last_azimuth - AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+        #ifdef DEBUG_POSITION_ROTARY_ENCODER
+        if (debug_mode){Serial.println(F("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CCW"));}   
+        #endif //DEBUG_POSITION_ROTARY_ENCODER   
+      }
+      
+      #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
+      if (configuration.last_azimuth < configuration.azimuth_starting_point)
+      {
+        configuration.last_azimuth = configuration.azimuth_starting_point;
+      }
+      if (configuration.last_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability))
+      {
+        configuration.last_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
+      }    
+      #else
+      if (configuration.last_azimuth < 0)
+      {
+        configuration.last_azimuth += 360;
+      }
+      if (configuration.last_azimuth >= 360)
+      {
+        configuration.last_azimuth -= 360;
+      }       
+      #endif //OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
+      
+      
+      raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
+      
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+      #endif //FEATURE_AZIMUTH_CORRECTION    
+      
+      if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+      {
+        azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+      } else 
+      {
+        azimuth = raw_azimuth;
+      }
+      configuration_dirty = 1;
+    }
+    #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
+    
+    #ifdef FEATURE_AZ_POSITION_HMC5883L // compass magnetometer
+    MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
+    float heading = atan2(scaled.YAxis, scaled.XAxis);
+    //  heading += declinationAngle;
+    // Correct for when signs are reversed.
+    if(heading < 0) heading += 2*PI;
+    if(heading > 2*PI) heading -= 2*PI;
+    raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; //radians to degree
+    if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+    }    
+    #ifdef FEATURE_AZIMUTH_CORRECTION
+    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+    #endif //FEATURE_AZIMUTH_CORRECTION
+    azimuth = raw_azimuth;
+    #endif // FEATURE_AZ_POSITION_HMC5883L
+
+    #ifdef FEATURE_AZ_POSITION_LSM303 // compass magnetometer and accelerometer
+    lsm.read();
+    float heading = atan2(lsm.magData.y,lsm.magData.x);
+    //  heading += declinationAngle;
+    // Correct for when signs are reversed.
+    if(heading < 0) heading += 2*PI;
+    if(heading > 2*PI) heading -= 2*PI;
+    raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; //radians to degree
+    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
+    {
+      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+    }    
+    #ifdef FEATURE_AZIMUTH_CORRECTION
+    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+    #endif //FEATURE_AZIMUTH_CORRECTION
+    azimuth = raw_azimuth;
+    #endif // FEATURE_AZ_POSITION_LSM303
+    
+    #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
+    #ifdef DEBUG_POSITION_PULSE_INPUT
+//    if (az_position_pule_interrupt_handler_flag) {
+//      Serial.print(F("read_azimuth: az_position_pusle_interrupt_handler_flag: "));
+//      Serial.println(az_position_pule_interrupt_handler_flag);
+//      az_position_pule_interrupt_handler_flag = 0;
+//    }
+    #endif //DEBUG_POSITION_PULSE_INPUT
+    
+    //dddd
+    
+    static float last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
+    
+    if (az_position_pulse_input_azimuth != last_az_position_pulse_input_azimuth)
+    {
+        #ifdef DEBUG_POSITION_PULSE_INPUT
+//        if (debug_mode)
+//        {
+//          Serial.print(F("read_azimuth: last_az_position_pulse_input_azimuth:"));
+//          Serial.print(last_az_position_pulse_input_azimuth);
+//          Serial.print(F(" az_position_pulse_input_azimuth:"));
+//          Serial.print(az_position_pulse_input_azimuth);
+//          Serial.print(F(" az_pulse_counter:"));
+//          Serial.println(az_pulse_counter);
+//        }   
+        #endif //DEBUG_POSITION_PULSE_INPUT     
+       configuration.last_azimuth = az_position_pulse_input_azimuth;
+       configuration_dirty = 1;
+       last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
+       raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
+       #ifdef FEATURE_AZIMUTH_CORRECTION
+       raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+       #endif //FEATURE_AZIMUTH_CORRECTION     
+       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+       {
+         azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+       } else 
+       {
+        azimuth = raw_azimuth;
+       }    
+    }
+    #endif //FEATURE_AZ_POSITION_PULSE_INPUT
+  #endif // ifdef azimuth interrupt
+} // ReadAzimuthISR()
+ 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 void setup() 
 {
@@ -247,7 +630,7 @@ void setup()
   initialize_pins();
   //initialize_PID();
 
-  read_azimuth();
+  read_headings();
   #ifdef FEATURE_YAESU_EMULATION
   report_current_azimuth();      // Yaesu - report the azimuth right off the bat without a C command; the Arduino doesn't wake up quick enough
                                  // to get first C command from HRD and if HRD doesn't see anything it doesn't connect
@@ -258,22 +641,30 @@ void setup()
   #endif //FEATURE_TIMED_BUFFER 
   
   #ifdef FEATURE_LCD_DISPLAY
-  initialize_display();
+  initialize_lcd_display();
   #endif
 
-  #ifdef FEATURE_NUMERIC_DISPLAY
-  initialize_numeric_display();
+  #ifdef FEATURE_MAX6959_DISPLAY
+  initialize_MAX6959_display();
+  delay(2000);
   #endif
   
   initialize_rotary_encoders(); 
   initialize_interrupts();
+
+  // setup the timer and start it
+  // timer used to read values and run state machine
+  int TimeBetweenInterrupts = 2; // msec
+  MsTimer2::set(TimeBetweenInterrupts, TimedService); // 2ms period
+  // interrupts enabled after this point
+  MsTimer2::start(); 
 }
 
 /*-------------------------- here's where the magic happens --------------------------------*/
 void loop() 
 { 
   check_serial();
-  read_headings();
+  read_headings(); // read az and el if configured
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
   service_request_queue();
   service_rotation_azimuth();
@@ -295,7 +686,11 @@ void loop()
   #ifdef FEATURE_LCD_DISPLAY
   update_display(); // Azimuth display with the large fonts
   #endif
-  
+
+  #ifdef FEATURE_MAX6959_DISPLAY
+  update_MAX6959_display();
+  #endif
+
   read_headings();
   
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
@@ -307,7 +702,7 @@ void loop()
   check_el_manual_rotate_limit();
   #endif
  
-  #ifdef OPTION_AZIMUTH_SPEED_CONTROL
+  #ifdef OPTION_AZIMUTH_MOTOR_DIR_CONTROL
   check_az_speed_pot();
   #endif
   
@@ -318,7 +713,7 @@ void loop()
   #endif //FEATURE_AZ_PRESET_ENCODER
   #endif //ndef FEATURE_REMOTE_UNIT_SLAVE
   
-  output_debug();
+  //output_debug();
   
   check_for_dirty_configuration();
   
@@ -384,7 +779,7 @@ void profile_loop_time()
 //--------------------------------------------------------------
 void check_az_speed_pot() 
 {
-#ifdef OPTION_AZIMUTH_SPEED_CONTROL
+#ifdef OPTION_AZIMUTH_MOTOR_DIR_CONTROL
   static unsigned long last_pot_check_time = 0;
   int pot_read = 0;
   byte new_azimuth_speed_voltage = 0;
@@ -900,160 +1295,6 @@ void check_overlap()
 }
 
 
-//--------------------------------------------------------------
-#ifdef FEATURE_EASYCOM_EMULATION
-void easycom_serial_commmand()
-{
-  /* Easycom protocol implementation
-   
-  Implemented commands:
-  
-  Command		Meaning			Parameters
-  -------		-------			----------
-  AZ		        Azimuth			number - 1 decimal place
-  EL		        Elevation		number - 1 decimal place  
-  
-  ML		        Move Left
-  MR		        Move Right
-  MU		        Move Up
-  MD		        Move Down
-  SA		        Stop azimuth moving
-  SE		        Stop elevation moving
-  
-  VE		        Request Version
-  
-  Easycom has no way to report azimuth or elevation back to the client, or report errors  
-  */
-  
-  float heading = -1;
-
-  if ((incoming_serial_byte != 13) && (incoming_serial_byte != 10) && (incoming_serial_byte != 32) && (serial0_buffer_index < COMMAND_BUFFER_SIZE))
-  { // if it's not a CR, LF, or space, add it to the buffer
-    if ((incoming_serial_byte > 96) && (incoming_serial_byte < 123)) {incoming_serial_byte = incoming_serial_byte - 32;} //uppercase it
-    serial0_buffer[serial0_buffer_index] = incoming_serial_byte;
-    serial0_buffer_index++;
-  } else 
-  {                       // time to get to work on the command
-    if (serial0_buffer_index)
-    {
-      switch (serial0_buffer[0]) 
-      {                  // look at the first character of the command
-        case 'A':  //AZ
-          if (serial0_buffer[1] == 'Z')
-          {   // format is AZx.x or AZxx.x or AZxxx.x (why didn't they make it fixed length?)
-            switch (serial0_buffer_index) 
-            {
-              #ifdef OPTION_EASYCOM_AZ_QUERY_COMMAND
-              case 2:
-                Serial.print("AZ");
-                Serial.println(float(azimuth*HEADING_MULTIPLIER),1);
-                clear_command_buffer();
-                return;
-                break;
-              #endif //OPTION_EASYCOM_AZ_QUERY_COMMAND
-              case 5: // format AZx.x
-                heading = (serial0_buffer[2]-48) + ((serial0_buffer[4]-48)/10);
-                break;
-              case 6: // format AZxx.x 
-                heading = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48) + ((serial0_buffer[5]-48)/10);
-                break;
-              case 7: // format AZxxx.x
-                heading = ((serial0_buffer[2]-48)*100) + ((serial0_buffer[3]-48)*10) + (serial0_buffer[4]-48) + ((serial0_buffer[6]-48)/10);
-                break;
-              //default: Serial.println("?"); break;
-            }
-            if (((heading >= 0) && (heading < 451))  && (serial0_buffer[serial0_buffer_index-2] == '.'))
-            {
-              submit_request(AZ,REQUEST_AZIMUTH,(heading*HEADING_MULTIPLIER));
-            } else 
-            {
-              Serial.println("?");
-            }
-          } else {
-            Serial.println("?");
-          }
-          break;        
-        #ifdef FEATURE_ELEVATION_CONTROL
-        case 'E':  //EL
-          if (serial0_buffer[1] == 'L') 
-          {
-            switch (serial0_buffer_index) 
-            {
-              #ifdef OPTION_EASYCOM_EL_QUERY_COMMAND
-              case 2:
-                Serial.print("EL");
-                Serial.println(float(elevation*HEADING_MULTIPLIER),1);
-                clear_command_buffer();
-                return;
-                break;              
-              #endif //OPTION_EASYCOM_EL_QUERY_COMMAND
-              case 5: // format ELx.x
-                heading = (serial0_buffer[2]-48) + ((serial0_buffer[4]-48)/10);
-                break;
-              case 6: // format ELxx.x 
-                heading = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48) + ((serial0_buffer[5]-48)/10);
-                break;
-              case 7: // format ELxxx.x
-                heading = ((serial0_buffer[2]-48)*100) + ((serial0_buffer[3]-48)*10) + (serial0_buffer[4]-48) + ((serial0_buffer[6]-48)/10);
-                break;
-              //default: Serial.println("?"); break;
-            }
-            if (((heading >= 0) && (heading < 181)) && (serial0_buffer[serial0_buffer_index-2] == '.')){
-              submit_request(EL,REQUEST_ELEVATION,(heading*HEADING_MULTIPLIER));
-            } else 
-            {
-              Serial.println("?");
-            }
-          } else 
-          {
-            Serial.println(F("?"));
-          }
-          break;
-        #endif //#FEATURE_ELEVATION_CONTROL
-        case 'S':  // SA or SE - stop azimuth, stop elevation
-          switch (serial0_buffer[1]) 
-          {
-            case 'A':
-              submit_request(AZ,REQUEST_STOP,0);
-              break;
-            #ifdef FEATURE_ELEVATION_CONTROL
-            case 'E':
-              submit_request(EL,REQUEST_STOP,0);
-              break; 
-            #endif //FEATURE_ELEVATION_CONTROL
-            default: Serial.println("?"); break;
-          }
-          break;
-        case 'M':  // ML, MR, MU, MD - move left, right, up, down
-          switch (serial0_buffer[1])
-          {
-            case 'L': // ML - move left
-              submit_request(AZ,REQUEST_CCW,0);
-              break;
-            case 'R': // MR - move right
-              submit_request(AZ,REQUEST_CW,0);
-              break;
-            #ifdef FEATURE_ELEVATION_CONTROL
-            case 'U': // MU - move up
-              submit_request(EL,REQUEST_UP,0);
-              break;
-            case 'D': // MD - move down
-              submit_request(EL,REQUEST_DOWN,0);
-              break;
-            #endif //FEATURE_ELEVATION_CONTROL
-            default: Serial.println(F("?")); break;
-          }
-          break;
-        case 'V': // VE - version query
-          if (serial0_buffer[1] == 'E') {Serial.println(F("VE002"));} // not sure what to send back, sending 002 because this is easycom version 2?
-          break;    
-        default: Serial.println("?"); break;
-      }
-    } 
-    clear_command_buffer();
-  } 
-}
-#endif //FEATURE_EASYCOM_EMULATION
 
 //--------------------------------------------------------------
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_ANCILLARY_PIN_CONTROL)
@@ -1458,22 +1699,31 @@ void service_remote_unit_serial_buffer()
     }
   }
 }
-
 #endif //FEATURE_REMOTE_UNIT_SLAVE
 
 //--------------------------------------------------------------
+// check and act on button presses
 void check_buttons()
 {
-  #ifdef FEATURE_ADAFRUIT_BUTTONS
+  #if defined(FEATURE_ADAFRUIT_BUTTONS)
   int buttons = 0;
   buttons = readButtons();
 
   if (buttons & BUTTON_RIGHT) 
   {
-  #else
+
+  #elif defined(FEATURE_MAX6959_BUTTONS)
+
+  int buttons = 0;
+  buttons = read_MAX6959_buttons();
+  if (buttons & MAX6959_BUTTON_RIGHT)
+  {
+
+  #else // not adafruit or max6959 buttons
   if (button_cw && (digitalRead(button_cw) == LOW)) 
   {
   #endif //FEATURE_ADAFRUIT_BUTTONS
+
     if (azimuth_button_was_pushed == 0) 
     {
       #ifdef DEBUG_BUTTONS
@@ -1495,11 +1745,18 @@ void check_buttons()
       #endif            
     }
 
-  } else 
+  } else // not button cw
   {
     #ifdef FEATURE_ADAFRUIT_BUTTONS
     if (buttons & BUTTON_LEFT) 
     {
+
+    #elif defined(FEATURE_MAX6959_BUTTONS)
+    int buttons = 0;
+    buttons = read_MAX6959_buttons();
+    if (buttons & MAX6959_BUTTON_LEFT)
+    {
+
     #else
     if (button_ccw && (digitalRead(button_ccw) == LOW)) 
     {
@@ -1543,10 +1800,10 @@ void check_buttons()
     azimuth_button_was_pushed = 0;
   }
   
-  #else
+  #else // not adafruit buttons
   if ((azimuth_button_was_pushed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
   {
-    delay(200);
+    delay(200); // debouncing
     if ((digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
     {
         #ifdef DEBUG_BUTTONS
@@ -1555,7 +1812,7 @@ void check_buttons()
         Serial.println(F("check_buttons: no AZ button depressed"));
       }    
       #endif // DEBUG_BUTTONS
-      submit_request(AZ,REQUEST_STOP,0);
+      submit_request(AZ, REQUEST_STOP,0);
       azimuth_button_was_pushed = 0;
     }
   }
@@ -2385,7 +2642,7 @@ void read_elevation()
       Serial.println(event.acceleration.z);
     }
     #endif //DEBUG_ACCEL
-    elevation = (atan2(event.acceleration.y,event.acceleration.z)* 180 * HEADING_MULTIPLIER)/M_PI;  
+    elevation = (atan2(event.acceleration.y,eventINITIALIZE_TIMED_SLOW_DOWN_CCW.acceleration.z)* 180 * HEADING_MULTIPLIER)/M_PI;  
     #ifdef FEATURE_ELEVATION_CORRECTION
     elevation = (correct_elevation(elevation/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
     #endif //FEATURE_ELEVATION_CORRECTION       
@@ -2620,12 +2877,20 @@ void update_el_variable_outputs(byte speed_voltage)
 // action: ACTIVATE, DEACTIVATE
 // type: CW, CCW, UP, DOWN
 
+// rotator control supported
+//    rotate_cw, rotate_ccw
+//    rotate_cw, H-bridge 1, 2
+// new control mode for HCO board
+//    motor_on, direction (cw/ccw)
+
 //TODO This code sets the I/O for the brake and direction of rotation
 //     Code above sets the speed for rotation
 //     Layers, K3NG concept, I/O, Rotator type...needs more isolation
-// rotation_action is activate or deactivate
-// rotation_type is CW or CCW
-// rotate_cw, rotate_ccw, rotate_cw_pwn, etc are pin numbers
+// inputs
+//    rotation_action: is activate or deactivate
+//    rotation_type: is CW or CCW
+// global variables
+//  pin numbers, otate_cw, rotate_ccw, rotate_cw_pwn, etc 
 void rotator(byte rotation_action, byte rotation_type) 
 {  
   #ifdef DEBUG_ROTATOR
@@ -2666,10 +2931,8 @@ void rotator(byte rotation_action, byte rotation_type)
             	analogWrite( rotate_ccw_pwm,   0);
             	digitalWrite(rotate_ccw_pwm, LOW);
             }
-            if (rotate_cw_ccw_pwm)
-            {
-            	analogWrite(rotate_cw_ccw_pwm, 0);
-            }
+            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm, 0);}
+            if (rotate_motor     ) {digitalWrite(rotate_motor,     LOW);}
             if (rotate_cw_freq)
             {
             	noTone(rotate_cw_freq);
@@ -2690,10 +2953,8 @@ void rotator(byte rotation_action, byte rotation_type)
             	analogWrite(rotate_ccw_pwm,  0);  //CW, ACTIVATE, slowstart, write zero to pwm, turn off
             	digitalWrite(rotate_ccw_pwm, LOW);
             }
-            if (rotate_cw_ccw_pwm)
-            {
-            	analogWrite(rotate_cw_ccw_pwm, normal_az_speed_voltage);
-            }
+            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm, normal_az_speed_voltage);}
+            if (rotate_motor     ) {digitalWrite(rotate_motor,     HIGH);}
             if (rotate_cw_freq)
             {
             	tone(rotate_cw_freq,
@@ -2709,8 +2970,8 @@ void rotator(byte rotation_action, byte rotation_type)
             }
           } // if slow start active, else
 
-          // CW, Activate, not pwm
-          if (rotate_cw)
+          
+          if (rotate_cw) // CW, Activate, not pwm
           {
         	  digitalWrite(rotate_cw,  ROTATE_PIN_ACTIVE_VALUE  );  // CW, ACTIVATE, start or continue
           }
@@ -2719,10 +2980,13 @@ void rotator(byte rotation_action, byte rotation_type)
         	  digitalWrite(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE  );  //CCW, ACTIVATE, stop
           }
 
-          if (rotate_h1 & rotate_h2) // if pins defined CW, Activate, pwm or not
+          if (rotate_h1) // if pins defined CW, Activate, pwm or not
           {
         	  digitalWrite(rotate_h1, 1);
-              digitalWrite(rotate_h2, 0);
+          }
+          if (rotate_h2) // if pins defined CW, Activate, pwm or not
+          {
+            digitalWrite(rotate_h2, 0);
           }
 
           #ifdef DEBUG_ROTATOR     
@@ -2746,10 +3010,8 @@ void rotator(byte rotation_action, byte rotation_type)
         	analogWrite(rotate_cw_pwm,0);
         	digitalWrite(rotate_cw_pwm,LOW);
         }
-        if (rotate_cw_ccw_pwm)
-        {
-        	analogWrite(rotate_cw_ccw_pwm,0);
-        }
+        if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm, 0); }
+        if (rotate_motor     ) {digitalWrite(rotate_motor,     LOW);}
         if (rotate_cw)
         {
         	digitalWrite(rotate_cw,ROTATE_PIN_INACTIVE_VALUE);
@@ -2758,11 +3020,9 @@ void rotator(byte rotation_action, byte rotation_type)
         {
         	noTone(rotate_cw_freq);
         }
-        if (rotate_h1 & rotate_h2) // if pins defined CW, Activate, pwm or not
-        {
-      	  digitalWrite(rotate_h1, 0);
-          digitalWrite(rotate_h2, 0);
-        }
+        // if pins defined CW, Activate, pwm or not
+        if (rotate_h1) { digitalWrite(rotate_h1, 0); }
+        if (rotate_h2) { digitalWrite(rotate_h2, 0); }
 
       } 
       break; // case CW
@@ -2784,14 +3044,9 @@ void rotator(byte rotation_action, byte rotation_type)
             	analogWrite(rotate_cw_pwm,0);
             	digitalWrite(rotate_cw_pwm,LOW);
             }
-            if (rotate_ccw_pwm)
-            {
-            	analogWrite(rotate_ccw_pwm,0);
-            }
-            if (rotate_cw_ccw_pwm)
-            {
-            	analogWrite(rotate_cw_ccw_pwm,0);
-            }
+            if (rotate_ccw_pwm)    { analogWrite(rotate_ccw_pwm,    0); }
+            if (rotate_cw_ccw_pwm) { analogWrite(rotate_cw_ccw_pwm, 0); }
+            if (rotate_motor     ) {digitalWrite(rotate_motor,    LOW);}
             if (rotate_cw_freq)
             {
             	noTone(rotate_cw_freq);
@@ -2812,10 +3067,8 @@ void rotator(byte rotation_action, byte rotation_type)
             {
             	analogWrite(rotate_ccw_pwm,normal_az_speed_voltage);
             }
-            if (rotate_cw_ccw_pwm)
-            {
-            	analogWrite(rotate_cw_ccw_pwm,normal_az_speed_voltage);
-            }
+            if (rotate_cw_ccw_pwm) { analogWrite( rotate_cw_ccw_pwm, normal_az_speed_voltage); }
+            if (rotate_motor     ) { digitalWrite(rotate_motor,                         HIGH);}
             if (rotate_cw_freq)
             {
             	noTone(rotate_cw_freq);
@@ -2834,15 +3087,10 @@ void rotator(byte rotation_action, byte rotation_type)
           {
         	  digitalWrite(rotate_cw,  ROTATE_PIN_INACTIVE_VALUE);
           }
-          if (rotate_ccw)
-          {
-        	  digitalWrite(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE);
-          }
-          if (rotate_h1 & rotate_h2) // CCW, Activate, pwm or not, if pins defined
-          {
-        	  digitalWrite(rotate_h1, 0);
-              digitalWrite(rotate_h2, 1);
-          }
+          if (rotate_ccw) { digitalWrite(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE); } 
+          // CCW, Activate, pwm or not, if pins defined
+          if (rotate_h1) { digitalWrite(rotate_h1, 0); }
+          if (rotate_h2) { digitalWrite(rotate_h2, 1); }
 
           #ifdef DEBUG_ROTATOR
           if (debug_mode) 
@@ -2859,22 +3107,14 @@ void rotator(byte rotation_action, byte rotation_type)
         #endif //DEBUG_ROTATOR
         if (rotate_ccw_pwm)
         {
-        	analogWrite(rotate_ccw_pwm,0);
+        	analogWrite( rotate_ccw_pwm,  0);
         	digitalWrite(rotate_ccw_pwm,LOW);
         }
-        if (rotate_ccw)
-        {
-        	digitalWrite(rotate_ccw,ROTATE_PIN_INACTIVE_VALUE);
-        }
-        if (rotate_ccw_freq)
-        {
-        	noTone(rotate_ccw_freq);
-        }
-        if (rotate_h1 & rotate_h2) // CCW, Activate, pwm or not, if pins defined
-        {
-      	  digitalWrite(rotate_h1, 0);
-          digitalWrite(rotate_h2, 0);
-        }
+        if (rotate_ccw)      { digitalWrite(rotate_ccw,ROTATE_PIN_INACTIVE_VALUE); }
+        if (rotate_ccw_freq) { noTone(rotate_ccw_freq); }
+        // CCW, Activate, pwm or not, if pins defined
+        if (rotate_h1)  { digitalWrite(rotate_h1, 0); }
+        if (rotate_h2)  { digitalWrite(rotate_h2, 0); }
       } // CCW, DEACTIVATE
       break; 
 
@@ -2978,7 +3218,7 @@ void rotator(byte rotation_action, byte rotation_type)
 // L298N is a dual H bridge motor controller
 // IN1 defined as high side for positive rotation
 // PWM on Teensy is 488.28 Hz
-#ifdef OPTION_AZIMUTH_SPEED_CONTROL
+#ifdef OPTION_AZIMUTH_MOTOR_DIR_CONTROL
 void rotator_speed(byte speed)
 {
 	if (speed > 0)
@@ -3072,6 +3312,7 @@ void initialize_pins()
   if (rotate_cw_pwm)     {pinMode(rotate_cw_pwm,     OUTPUT);}
   if (rotate_ccw_pwm)    {pinMode(rotate_ccw_pwm,    OUTPUT);}
   if (rotate_cw_ccw_pwm) {pinMode(rotate_cw_ccw_pwm, OUTPUT);}  
+  if (rotate_motor)      {pinMode(rotate_motor,      OUTPUT);}
   if (rotate_cw_freq)    {pinMode(rotate_cw_freq,    OUTPUT);}
   if (rotate_ccw_freq)   {pinMode(rotate_ccw_freq,   OUTPUT);}  
   if (rotate_h1)         {pinMode(rotate_h1,         OUTPUT);}
@@ -3175,7 +3416,10 @@ void initialize_pins()
   }
   #endif //FEATURE_ROTATION_INDICATOR_PIN
   
-  if (blink_led) {pinMode(blink_led,OUTPUT);}
+  if (blink_led) 
+  {
+    pinMode(blink_led,OUTPUT);
+  }
 }  
 
 //--------------------------------------------------------------
@@ -3250,6 +3494,29 @@ void initialize_peripherals()
 
 //--------------------------------------------------------------
 // State Machine: Initialize, Start Up, Slow Down, Normal
+// IDLE 
+// SLOW_START_CW,                                 SLOW_START_CCW
+// NORMAL_CW,                                         NORMAL_CCW 
+// SLOW_DOWN_CW,                                   SLOW_DOWN_CCW 
+// INITIALIZE_SLOW_START_CW,           INITIALIZE_SLOW_START_CCW
+// INITIALIZE_TIMED_SLOW_DOWN_CW, INITIALIZE_TIMED_SLOW_DOWN_CCW 
+// TIMED_SLOW_DOWN_CW,                       TIMED_SLOW_DOWN_CCW 
+// INITIALIZE_DIR_CHANGE_TO_CW,     INITIALIZE_DIR_CHANGE_TO_CCW 
+// INITIALIZE_NORMAL_CW,                   INITIALIZE_NORMAL_CCW 
+
+// state transitions
+//  Init normal cw -> normal cw
+//  Init normal ccw -> normal ccw
+//  Init slow start cw -> slow start cw
+// INITIALIZE_SLOW_START_CCW      -> SLOW_START_CCW
+// INITIALIZE_TIMED_SLOW_DOWN_CW  -> TIMED_SLOW_DOWN_CW
+// INITIALIZE_TIMED_SLOW_DOWN_CCW -> TIMED_SLOW_DOWN_CVW
+// INITIALIZE_DIR_CHANGE_TO_CW    -> TIMED_SLOW_DOWN_CCW
+// INITIALIZE_DIR_CHANGE_TO_CCW   -> TIMED_SLOW_DOWN_CW
+// SLOW_START_CW                  -> NORMAL_CW
+// SLOW_START_CCW                 -> NORMAL_CCW
+
+
 // manage state machine, call rotator()
 void service_rotation_azimuth()
 {   
@@ -3259,14 +3526,14 @@ void service_rotation_azimuth()
   if (az_state == INITIALIZE_NORMAL_CW) 
   {
     update_az_variable_outputs(normal_az_speed_voltage);
-    rotator(ACTIVATE,CW);        
+    rotator(ACTIVATE, CW);        
     az_state = NORMAL_CW;
   }
 
   if (az_state == INITIALIZE_NORMAL_CCW) 
   {
     update_az_variable_outputs(normal_az_speed_voltage);
-    rotator(ACTIVATE,CCW);        
+    rotator(ACTIVATE, CCW);        
     az_state = NORMAL_CCW;
   }
   
@@ -3354,7 +3621,7 @@ void service_rotation_azimuth()
         #endif //DEBUG_SERVICE_ROTATION
       }         
       update_az_variable_outputs(normal_az_speed_voltage); 
-    } else 
+    } else // not ((az_state == SLOW_START_CW) || (az_state == SLOW_START_CCW)) 
     {  // it's not time to end slow start yet, but let's check if it's time to step up the speed voltage
       if (((millis() - az_last_step_time) > (AZ_SLOW_START_UP_TIME/AZ_SLOW_START_STEPS)) && (normal_az_speed_voltage > AZ_SLOW_START_STARTING_PWM))
       {
@@ -3402,7 +3669,13 @@ void service_rotation_azimuth()
         if (az_state == TIMED_SLOW_DOWN_CW) 
         {
           rotator(ACTIVATE,CCW);
-          if (az_slowstart_active) {az_state = INITIALIZE_SLOW_START_CCW;} else {az_state = NORMAL_CCW;};
+          if (az_slowstart_active) 
+          {
+            az_state = INITIALIZE_SLOW_START_CCW;
+          } else 
+          {
+            az_state = NORMAL_CCW;
+          };
           az_direction_change_flag = 0;
         }
         if (az_state == TIMED_SLOW_DOWN_CCW) 
@@ -3441,8 +3714,15 @@ void service_rotation_azimuth()
   
   // normal -------------------------------------------------------------------------------------------------------------------
   // if slow down is enabled, see if we're ready to go into slowdown
-  if (((az_state == NORMAL_CW) || (az_state == SLOW_START_CW) || (az_state == NORMAL_CCW) || (az_state == SLOW_START_CCW)) && 
-  (az_request_queue_state == IN_PROGRESS_TO_TARGET) && az_slowdown_active && (abs((target_raw_azimuth - raw_azimuth)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ))  
+  if  ( ( (az_state == NORMAL_CW     ) || 
+          (az_state == SLOW_START_CW ) || 
+          (az_state == NORMAL_CCW    ) || 
+          (az_state == SLOW_START_CCW)
+        ) && 
+        (az_request_queue_state == IN_PROGRESS_TO_TARGET) && 
+        az_slowdown_active && 
+        (abs((target_raw_azimuth - raw_azimuth)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ)
+      )  
   { 
     #ifdef DEBUG_SERVICE_ROTATION
     if (debug_mode) {Serial.print(F("service_rotation: SLOW_DOWN_C"));}   
@@ -3472,15 +3752,33 @@ void service_rotation_azimuth()
   }
   
   // check rotation target --------------------------------------------------------------------------------------------------------
-  if ((az_state != IDLE) && (az_request_queue_state == IN_PROGRESS_TO_TARGET) )  
+  if  ( 
+        (az_state != IDLE) && 
+        (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
+      )  
   {
-    if ((az_state == NORMAL_CW) || (az_state == SLOW_START_CW) || (az_state == SLOW_DOWN_CW))
+    if  (
+          (az_state == NORMAL_CW) || 
+          (az_state == SLOW_START_CW) || 
+          (az_state == SLOW_DOWN_CW)
+        )
     {
-      if ((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || ((raw_azimuth > target_raw_azimuth) && ((raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
+      if  (
+            (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+            (
+              (raw_azimuth > target_raw_azimuth) && 
+              ( (raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+            )
+          ) 
       {
         delay(50);
         read_azimuth();
-        if ((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || ((raw_azimuth > target_raw_azimuth) && ((raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
+        if  (
+              (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+              ((raw_azimuth > target_raw_azimuth) && 
+              ( (raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+              )
+            ) 
         {
           rotator(DEACTIVATE,CW);
           rotator(DEACTIVATE,CCW);
@@ -3493,15 +3791,22 @@ void service_rotation_azimuth()
       }      
     } else 
     {
-      if ( (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
-           ( (raw_azimuth < target_raw_azimuth) &&
-             ( (target_raw_azimuth - raw_azimuth) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
-		   )
-         ) 
+      if  ( 
+            (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
+            ( (raw_azimuth < target_raw_azimuth) &&
+              ( (target_raw_azimuth - raw_azimuth) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+		        )
+          ) 
       {
         delay(50);
         read_azimuth();
-        if ((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || ((raw_azimuth < target_raw_azimuth) && ((target_raw_azimuth - raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER)))) 
+        if  (
+              (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+              (
+                (raw_azimuth < target_raw_azimuth) && 
+                ((target_raw_azimuth - raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER))
+              )
+            ) 
         {
           rotator(DEACTIVATE,CW);
           rotator(DEACTIVATE,CCW);
@@ -3520,6 +3825,12 @@ void service_rotation_azimuth()
 // Called from loop(), before service_rotator_azimuth()
 // if request in queue, process request
 // queue means a single request, a pending operation
+// REQUEST_STOP
+// REQUEST_AZIMUTH, REQUEST_AZIMUTH_RAW
+// REQUEST_CW, REQUEST_CCW, 
+// REQUEST_UP, REQUEST_DOWN
+// REQUEST_ELEVATION, REQUEST_KILL
+
 void service_request_queue()
 { 
   int work_target_raw_azimuth = 0;

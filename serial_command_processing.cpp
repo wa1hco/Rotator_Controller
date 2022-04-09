@@ -25,9 +25,16 @@ void yaesu_serial_command()
     {
       serial0_buffer[0] = serial0_buffer[0] - 32;
     }
-    switch (serial0_buffer[0]) 
-    {                  // look at the first character of the command
-      case 'C':                                   // C - return current azimuth
+    switch (serial0_buffer[0]) // look at the first character of the command
+    {          
+      case 'A':  // A - CW/CCW rotation stop
+        #ifdef DEBUG_SERIAL
+        if (debug_mode) {Serial.println(F("yaesu_serial_command: A cmd"));}
+        #endif //DEBUG_SERIAL
+        submit_request(AZ,REQUEST_STOP,0);
+        Serial.println();
+        break;         
+      case 'C': // C - return current azimuth                                  
         #ifdef DEBUG_SERIAL
         if (debug_mode) {Serial.println(F("yaesu_serial_command: C cmd"));}
         #endif //DEBUG_SERIAL
@@ -64,13 +71,6 @@ void yaesu_serial_command()
         submit_request(AZ,REQUEST_CW,0);
         Serial.println();
         break;        
-      case 'A':  // A - CW/CCW rotation stop
-        #ifdef DEBUG_SERIAL
-        if (debug_mode) {Serial.println(F("yaesu_serial_command: A cmd"));}
-        #endif //DEBUG_SERIAL
-        submit_request(AZ,REQUEST_STOP,0);
-        Serial.println();
-        break;         
       case 'S':         // S - all stop
         #ifdef DEBUG_SERIAL
         if (debug_mode) {Serial.println(F("yaesu_serial_command: S cmd"));}
@@ -138,7 +138,7 @@ void yaesu_serial_command()
         yaesu_w_command();
         break;       
       #ifdef OPTION_GS_232B_EMULATION
-      case 'P': yaesu_p_command(); break;                       // P - switch between 360 and 450 degree mode
+      case 'P': yaesu_p_command(); break;                 ged// P - switch between 360 and 450 degree mode
       case 'Z':                                           // Z - Starting point toggle
         if (configuration.azimuth_starting_point == 180) 
         {
@@ -227,6 +227,11 @@ void check_serial(){
             {
               submit_request(AZ,REQUEST_AZIMUTH,(azimuth-(180*HEADING_MULTIPLIER)));
             }
+            Serial.print("command: L, azimuth ");
+            Serial.print(azimuth);
+            Serial.print(", ");
+            Serial.print(analog_az);
+            Serial.println("");
             break;
               
           #ifdef FEATURE_HOST_REMOTE_PROTOCOL
@@ -575,7 +580,7 @@ void yaesu_p_command()
 //--------------------------------------------------------------
 
 #ifdef FEATURE_YAESU_EMULATION
-void yaesu_o_command()
+void yaesu_o_command() // fully ccw, L command
 {
 
   #ifdef FEATURE_ELEVATION_CONTROL
@@ -618,7 +623,7 @@ void clear_serial_buffer()
 
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
-void yaesu_f_command()
+void yaesu_f_command() // fully cw, R command
 {
   #ifdef FEATURE_ELEVATION_CONTROL
   if ((serial0_buffer[1] == '2') && (serial0_buffer_index > 1)) 
@@ -765,3 +770,157 @@ void get_keystroke()
       incoming_serial_byte = Serial.read();
     }
 }
+//--------------------------------------------------------------
+#ifdef FEATURE_EASYCOM_EMULATION
+void easycom_serial_commmand()
+{
+  /* Easycom protocol implementation
+   
+  Implemented commands:
+  
+  Command		Meaning			Parameters
+  -------		-------			----------
+  AZ		        Azimuth			number - 1 decimal place
+  EL		        Elevation		number - 1 decimal place  
+  
+  ML		        Move Left
+  MR		        Move Right
+  MU		        Move Up
+  MD		        Move Down
+  SA		        Stop azimuth moving
+  SE		        Stop elevation moving
+  
+  VE		        Request Version
+  
+  Easycom has no way to report azimuth or elevation back to the client, or report errors  
+  */
+  
+  float heading = -1;
+
+  if ((incoming_serial_byte != 13) && (incoming_serial_byte != 10) && (incoming_serial_byte != 32) && (serial0_buffer_index < COMMAND_BUFFER_SIZE))
+  { // if it's not a CR, LF, or space, add it to the buffer
+    if ((incoming_serial_byte > 96) && (incoming_serial_byte < 123)) {incoming_serial_byte = incoming_serial_byte - 32;} //uppercase it
+    serial0_buffer[serial0_buffer_index] = incoming_serial_byte;
+    serial0_buffer_index++;
+  } else 
+  {                       // time to get to work on the command
+    if (serial0_buffer_index)
+    {
+      switch (serial0_buffer[0]) 
+      {                  // look at the first character of the command
+        case 'A':  //AZ
+          if (serial0_buffer[1] == 'Z')
+          {   // format is AZx.x or AZxx.x or AZxxx.x (why didn't they make it fixed length?)
+            switch (serial0_buffer_index) 
+            {
+              #ifdef OPTION_EASYCOM_AZ_QUERY_COMMAND
+              case 2:
+                Serial.print("AZ");
+                Serial.println(float(azimuth*HEADING_MULTIPLIER),1);
+                clear_command_buffer();
+                return;
+                break;
+              #endif //OPTION_EASYCOM_AZ_QUERY_COMMAND
+              case 5: // format AZx.x
+                heading = (serial0_buffer[2]-48) + ((serial0_buffer[4]-48)/10);
+                break;
+              case 6: // format AZxx.x 
+                heading = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48) + ((serial0_buffer[5]-48)/10);
+                break;
+              case 7: // format AZxxx.x
+                heading = ((serial0_buffer[2]-48)*100) + ((serial0_buffer[3]-48)*10) + (serial0_buffer[4]-48) + ((serial0_buffer[6]-48)/10);
+                break;
+              //default: Serial.println("?"); break;
+            }
+            if (((heading >= 0) && (heading < 451))  && (serial0_buffer[serial0_buffer_index-2] == '.'))
+            {
+              submit_request(AZ,REQUEST_AZIMUTH,(heading*HEADING_MULTIPLIER));
+            } else 
+            {
+              Serial.println("?");
+            }
+          } else {
+            Serial.println("?");
+          }
+          break;        
+        #ifdef FEATURE_ELEVATION_CONTROL
+        case 'E':  //EL
+          if (serial0_buffer[1] == 'L') 
+          {
+            switch (serial0_buffer_index) 
+            {
+              #ifdef OPTION_EASYCOM_EL_QUERY_COMMAND
+              case 2:
+                Serial.print("EL");
+                Serial.println(float(elevation*HEADING_MULTIPLIER),1);
+                clear_command_buffer();
+                return;
+                break;              
+              #endif //OPTION_EASYCOM_EL_QUERY_COMMAND
+              case 5: // format ELx.x
+                heading = (serial0_buffer[2]-48) + ((serial0_buffer[4]-48)/10);
+                break;
+              case 6: // format ELxx.x 
+                heading = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48) + ((serial0_buffer[5]-48)/10);
+                break;
+              case 7: // format ELxxx.x
+                heading = ((serial0_buffer[2]-48)*100) + ((serial0_buffer[3]-48)*10) + (serial0_buffer[4]-48) + ((serial0_buffer[6]-48)/10);
+                break;
+              //default: Serial.println("?"); break;
+            }
+            if (((heading >= 0) && (heading < 181)) && (serial0_buffer[serial0_buffer_index-2] == '.')){
+              submit_request(EL,REQUEST_ELEVATION,(heading*HEADING_MULTIPLIER));
+            } else 
+            {
+              Serial.println("?");
+            }
+          } else 
+          {
+            Serial.println(F("?"));
+          }
+          break;
+        #endif //#FEATURE_ELEVATION_CONTROL
+        case 'S':  // SA or SE - stop azimuth, stop elevation
+          switch (serial0_buffer[1]) 
+          {
+            case 'A':
+              submit_request(AZ,REQUEST_STOP,0);
+              break;
+            #ifdef FEATURE_ELEVATION_CONTROL
+            case 'E':
+              submit_request(EL,REQUEST_STOP,0);
+              break; 
+            #endif //FEATURE_ELEVATION_CONTROL
+            default: Serial.println("?"); break;
+          }
+          break;
+        case 'M':  // ML, MR, MU, MD - move left, right, up, down
+          switch (serial0_buffer[1])
+          {
+            case 'L': // ML - move left
+              submit_request(AZ,REQUEST_CCW,0);
+              break;
+            case 'R': // MR - move right
+              submit_request(AZ,REQUEST_CW,0);
+              break;
+            #ifdef FEATURE_ELEVATION_CONTROL
+            case 'U': // MU - move up
+              submit_request(EL,REQUEST_UP,0);
+              break;
+            case 'D': // MD - move down
+              submit_request(EL,REQUEST_DOWN,0);
+              break;
+            #endif //FEATURE_ELEVATION_CONTROL
+            default: Serial.println(F("?")); break;
+          }
+          break;
+        case 'V': // VE - version query
+          if (serial0_buffer[1] == 'E') {Serial.println(F("VE002"));} // not sure what to send back, sending 002 because this is easycom version 2?
+          break;    
+        default: Serial.println("?"); break;
+      }
+    } 
+    clear_command_buffer();
+  } 
+}
+#endif //FEATURE_EASYCOM_EMULATION

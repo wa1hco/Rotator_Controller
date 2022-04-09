@@ -20,7 +20,7 @@
 // CAN      |R|T| | | | | | | | |  | T|  | R|  |  |  |  |  |  |  |  | T| R|
 //--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
 
-// Rotator custom board use of pins
+// HCO Rotator custom board use of pins
 //--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
 // Analog   | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 // I2C      | | | | | | | | | | |  |  |  |  |  |  |  |  |CL|DA|  |  |  |  |
@@ -29,43 +29,54 @@
 // Unused   |0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|  |  |  |  |  |21|22|23|
 //--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
 
-#define I2CClockPin    18
-#define I2CDataPin     19
+#define I2CClockPin    19
+#define I2CDataPin     18
 
 // when using a quad relay board
-#define   BrakePin        16 // high to release brake
+#define   BrakeAzPin      16 // high to release brake
 #define   DirectionPin    17 // high to rotate left
 #define   MotorPin        20 // high to run motor
 
-#define   PositionPosPin  14
-#define   PositionNegPin  15
+#define   PositionPosPin  14 // grounded wiper
+#define   PositionNegPin  15 // grounded wiper
 
 #define   TeensyLED       13
 
+// when using motor and direction relays or...
+// when using an L298N H-bridge PWM motor controller
+#define ENAPin                  20              // ENA on L298n, Motor control pin
+#define IN1Pin                  17              // IN1 on L298n, Direction controlpin
+#define IN2Pin                  0               // IN2 on L298n
 
-/* azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator) */
-#define rotate_cw               0               // asserted to activate rotator R ( CW) rotation - pin 1 on Yaesu connector
-#define rotate_ccw              0               // asserted to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
-#define rotate_cw_pwm           0               // optional - PWM CW output - set to 0 to disable (must be PWM capable pin)
-#define rotate_ccw_pwm          0               // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
-#define rotate_cw_ccw_pwm       0               // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
-#define rotate_cw_freq          0               // optional - CW variable frequency output
-#define rotate_ccw_freq         0               // optional - CCW variable frequency output
-#define rotate_h1               0               // L298 H Bridge In 1 Pin, High means rotate cw
-#define rotate_h2               0               // L298 H Bridge In 2 Pin, High means rotate ccw
-#define button_cw               0               // normally open button to ground for manual CW rotation (schematic pin: A1)
-#define button_ccw              0               // normally open button to ground for manual CCW rotation (schematic pin: A2)
-#define serial_led              LED_BUILTIN     // LED blinks when command is received on serial port (set to 0 to disable)
-#define rotator_analog_az       PositionPosPin  // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
-#define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
+
+// azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator)
+// if change made here, also change initialize_pins()
+#define serial_led              TeensyLED       // LED blinks when command is received on serial port (set to 0 to disable)
 #define overlap_led             0               // line goes high when azimuth rotator is in overlap (> 360 rotators)
-#define brake_az                BrakePin               // goes high to disengage azimuth brake (set to 0 to disable)
+#define brake_az                BrakeAzPin      // goes high to disengage azimuth brake (set to 0 to disable)
 #define az_speed_pot            0               // connect to wiper of 1K to 10K potentiometer for speed control (set to 0 to disable)
 #define az_preset_pot           0               // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
 #define preset_start_button     0               // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 #define button_stop             0               // connect to momentary switch (ground on button press) for preset stop (set to 0 to disable or for preset automatic start)
-#define rotation_indication_pin 0
+
+#define rotate_cw               0               // asserted to activate rotator R ( CW) rotation - pin 1 on Yaesu connector
+#define rotate_ccw              0               // asserted to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
+#define rotate_cw_pwm           0               // optional - PWM CW output  - set to 0 to disable (must be PWM capable pin)
+#define rotate_ccw_pwm          0               // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
+#define rotate_cw_ccw_pwm       0               // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
+#define rotate_motor            ENAPin          // optional - motor control pin
+#define rotate_cw_freq          0               // optional - CW variable frequency output
+#define rotate_ccw_freq         0               // optional - CCW variable frequency output
+
+#define rotate_h1               IN1Pin          // L298 H Bridge In 1 Pin, High means rotate cw
+#define rotate_h2               0               // L298 H Bridge In 2 Pin, High means rotate ccw
+#define button_cw               0               // normally open button to ground for manual CW rotation (schematic pin: A1)
+#define button_ccw              0               // normally open button to ground for manual CCW rotation (schematic pin: A2)
+#define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
+
+#define rotator_analog_az       PositionPosPin  // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
+#define rotation_indication_pin 0
 
 
 /*----------- elevation pins --------------*/

@@ -19,17 +19,20 @@
 
 // azimuth globals
 extern int azimuth;
-extern int raw_azimuth;
+extern float raw_azimuth;
 extern int target_azimuth;
 extern int target_raw_azimuth;
 extern byte az_request;
 extern int  az_request_parm;
 extern byte az_request_queue_state;
 
+extern float analog_az;
+extern float previous_analog_az;
+
 extern byte az_state;
-extern int analog_az;
 extern unsigned long az_last_rotate_initiation;
 extern byte azimuth_button_was_pushed;
+extern byte MAX6959_buttons_debounced;
 extern byte brake_az_engaged;
 extern byte brake_el_engaged;
 
@@ -43,6 +46,8 @@ extern byte normal_az_speed_voltage;
 extern byte current_az_speed_voltage;
 extern byte az_slowstart_active;
 extern byte az_slowdown_active;
+
+extern int IsrTime;
 
 extern unsigned long last_debug_output_time;
 
@@ -135,7 +140,7 @@ byte preset_encoders_state = ENCODER_IDLE;
 #endif //FEATURE_ROTARY_ENCODER_SUPPORT
 
 #ifdef DEBUG_PROFILE_LOOP_TIME
-float average_loop_time = 0;
+extern float average_loop_time;
 #endif //DEBUG_PROFILE_LOOP_TIME
 
 #ifdef FEATURE_AZ_POSITION_PULSE_INPUT

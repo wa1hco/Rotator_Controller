@@ -13,8 +13,9 @@
 
 // azimuth globals
 int azimuth                     = 0;
-int raw_azimuth                 = 0;
-int analog_az                   = 0;
+float raw_azimuth               = 0;
+float analog_az                 = 0;
+float previous_analog_az        = 0;
 
 int target_azimuth              = 0;
 int target_raw_azimuth          = 0;
@@ -24,8 +25,9 @@ int az_request_parm             = 0;
 byte az_request_queue_state = NONE;
 
 byte az_state = IDLE;
-unsigned long az_last_rotate_initiation   = 0;
+unsigned long az_last_rotate_initiation = 0;
 byte azimuth_button_was_pushed   = 0;
+byte MAX6959_buttons_debounced   = 0;
 byte brake_az_engaged            = 0;
 
 unsigned long az_slowstart_start_time   = 0;
@@ -38,6 +40,8 @@ byte normal_az_speed_voltage    = 0;
 byte current_az_speed_voltage   = 0;
 byte az_slowstart_active        = AZ_SLOWSTART_DEFAULT;
 byte az_slowdown_active         = AZ_SLOWDOWN_DEFAULT;
+
+int IsrTime =  0;  // test variable, ISR execution time in msec
 
 byte debug_mode = DEFAULT_DEBUG_STATE;
 unsigned long last_debug_output_time = 0;

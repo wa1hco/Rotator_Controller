@@ -7,19 +7,25 @@
 /* main features */
 //#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232A emulation
-#define OPTION_GS_232B_EMULATION          // uncomment this for GS-232B emulation (also uncomment FEATURE_YAESU_EMULATION above)
+//#define OPTION_GS_232B_EMULATION          // uncomment this for GS-232B emulation (also uncomment FEATURE_YAESU_EMULATION above)
 //#define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation (undefine FEATURE_YAESU_EMULATION above)
-//#define FEATURE_ROTATION_INDICATOR_PIN  // activate pin (defined below) to indicate rotation
+//#define FEATURE_ROTATION_INDICATOR_PIN    // activate pin (defined below) to indicate rotation
 
 /* host and remote unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE       //uncomment this to make this unit a remote unit controlled by a host unit
 
 //#define FEATURE_LCD_DISPLAY
-#define FEATURE_NUMERIC_DISPLAY
+#define HCO_BOARD
+#ifdef HCO_BOARD
+  #define FEATURE_WIRE_SUPPORT
+  #define FEATURE_MAX6959_DISPLAY
+  #define FEATURE_MAX6959_BUTTONS
+  #define FEATURE_AZ_POSITION_POT_TOP_BOT          // read + and - ends of pot with grounded wiper
+#endif
+#define AZIMUTH_INTERRUPT                          // use 1 msec ISR for ADC read
 
-/* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
+// position sensors - pick one for azimuth and one for elevation if using an az/el rotator
 //#define FEATURE_AZ_POSITION_POTENTIOMETER          //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
-#define FEATURE_AZ_POSITION_POT_TOP_BOT            // read + and - ends of pot with grounded wiper
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
 //#define FEATURE_AZ_POSITION_PULSE_INPUT
 //#define FEATURE_AZ_POSITION_HMC5883L             // HMC5883L digital compass support (also uncomment object declaration below)
@@ -65,8 +71,8 @@
 //#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
 //#define OPTION_JOYSTICK_REVERSE_X_AXIS
 //#define OPTION_JOYSTICK_REVERSE_Y_AXIS
-//#define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
-//#define OPTION_AZIMUTH_SPEED_CONTROL
+//#define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED  // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
+//#define OPTION_AZIMUTH_MOTOR_DIR_CONTROL  // specifies use of H-bridge or motor and direction relays
 
   /*
   
@@ -83,23 +89,24 @@
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
-#define DEBUG_SERIAL
+//#define DEBUG_SERIAL
 //#define DEBUG_SERVICE_REQUEST_QUEUE
 //#define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT
 //#define DEBUG_AZ_PRESET_POT
+//#define DEBUG_HCO_BOARD
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
-#define DEBUG_BRAKE
+//#define DEBUG_BRAKE
 //#define DEBUG_OVERLAP
 //#define DEBUG_DISPLAY
 //#define DEBUG_AZ_STR
-#define DEBUG_TURNING
+//#define DEBUG_TURNING
 //#define DEBUG_AZ_CHECK_OPERATION_TIMEOUT
 //#define DEBUG_TIMED_BUFFER
 //#define DEBUG_EL_CHECK_OPERATION_TIMEOUT
-#define DEBUG_VARIABLE_OUTPUTS
-#define DEBUG_ROTATOR
+//#define DEBUG_VARIABLE_OUTPUTS
+//#define DEBUG_ROTATOR
 //#define DEBUG_SUBMIT_REQUEST
 //#define DEBUG_SERVICE_ROTATION
 //#define DEBUG_POSITION_ROTARY_ENCODER
@@ -110,5 +117,6 @@
 //#define DEBUG_HEADING_READING_TIME
 //#define DEBUG_JOYSTICK
 //#define DEBUG_ROTATION_INDICATION_PIN
+#define DEBUG_MAX6959_BUTTONS
 
 #endif // ROTATOR_FEATURES_H_
