@@ -17,11 +17,12 @@
 //#define FEATURE_LCD_DISPLAY
 #define HCO_BOARD
 #ifdef HCO_BOARD
-  #define FEATURE_WIRE_SUPPORT
-  #define FEATURE_MAX6959_DISPLAY
-  #define FEATURE_MAX6959_BUTTONS
-  #define FEATURE_AZ_POSITION_POT_TOP_BOT          // read + and - ends of pot with grounded wiper
+  //#define FEATURE_WIRE_SUPPORT
+  #define FEATURE_MAX7221_DISPLAY
+  #define FEATURE_HCO_BUTTONS
+  #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
 #endif
+
 #define AZIMUTH_INTERRUPT                          // use 1 msec ISR for ADC read
 
 // position sensors - pick one for azimuth and one for elevation if using an az/el rotator
@@ -95,6 +96,7 @@
 //#define DEBUG_AZ_SPEED_POT
 //#define DEBUG_AZ_PRESET_POT
 //#define DEBUG_HCO_BOARD
+//#define DEBUG_7_SEGMENTS
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
 //#define DEBUG_BRAKE
@@ -117,6 +119,6 @@
 //#define DEBUG_HEADING_READING_TIME
 //#define DEBUG_JOYSTICK
 //#define DEBUG_ROTATION_INDICATION_PIN
-#define DEBUG_MAX6959_BUTTONS
+//#define DEBUG_MAX6959_BUTTONS
 
 #endif // ROTATOR_FEATURES_H_

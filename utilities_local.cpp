@@ -2,7 +2,7 @@
 #include "EEPROM.h"
 
 #include "rotator_features.h"
-#include "rotator_pins_custom_board.h"
+#include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
 #include "serial_command_processing.h"

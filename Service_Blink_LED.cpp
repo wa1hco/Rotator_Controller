@@ -8,7 +8,7 @@
 
 #include <Arduino.h>
 #include "rotator_features.h"
-#include "rotator_pins_custom_board.h"
+#include "rotator_pins_HCO_board.h"
 
 void service_blink_led()
 {

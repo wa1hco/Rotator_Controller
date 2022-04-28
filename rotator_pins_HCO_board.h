@@ -8,45 +8,58 @@
 
 // Teensy v4.0 Digital and Analog Pins, front side only
 
-//    Teensy Pin Definitions, , USB up
-//----------|-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
-// Pins     |0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|
-// Digital  |0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|
-// Analog   | | | | | | | | | | |  |  |  |  |14|15|16|17|18|19|20|21|22|23|
-// PWM      |0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|  |  |18|19|  |  |22|23|
-// I2C      | | | | | | | | | | |  |  |  |  |  |  |CL|DA|CL|DA|  |  |  |  |
-// Serial   |R|T| | | | | |R|T| |  |  |  |  |T3|R3|R4|T4|  |  |T5|R5|  |  |
-// SPI      | | | | | | | | | | |CS|SI|SO|CL|  |  |  |  |  |  |  |  |  |  |
-// CAN      |R|T| | | | | | | | |  | T|  | R|  |  |  |  |  |  |  |  | T| R|
-//--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+//    Teensy 4.0 Pin Definitions, USB up, upperleft, counter clockwise
+//----------|-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+// Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+// Digital  |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|A2 |A3 |A4 |A5 |A6|A7|A8|A9|
+// PWM      |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|   |   |18 |19 |  |  |22|23|
+// I2C      | | | | | | | | |   |  |  |  |  |  |  |  |CL1|DA1|DA0|CL0|  |  |  |  |
+// Serial   |R|T| | | | | |R|T  |  |  |  |  |  |T3|R3|R4 |T4 |   |   |T5|R5|  |  |
+// CAN      |R|T| | | | | | |   |  |  |T |  |R |  |  |   |   |   |   |  |  |T |R |
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
 
 // HCO Rotator custom board use of pins
-//--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
-// Analog   | | | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-// I2C      | | | | | | | | | | |  |  |  |  |  |  |  |  |CL|DA|  |  |  |  |
-// Relays   | | | | | | | | | | |  |  |  |  |  |  |BR|LR|  |  |MV|  |  |  |
-//--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
-// Unused   |0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|  |  |  |  |  |21|22|23|
-//--------- |-|-|-|-|-|-|-|-|-|-|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+// Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
+// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|   |   |   |   |  |  |  |  |
+// I2C      | | | | | | | | |   |  |  |  |  |  |  |  |   |   |DA0|CL0|  |  |  |  |
+// Buttons  | | | | | | | | |CCW|CW|  |  |  |  |  |  |   |   |   |   |  |  |  |  |
+// SPI      | | | | | | | | |   |  |CS|SI|SO|CL|  |  |   |   |   |   |  |  |  |  |
+// Relays   | | | | | | | | |   |  |  |  |  |  |  |  |BR |LR |   |   |MV|  |  |  |
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+// Unused   |0|1|2|3|4|5|6|7|   |  |  |  |  |  |  |  |   |   |   |   |  |21|22|23|
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
 
-#define I2CClockPin    19
-#define I2CDataPin     18
+#ifdef FEATURE_MAX6959_DISPLAY
+#define I2CClockPin    19 // SCL0, I2c, when using MAX6959
+#define I2CDataPin     18 // SDA0, I2c, when using MAX6959
+#endif
+
+#ifdef FEATURE_MAX7221_DISPLAY
+#define MAX7221_CS_PIN 10 // MAX7221 SPI bus chip select pin
+#endif
+
+#ifdef FEATURE_HCO_BUTTONS
+#define BUTTON_CCW     8
+#define BUTTON_CW      9
+#endif
 
 // when using a quad relay board
-#define   BrakeAzPin      16 // high to release brake
-#define   DirectionPin    17 // high to rotate left
-#define   MotorPin        20 // high to run motor
+#define BrakeAzPin     16         // high to release brake
+#define DirectionPin   17         // high to rotate left
+#define MotorPin       20         // high to run motor
 
-#define   PositionPosPin  14 // grounded wiper
-#define   PositionNegPin  15 // grounded wiper
+#define PositionPosPin 14         // A0, grounded wiper
+#define PositionNegPin 15         // A1, grounded wiper
 
-#define   TeensyLED       13
+#define TeensyLED      13
 
 // when using motor and direction relays or...
 // when using an L298N H-bridge PWM motor controller
-#define ENAPin                  20              // ENA on L298n, Motor control pin
-#define IN1Pin                  17              // IN1 on L298n, Direction controlpin
-#define IN2Pin                  0               // IN2 on L298n
+#define ENAPin         20         // ENA on L298n, Motor control pin
+#define IN1Pin         17         // IN1 on L298n, Direction controlpin
+#define IN2Pin         0          // IN2 on L298n
 
 
 // azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator)
@@ -70,8 +83,8 @@
 
 #define rotate_h1               IN1Pin          // L298 H Bridge In 1 Pin, High means rotate cw
 #define rotate_h2               0               // L298 H Bridge In 2 Pin, High means rotate ccw
-#define button_cw               0               // normally open button to ground for manual CW rotation (schematic pin: A1)
-#define button_ccw              0               // normally open button to ground for manual CCW rotation (schematic pin: A2)
+#define button_cw               BUTTON_CW       // normally open button to ground for manual CW rotation (schematic pin: A1)
+#define button_ccw              BUTTON_CCW      // normally open button to ground for manual CCW rotation (schematic pin: A2)
 #define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
 
@@ -98,18 +111,18 @@
 
 // rotary encoder pins and options
 #ifdef FEATURE_AZ_PRESET_ENCODER 
-#define az_rotary_preset_pin1   0           // CW Encoder Pin
-#define az_rotary_preset_pin2   0           // CCW Encoder Pin
+#define az_rotary_preset_pin1           0   // CW Encoder Pin
+#define az_rotary_preset_pin2           0   // CCW Encoder Pin
 #endif //FEATURE_AZ_PRESET_ENCODER
 
 #ifdef FEATURE_EL_PRESET_ENCODER 
-#define el_rotary_preset_pin1   0           // UP Encoder Pin
-#define el_rotary_preset_pin2   0           // DOWN Encoder Pin
+#define el_rotary_preset_pin1           0  // UP Encoder Pin
+#define el_rotary_preset_pin2           0  // DOWN Encoder Pin
 #endif //FEATURE_EL_PRESET_ENCODER
 
 #ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
-#define az_rotary_position_pin1 0           // CW Encoder Pin
-#define az_rotary_position_pin2 0           // CCW Encoder Pin
+#define az_rotary_position_pin1         0  // CW Encoder Pin
+#define az_rotary_position_pin2         0  // CCW Encoder Pin
 #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
 
 #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER

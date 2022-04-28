@@ -104,7 +104,7 @@ You can tweak these, but read the online documentation!
 #define DISPLAY_UPDATE_INTERVAL        200     // msec, display update interval, LCD or 7 segment
 #define AZ_BRAKE_DELAY                1000     // msec
 #define EL_BRAKE_DELAY                1000     // msec
-#define TIMEBETWEENINTERRUPTS            2     // msec
+#define TIME_BETWEEN_INTERRUPTS          5     // msec
 
 #define EEPROM_MAGIC_NUMBER 100
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds

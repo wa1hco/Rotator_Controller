@@ -10,7 +10,7 @@
 
 
 #include "rotator_features.h"
-#include "rotator_pins_custom_board.h"
+#include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
 
@@ -28,6 +28,10 @@
 
 #ifdef FEATURE_MAX6959_DISPLAY
 #define MAX6959A 0x38
+#endif
+
+#ifdef FEATURE_MAX7221_DISPLAY
+#include <SPI.h>
 #endif
 
 #ifdef FEATURE_LCD_DISPLAY
@@ -175,9 +179,9 @@ void initialize_lcd_display()
 }
 
 // MAX6959 7 segment controller, connected to 4 digit display
+#ifdef FEATURE_MAX6959_DISPLAY
 void initialize_MAX6959()
 {
-  #ifdef FEATURE_MAX6959_DISPLAY
   // Register           Command Address
   // NOP                0x00
   // Decode mode        0x01
@@ -232,11 +236,9 @@ void initialize_MAX6959()
 
   Wire.beginTransmission(MAX6959A); 
   Wire.write(byte(0x03)); // scan limit register address
-  Wire.write(byte(0x02)); // 4 digits, 8 segments
+  Wire.write(byte(0x03)); // 4 digits, 8 segments
   Wire.endTransmission();
   //delay(70);  
-
-  #endif
 
   # if 0
   Wire.beginTransmission(MAX6959A); 
@@ -248,11 +250,134 @@ void initialize_MAX6959()
   Serial.println(result);
   #endif
 }
+  #endif // initialize_MAX6959
+
+// SPI transfer function
+void SPI_Transfer(uint8_t address, uint8_t data)
+{
+  uint8_t miso_addr;
+  uint8_t miso_data;
+
+  SPI.beginTransaction(SPISettings((uint32_t) 400000, MSBFIRST, SPI_MODE0));
+  digitalWrite(MAX7221_CS_PIN, LOW);
+  miso_addr = SPI.transfer(address); // decode mode register
+  miso_data = SPI.transfer(data); // bypass decoder for all digits
+  digitalWrite(MAX7221_CS_PIN, HIGH);
+  SPI.endTransaction();
+  delayMicroseconds(10);
+
+  Serial.print("SPI_Transfer: addr, data, miso_addr, miso_data ");
+  Serial.print(address);
+  Serial.print(", ");
+  Serial.print(data);
+  Serial.print(", ");
+  Serial.print(miso_addr);
+  Serial.print(", ");
+  Serial.print(miso_data);
+  Serial.println(" ");
+}
+
+//------------------------------------------------------------------------------
+// 7 segment display on I2C bus using MAX6959
+// MAX7221 Register   Command Address
+// NOP                0x00
+// Digit 0            0x01
+// Digit 1            0x02
+// Digit 2            0x03
+// Digit 3            0x04
+// Digit 4            0x05
+// Digit 5            0x06
+// Digit 6            0x07
+// Digit 7            0x08
+// Decode mode        0x09  BCD mode B (0-9, E, H, L, P, -) or raw, Digits 7 to 0
+// Intensity          0x0A  PWM 15/16 to 1/16, bits 3 to 0
+// Scan Limit         0x0B  0 only to 0 to 7, bits 2 to 0
+// Shutdown           0x0C
+// Display test       0x0F
+#ifdef FEATURE_MAX7221_DISPLAY
+void initialize_MAX7221_display()
+{  
+  Serial.println("init MAX7221");
+
+  // Register   D7 D6 D5 D4 D3 D2 D1 D0
+  // Segment     x  a  b  c  d  e  f  g
+  digitalWrite(MAX7221_CS_PIN, HIGH);
+  
+  SPI.begin();
+
+  SPI_Transfer(byte(0x0C), byte(0x01)); // shutdown register,     normal operation
+  SPI_Transfer(byte(0x09), byte(0x00)); // decode mode register,  bypass decoder for all digits
+  SPI_Transfer(byte(0x0A), byte(0x07)); // Intensity register,    8/16 intensity
+  SPI_Transfer(byte(0x0B), byte(0x03)); // Scan limit register,   4 digits
+  // display 'hco' or 'HCO' with decode turned off
+  SPI_Transfer(byte(0x01), byte(0x17)); // h
+  SPI_Transfer(byte(0x02), byte(0x0D)); // c
+  SPI_Transfer(byte(0x03), byte(0x1D)); // o
+  SPI_Transfer(byte(0x04), byte(0x00)); // \b
+
+  delay(3000); // 3 seconds
+
+  // blank the display
+  SPI_Transfer(byte(0x01), byte(0x00)); // \b
+  SPI_Transfer(byte(0x02), byte(0x00)); // \b
+  SPI_Transfer(byte(0x03), byte(0x00)); // \b
+  SPI_Transfer(byte(0x04), byte(0x00)); // \b
+
+  SPI_Transfer(byte(0x09), byte(0x0F)); // decode mode address, set hex decode
+}
+#endif
+
+
+//
+#ifdef FEATURE_MAX7221_DISPLAY
+void update_MAX7221_display()
+{
+
+  // get the azimuth
+  static uint32_t last_numeric_update = 0;
+  uint32_t millis_now = millis();
+
+  if ((millis_now - last_numeric_update) > DISPLAY_UPDATE_INTERVAL)
+  { 
+
+    uint16_t binaryTemp;
+    uint8_t digit[4]; // bcd digits
+
+    //Serial.println("update MAX7221");
+
+
+    last_numeric_update = millis_now;
+
+    // binary to bcd and write to led
+    binaryTemp = 10 * azimuth; // show decimal point
+    digit[3] = (uint8_t) binaryTemp % 10; // least significant digit
+    binaryTemp /= 10;
+    digit[2] = (uint8_t) binaryTemp % 10; //
+    binaryTemp /= 10;
+    digit[1] = (uint8_t) binaryTemp % 10;  
+    binaryTemp /= 10;
+    digit[0] = (uint8_t) binaryTemp % 10;  // most significant digit
+    binaryTemp /= 10;
+ 
+    SPI_Transfer(byte(0x01), digit[0]); // \b
+    SPI_Transfer(byte(0x02), digit[1]); // \b
+    SPI_Transfer(byte(0x03), digit[2]); // \b
+    SPI_Transfer(byte(0x04), digit[3]); // \b
+
+    #if 0
+      Serial.print("update_MAX6959_display: num ");
+      Serial.println(num);
+    #endif
+  } // if time to update digits
+} // update_MAX6959_display()
+#endif
 
 //--------------------------------------------------------------
 // 7 segment display on I2C bus using MAX6959
+#ifdef FEATURE_MAX6959_DISPLAY
 void initialize_MAX6959_display()
 {
+
   byte decodeMode = 0;
   initialize_MAX6959();
 
@@ -305,18 +430,38 @@ void initialize_MAX6959_display()
   Wire.endTransmission();
 
   //delay(3000);  // display intro screen for 3 seconds
+
 }
+#endif
 
 //
 #ifdef FEATURE_MAX6959_DISPLAY
 void update_MAX6959_display()
 {
+
   // get the azimuth
   static uint32_t last_numeric_update = 0;
   uint32_t millis_now = millis();
 
   if ((millis_now - last_numeric_update) > DISPLAY_UPDATE_INTERVAL)
   { 
+    #ifdef DEBUG_7_SEGMENTS
+    // set specific segment across all digits
+    // display 'hco' or 'HCO' with decode turned off
+    Wire.beginTransmission(MAX6959A_ADDR); 
+    Wire.write(byte(0x01)); // decode mode register address
+    Wire.write(byte(0x00)); // raw 7 segment, not hex decode
+    Wire.endTransmission();
+    uint8_t segmentBit = 0x01;
+    Wire.beginTransmission(MAX6959A_ADDR); 
+    Wire.write((int) 0x20); // left digit data register address
+    Wire.write(segmentBit); // 
+    Wire.write(segmentBit); //
+    Wire.write(segmentBit); //
+    Wire.write(segmentBit); //
+    Wire.endTransmission();
+
+    #else
     uint16_t binaryTemp;
     uint8_t digitAddr = 0x20; // most significant digit address
     uint8_t digit[3]; // bcd digits
@@ -324,8 +469,10 @@ void update_MAX6959_display()
     last_numeric_update = millis_now;
 
     // binary to bcd and write to led
-    binaryTemp = azimuth;
-    digit[2] = (uint8_t) binaryTemp % 10; // least significant digit
+    binaryTemp = 10 * azimuth; // show decimal point
+    digit[3] = (uint8_t) binaryTemp % 10; // least significant digit
+    binaryTemp /= 10;
+    digit[2] = (uint8_t) binaryTemp % 10; //
     binaryTemp /= 10;
     digit[1] = (uint8_t) binaryTemp % 10;  
     binaryTemp /= 10;
@@ -337,7 +484,9 @@ void update_MAX6959_display()
     Wire.write(digit[0]);  // digit value, auto increment address
     Wire.write(digit[1]);
     Wire.write(digit[2]);
+    Wire.write(digit[3]);
     Wire.endTransmission();
+    #endif
 
     #if 0
       Serial.print("update_MAX6959_display: num ");
@@ -348,6 +497,7 @@ void update_MAX6959_display()
 #endif
 
 //--------------------------------------------------------------
+#ifdef FEATURE_MAX6959_DISPLAY
 int read_MAX6959_buttons()
 {
   int buttons = 0;
@@ -356,6 +506,7 @@ int read_MAX6959_buttons()
   Wire.write(MAX6959_READ_BUTTONS_PRESSED); // read button address
   Wire.endTransmission();
 
+  delay(70);
 
   Wire.requestFrom(MAX6959A_ADDR, 1);         // execute the read
 
@@ -378,6 +529,8 @@ int read_MAX6959_buttons()
   }
   return buttons;
 }
+#endif
+
 
 //--------------------------------------------------------------
 // started from update_display(), stripped elevation options

@@ -200,7 +200,7 @@
 
 // Project configuration
 #include "rotator_features.h"
-#include "rotator_pins_custom_board.h"
+#include "rotator_pins_HCO_board.h"
 #include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
@@ -219,12 +219,14 @@
 #include "eeprom_local.h"
 #include "utilities_local.h"
 
+// define external functions
 void initialize_serial();
 void initialize_peripherals();
 void read_settings_from_eeprom();
 void initialize_pins();
 //void initialize_PID();
 void initialize_rotary_encoders();
+void initialize_interrupts();
 void check_serial();
 void read_headings();
 void service_request_queue();
@@ -235,7 +237,6 @@ void check_overlap();
 void check_az_speed_pot();
 void check_az_preset_potentiometer();
 void output_debug();
-void initialize_interrupts();
 void profile_loop_time();
 void TimedService();
 void ReadAzimuthISR();
@@ -257,7 +258,7 @@ void TimedService()
 // Called from interrupt context, ADC reads occur at 2 ms, 500 Hz
 // read both ADC input close together in time
 // then do the peak processing
-// This function is called from MsTimer2 every TIMEBETWEENINTERRUPTS msec
+// This function is called from MsTimer2 every TIME_BETWEEN_INTERRUPTS msec
 void ReadAzimuthISR() 
 {
   #ifdef AZIMUTH_INTERRUPT
@@ -279,8 +280,14 @@ void ReadAzimuthISR()
 
   static const int ADCmax = (int) (1023 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT));  //  616 max ADC reading expected
 
-  int   Az_adc_top = analogRead(PositionPosPin); // adc reading for top    of azimuth pot
-  int   Az_adc_bot = analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+  float Az_adc_top = (float) analogRead(PositionPosPin); // adc reading for top    of azimuth pot
+  float Az_adc_bot = (float) analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+
+  static float Vs = 3.3; // Volts
+  static float Rb = 330; // Ohms
+  static float Rp = 800; // Ohms, rotator pot specified 500, measures 800
+  float Az_V_top = Vs * Az_adc_top / 1023;
+  float Az_V_bot = Vs * Az_adc_bot / 1023;
   
   float Az_top     = 99.0; // init to uninitialized flag value
   float Az_bot     = 99.0;
@@ -289,9 +296,12 @@ void ReadAzimuthISR()
   // test for open wiper using fix point techniques
   if( (Az_adc_top < (ADCmax + (ADCmax >> 2))) | (Az_adc_bot < (ADCmax + (ADCmax >> 2)))) 
   {
-    // convert top and bottom ADC reading to azimuth
-    Az_top = (360 * Az_adc_top)            / ADCmax;
-    Az_bot = (360 * (ADCmax - Az_adc_bot)) / ADCmax;
+    // Az from pot voltage formulas from Octave
+    // Az_top = Rb ./ (((Vs ./ Vt) * Rp) - Rp);
+    // Az_bot = 1 - (Rb ./ (((Vs ./ Vb) * Rp) - Rp));
+
+    Az_top = 360 *      Rb / (Vs / Az_V_top * Rp - Rp);
+    Az_bot = 360 * (1 - Rb / (Vs / Az_V_bot * Rp - Rp));
 
     Az_avg = (Az_top + Az_bot) / 2.0; //average the two readings, probably not that helpful
     analog_az = Az_avg;  // global for other
@@ -646,15 +656,19 @@ void setup()
 
   #ifdef FEATURE_MAX6959_DISPLAY
   initialize_MAX6959_display();
-  delay(2000);
   #endif
-  
+
+  #ifdef FEATURE_MAX7221_DISPLAY
+  initialize_MAX7221_display();
+  #endif
+  delay(2000);
+
   initialize_rotary_encoders(); 
   initialize_interrupts();
 
   // setup the timer and start it
   // timer used to read values and run state machine
-  int TimeBetweenInterrupts = 2; // msec
+  int TimeBetweenInterrupts = TIME_BETWEEN_INTERRUPTS; // msec
   MsTimer2::set(TimeBetweenInterrupts, TimedService); // 2ms period
   // interrupts enabled after this point
   MsTimer2::start(); 
@@ -689,6 +703,10 @@ void loop()
 
   #ifdef FEATURE_MAX6959_DISPLAY
   update_MAX6959_display();
+  #endif
+
+  #ifdef FEATURE_MAX7221_DISPLAY
+  update_MAX7221_display();
   #endif
 
   read_headings();
@@ -1719,6 +1737,10 @@ void check_buttons()
   if (buttons & MAX6959_BUTTON_RIGHT)
   {
 
+  #elif defined(FEATURE_HCO_BUTTONS)
+  if (button_cw & (digitalRead(button_cw) == LOW))
+    {
+
   #else // not adafruit or max6959 buttons
   if (button_cw && (digitalRead(button_cw) == LOW)) 
   {
@@ -1757,6 +1779,10 @@ void check_buttons()
     if (buttons & MAX6959_BUTTON_LEFT)
     {
 
+    #elif defined(FEATURE_HCO_BUTTONS)
+    if (button_ccw & (digitalRead(button_ccw) == LOW))
+      {
+
     #else
     if (button_ccw && (digitalRead(button_ccw) == LOW)) 
     {
@@ -1787,7 +1813,7 @@ void check_buttons()
     }
   }
 
-  #ifdef FEATURE_ADAFRUIT_BUTTONS
+  #if defined(FEATURE_ADAFRUIT_BUTTONS)
   if ((azimuth_button_was_pushed) && (!(buttons & 0x12))) 
   {
     #ifdef DEBUG_BUTTONS
@@ -1799,6 +1825,21 @@ void check_buttons()
     submit_request(AZ,REQUEST_STOP,0);
     azimuth_button_was_pushed = 0;
   }
+
+  #elif defined(FEATURE_MAX6959_BUTTONS)
+  // if button was pushed and not neither pushed now
+   if ((azimuth_button_was_pushed) && (!(buttons & (MAX6959_BUTTON_LEFT | MAX6959_BUTTON_RIGHT)))) 
+  {
+    #ifdef DEBUG_BUTTONS
+    if (debug_mode) 
+    {
+      Serial.println(F("check_buttons: no button depressed"));
+    }    
+    #endif // DEBUG_BUTTONS
+    submit_request(AZ,REQUEST_STOP,0);
+    azimuth_button_was_pushed = 0;
+  }
+
   
   #else // not adafruit buttons
   if ((azimuth_button_was_pushed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
@@ -1812,11 +1853,11 @@ void check_buttons()
         Serial.println(F("check_buttons: no AZ button depressed"));
       }    
       #endif // DEBUG_BUTTONS
-      submit_request(AZ, REQUEST_STOP,0);
+      //submit_request(AZ, REQUEST_STOP,0);
       azimuth_button_was_pushed = 0;
     }
   }
-  #endif //FEATURE_ADAFRUIT_BUTTONS
+  #endif //adafruit or max6959 or directly connected buttons
 
   #ifdef FEATURE_ELEVATION_CONTROL
   #ifdef FEATURE_ADAFRUIT_BUTTONS
@@ -2417,8 +2458,6 @@ void output_debug()
     last_debug_output_time = millis(); 
   }
 }
-
-
 
 //--------------- Elevation -----------------------
 #ifdef FEATURE_ELEVATION_CONTROL
@@ -3257,6 +3296,15 @@ void initialize_interrupts()
 //--------------------------------------------------------------
 void initialize_pins()
 {  
+  if (button_ccw)
+  {
+    pinMode(button_ccw, OUTPUT);
+  }
+  if (button_cw)
+  {
+    pinMode(button_cw, OUTPUT);
+  }
+  
   if (serial_led) 
   {
     pinMode(serial_led, OUTPUT);
@@ -3294,6 +3342,11 @@ void initialize_pins()
     pinMode(button_stop, INPUT);
     digitalWrite(button_stop, HIGH);
   }   
+
+  #ifdef MAX7221_CS_PIN
+    pinMode(MAX7221_CS_PIN, OUTPUT);
+    digitalWrite(MAX7221_CS_PIN, HIGH);
+  #endif
 
   #ifdef FEATURE_ELEVATION_CONTROL
   if (brake_el) 
