@@ -31,7 +31,7 @@ extern float previous_analog_az;
 
 extern byte az_state;
 extern unsigned long az_last_rotate_initiation;
-extern byte azimuth_button_was_pushed;
+extern bool isAzButtonPressed;
 extern byte MAX6959_buttons_debounced;
 extern byte brake_az_engaged;
 extern byte brake_el_engaged;

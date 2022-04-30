@@ -233,6 +233,7 @@ void service_request_queue();
 void service_rotation_azimuth();
 void az_check_operation_timeout();
 void check_buttons();
+void check_hco_buttons();
 void check_overlap();
 void check_az_speed_pot();
 void check_az_preset_potentiometer();
@@ -336,7 +337,7 @@ void ReadAzimuthISR()
   Serial.print(Az_capability);
   Serial.print(", ");
   Serial.print(Az_stop);
-  Serial.println("");
+  Serial.println();
   #endif
 
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
@@ -380,7 +381,7 @@ void ReadAzimuthISR()
       Serial.print(", ");
       Serial.print(azimuth);
 
-      Serial.println("");
+      Serial.println();
     }
     #endif // ifdef debug HCO
 
@@ -661,7 +662,6 @@ void setup()
   #ifdef FEATURE_MAX7221_DISPLAY
   initialize_MAX7221_display();
   #endif
-  delay(2000);
 
   initialize_rotary_encoders(); 
   initialize_interrupts();
@@ -687,7 +687,13 @@ void loop()
   check_timed_interval();
   #endif //FEATURE_TIMED_BUFFER
   read_headings();
+
+  #ifdef FEATURE_HCO_BUTTONS
+  check_hco_buttons();
+  #else
   check_buttons();
+  #endif
+
   check_overlap();
   check_brake_release();  // manages the timing of pending brake operations
   #ifdef FEATURE_ELEVATION_CONTROL
@@ -1726,27 +1732,14 @@ void check_buttons()
   #if defined(FEATURE_ADAFRUIT_BUTTONS)
   int buttons = 0;
   buttons = readButtons();
-
   if (buttons & BUTTON_RIGHT) 
   {
-
-  #elif defined(FEATURE_MAX6959_BUTTONS)
-
-  int buttons = 0;
-  buttons = read_MAX6959_buttons();
-  if (buttons & MAX6959_BUTTON_RIGHT)
-  {
-
-  #elif defined(FEATURE_HCO_BUTTONS)
-  if (button_cw & (digitalRead(button_cw) == LOW))
-    {
-
   #else // not adafruit or max6959 buttons
   if (button_cw && (digitalRead(button_cw) == LOW)) 
   {
   #endif //FEATURE_ADAFRUIT_BUTTONS
 
-    if (azimuth_button_was_pushed == 0) 
+    if (!isAzButtonPressed) 
     {
       #ifdef DEBUG_BUTTONS
       if (debug_mode) {Serial.println(F("check_buttons: button_cw pushed"));}       
@@ -1755,8 +1748,8 @@ void check_buttons()
       if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
       {
       #endif      
-      submit_request(AZ,REQUEST_CW,0);
-      azimuth_button_was_pushed = 1;
+      submit_request(AZ,REQUEST_CW, 0);
+      isAzButtonPressed = true;
       #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
       } else 
       {
@@ -1779,15 +1772,11 @@ void check_buttons()
     if (buttons & MAX6959_BUTTON_LEFT)
     {
 
-    #elif defined(FEATURE_HCO_BUTTONS)
-    if (button_ccw & (digitalRead(button_ccw) == LOW))
-      {
-
     #else
     if (button_ccw && (digitalRead(button_ccw) == LOW)) 
     {
     #endif //FEATURE_ADAFRUIT_BUTTONS
-      if (azimuth_button_was_pushed == 0) 
+      if (!isAzButtonPressed) 
       {
         #ifdef DEBUG_BUTTONS
         if (debug_mode) 
@@ -1800,7 +1789,7 @@ void check_buttons()
         {
         #endif  
         submit_request(AZ,REQUEST_CCW,0);
-        azimuth_button_was_pushed = 1;
+        isAzButtonPressed = true;
         #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
         } else 
         {
@@ -1814,7 +1803,7 @@ void check_buttons()
   }
 
   #if defined(FEATURE_ADAFRUIT_BUTTONS)
-  if ((azimuth_button_was_pushed) && (!(buttons & 0x12))) 
+  if ((isAzButtonPressed) && (!(buttons & 0x12))) 
   {
     #ifdef DEBUG_BUTTONS
     if (debug_mode) 
@@ -1823,12 +1812,12 @@ void check_buttons()
     }    
     #endif // DEBUG_BUTTONS
     submit_request(AZ,REQUEST_STOP,0);
-    azimuth_button_was_pushed = 0;
+    isAzButtonPressed = 0;
   }
 
   #elif defined(FEATURE_MAX6959_BUTTONS)
   // if button was pushed and not neither pushed now
-   if ((azimuth_button_was_pushed) && (!(buttons & (MAX6959_BUTTON_LEFT | MAX6959_BUTTON_RIGHT)))) 
+   if ((isAzButtonPressed) && (!(buttons & (MAX6959_BUTTON_LEFT | MAX6959_BUTTON_RIGHT)))) 
   {
     #ifdef DEBUG_BUTTONS
     if (debug_mode) 
@@ -1837,12 +1826,12 @@ void check_buttons()
     }    
     #endif // DEBUG_BUTTONS
     submit_request(AZ,REQUEST_STOP,0);
-    azimuth_button_was_pushed = 0;
+    isAzButtonPressed = 0;
   }
 
   
   #else // not adafruit buttons
-  if ((azimuth_button_was_pushed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
+  if ((isAzButtonPressed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
   {
     delay(200); // debouncing
     if ((digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
@@ -1854,7 +1843,7 @@ void check_buttons()
       }    
       #endif // DEBUG_BUTTONS
       //submit_request(AZ, REQUEST_STOP,0);
-      azimuth_button_was_pushed = 0;
+      isAzButtonPressed = false;
     }
   }
   #endif //adafruit or max6959 or directly connected buttons
@@ -1984,6 +1973,113 @@ void check_buttons()
     }      
   }  
 }
+
+//--------------------------------------------------------------
+// check and act on button presses
+void check_hco_buttons()
+{
+  #ifdef DEBUG_HCO_BUTTONS
+  Serial.print("check_hco_buttons: ");
+  #endif
+
+  #ifdef DEBUG_HCO_BUTTONS
+  Serial.print("CW: ");
+  Serial.print(digitalRead(button_cw));
+  Serial.print(" ");
+  #endif
+
+  if (digitalRead(button_cw) == LOW) // might be first press or continued press
+  {
+    if (!isAzButtonPressed) // still low
+    {
+      #ifdef DEBUG_HCO_BUTTONS
+      if (debug_mode) 
+      {
+        Serial.println(F("check_buttons: button_cw pushed"));
+      }       
+      #endif
+
+      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
+      if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
+      {
+      #endif    
+
+      submit_request(AZ, REQUEST_CW, 0); // on first detection of press
+      isAzButtonPressed = true;
+
+      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
+      } else 
+      {
+        #ifdef DEBUG_BUTTONS
+        if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT"));}
+        #endif //DEBUG_BUTTONS
+      }
+      #endif            
+    }
+  } // if button_cw
+
+  #ifdef DEBUG_HCO_BUTTONS
+  Serial.print("CCW: ");
+  Serial.print(digitalRead(button_ccw));
+  Serial.print(" ");
+  #endif
+
+  if (digitalRead(button_ccw) == LOW)
+
+  {
+    if (!isAzButtonPressed) // still low
+    {
+      #ifdef DEBUG_HCO_BUTTONS
+      Serial.println(F("check_buttons: button_ccw pushed"));      
+      #endif
+
+      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
+      if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER)) 
+      {
+      #endif  
+
+      submit_request(AZ, REQUEST_CCW, 0); // on first detection of press
+      isAzButtonPressed = true;
+
+      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
+      } else 
+      {
+        #ifdef DEBUG_BUTTONS
+        if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CCW_LIMIT"));}
+        #endif //DEBUG_BUTTONS
+      }
+      #endif //OPTION_AZ_MANUAL_ROTATE_LIMITS      
+    }
+  } // if ccw == low
+  // handle debouncing and release of button press
+  // if button was press and no buttons pressed now
+
+  #ifdef DEBUG_HCO_BUTTONS
+  Serial.print("isAzPressed ");
+  Serial.print(isAzButtonPressed);
+  Serial.print(" ");
+  #endif
+
+  if ((isAzButtonPressed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
+  {
+    delay(200); // debouncing wait 200 msec
+
+    if ((digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) // still no buttons pressed
+    {
+      #ifdef DEBUG_HCO_BUTTONS
+      Serial.println(F("check_buttons: no AZ button depressed"));
+      #endif
+
+      submit_request(AZ, REQUEST_STOP,0);
+      isAzButtonPressed = false;
+    }
+  } // if cw and ccw button released
+
+  #ifdef DEBUG_HCO_BUTTONS
+  Serial.println();
+  #endif
+
+} // check_hco_buttons()
 
 //--------------------------------------------------------------
 void read_settings_from_eeprom()
@@ -3298,11 +3394,11 @@ void initialize_pins()
 {  
   if (button_ccw)
   {
-    pinMode(button_ccw, OUTPUT);
+    pinMode(button_ccw, INPUT_PULLUP);
   }
   if (button_cw)
   {
-    pinMode(button_cw, OUTPUT);
+    pinMode(button_cw, INPUT_PULLUP);
   }
   
   if (serial_led) 

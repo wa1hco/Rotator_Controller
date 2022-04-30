@@ -26,7 +26,7 @@ byte az_request_queue_state = NONE;
 
 byte az_state = IDLE;
 unsigned long az_last_rotate_initiation = 0;
-byte azimuth_button_was_pushed   = 0;
+bool isAzButtonPressed           = false;
 byte MAX6959_buttons_debounced   = 0;
 byte brake_az_engaged            = 0;
 

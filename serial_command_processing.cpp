@@ -231,7 +231,7 @@ void check_serial(){
             Serial.print(azimuth);
             Serial.print(", ");
             Serial.print(analog_az);
-            Serial.println("");
+            Serial.println();
             break;
               
           #ifdef FEATURE_HOST_REMOTE_PROTOCOL

@@ -210,7 +210,7 @@ void read_azimuth()
       Serial.print(Az_capability);
       Serial.print(", ");
       Serial.print(Az_stop);
-      Serial.println("");
+      Serial.println();
     #endif
 
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
