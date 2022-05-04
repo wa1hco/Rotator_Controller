@@ -176,7 +176,6 @@ void yaesu_serial_command()
 }
 #endif //FEATURE_YAESU_EMULATION
 
-
 void check_serial(){
   if (Serial.available()) 
   {

@@ -194,6 +194,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <MsTimer2.h>
+#include <FIR.h>
 
 // C++ functions
 #include <math.h> 
@@ -263,7 +264,7 @@ void TimedService()
 void ReadAzimuthISR() 
 {
   #ifdef AZIMUTH_INTERRUPT
-  unsigned int previous_raw_azimuth = raw_azimuth;
+  unsigned int previous_AzTopMap = AzFiltered;
 
   #ifdef DEBUG_HEADING_READING_TIME
   static unsigned long last_time = 0;
@@ -276,57 +277,42 @@ void ReadAzimuthISR()
   //static const float Vmax = 3.3 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT); // 1.98 max voltage expected
   // TODO adc read 653, but calculation says 616
 
-  #define ROTOR_POT 823.0
+  #define ROTOR_POT 500.0
   #define HCO_BOARD_RESISTOR 330.0
-
-  static const int ADCmax = (int) (1023 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT));  //  616 max ADC reading expected
 
   float Az_adc_top = (float) analogRead(PositionPosPin); // adc reading for top    of azimuth pot
   float Az_adc_bot = (float) analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
 
-  static float Vs = 3.3; // Volts
-  static float Rb = 330; // Ohms
-  static float Rp = 800; // Ohms, rotator pot specified 500, measures 800
-  float Az_V_top = Vs * Az_adc_top / 1023;
-  float Az_V_bot = Vs * Az_adc_bot / 1023;
+  static float Vs = 3.3; // Volts, azimuth pot bias voltage
+  static float Rs = 330; // Ohms, bias voltage to end of pot
+  static float Rp = 830; // Ohms, rotator pot specified 500, measures 800
+  float VtAz = Vs * Az_adc_top / 1023.0; // Volts, at top    of azimuth pot
+  float VbAz = Vs * Az_adc_bot / 1023.0; // Volts, at bottom of azimuth pot
+
+  float Rt = Rs * VtAz / (Vs - VtAz);
+  float Rb = Rs * VbAz / (Vs - VbAz);
+
+  float AzTop = 360 / Rp * Rs * VtAz / (Vs - VtAz);
+  float AzBot = 360 / Rp * (VbAz * Rs + VbAz * Rp - Vs * Rp) / (VbAz - Vs);
+
+  if (AzTop > 360) {AzTop = 360;}
+  if (AzBot > 360) {AzBot = 360;}
   
-  float Az_top     = 99.0; // init to uninitialized flag value
-  float Az_bot     = 99.0;
-  float Az_avg     = 99.0;
-
-  // test for open wiper using fix point techniques
-  if( (Az_adc_top < (ADCmax + (ADCmax >> 2))) | (Az_adc_bot < (ADCmax + (ADCmax >> 2)))) 
-  {
-    // Az from pot voltage formulas from Octave
-    // Az_top = Rb ./ (((Vs ./ Vt) * Rp) - Rp);
-    // Az_bot = 1 - (Rb ./ (((Vs ./ Vb) * Rp) - Rp));
-
-    Az_top = 360 *      Rb / (Vs / Az_V_top * Rp - Rp);
-    Az_bot = 360 * (1 - Rb / (Vs / Az_V_bot * Rp - Rp));
-
-    Az_avg = (Az_top + Az_bot) / 2.0; //average the two readings, probably not that helpful
-    analog_az = Az_avg;  // global for other
-    previous_analog_az = Az_avg; // remember the az in case wiper glitches
-  } else // wiper has gone intermittent, skip update
-  {
-    Az_top = 99.0; // flag variables not used
-    Az_bot = 99.0;
-    Az_avg = previous_analog_az; // wiper glitched, use previous az
-    analog_az = Az_avg;
-  }
+  // TODO wiper appears as increased voltage at wiper
 
   // map(value, fromLow, fromHigh, toLow, toHigh)
   
-  //raw_azimuth = map(Az_avg, 0, 360, 0, 360);
+  //AzFiltered = map(Az_avg, 0, 360, 0, 360);
   float ADC_ccw       = configuration.analog_az_full_ccw;
   float ADC_cw        = configuration.analog_az_full_cw;
   float Az_start      = configuration.azimuth_starting_point * HEADING_MULTIPLIER;
   float Az_capability = configuration.azimuth_rotation_capability;
   float Az_stop       = Az_start + Az_capability * HEADING_MULTIPLIER;
 
-  raw_azimuth = map( Az_avg, ADC_ccw, ADC_cw, Az_start, Az_stop);
+  float AzTopMap = map(AzTop, ADC_ccw, ADC_cw, Az_start, Az_stop);
+  float AzBotMap = map(AzBot, ADC_ccw, ADC_cw, Az_start, Az_stop);
 
-  #if 0 //#ifdef DEBUG_HCO_BOARD
+  # if 0 //#ifdef DEBUG_HCO_ADC
   Serial.print("read_az: config, ccw, cw, start, capabilty, stop ");
   Serial.print(ADC_ccw);
   Serial.print(", ");
@@ -342,20 +328,22 @@ void ReadAzimuthISR()
 
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
     {
-      raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+      AzFiltered = AzTopMap * (1 - AZIMUTH_SMOOTHING_FACTOR) + (previous_AzTopMap * AZIMUTH_SMOOTHING_FACTOR);
     }  
 
     // wrap raw azimuth into azimuth
-    azimuth = (int) raw_azimuth;
+    azimuth = (int) AzFiltered;
     if (azimuth >= 360) 
     {
       azimuth -= 360;
-    } else if (raw_azimuth < 0) 
+    } 
+    
+    if (AzFiltered < 0) 
     {
       azimuth += 360;
     }
 
-    #ifdef DEBUG_HCO_BOARD
+    #ifdef DEBUG_HCO_ADC
     {
       static bool isFirstWrite = true;
       float Time_usec;
@@ -369,15 +357,21 @@ void ReadAzimuthISR()
       Time_usec = micros();;
       Serial.print(Time_usec);
       Serial.print(", ");
-      Serial.print(Az_adc_top);
+      Serial.print(VtAz); // top voltage
       Serial.print(", ");
-      Serial.print(Az_adc_bot);
+      Serial.print(VbAz); // bottom voltage
       Serial.print(", ");
-      Serial.print(Az_top);
+      Serial.print(Rt);   // top part of pot
       Serial.print(", ");
-      Serial.print(Az_bot);
+      Serial.print(Rb);   // bottom part of pot
       Serial.print(", ");
-      Serial.print(raw_azimuth);
+       Serial.print(AzTop);
+      Serial.print(", ");
+      Serial.print(AzBot);
+      Serial.print(", ");
+      Serial.print(AzTopMap);
+      Serial.print(", ");
+      Serial.print(AzBotMap);
       Serial.print(", ");
       Serial.print(azimuth);
 
@@ -403,26 +397,26 @@ void ReadAzimuthISR()
                        ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
     
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+    AzFiltered = (correct_azimuth(AzFiltered/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
     #endif //FEATURE_AZIMUTH_CORRECTION
 
     
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
     {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+      AzFiltered = (AzFiltered*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_AzTopMap*(AZIMUTH_SMOOTHING_FACTOR/100));
     }  
-    if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
+    if (AzFiltered >= (360 * HEADING_MULTIPLIER)) 
     {
-      azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+      azimuth = AzFiltered - (360 * HEADING_MULTIPLIER);
       if (azimuth >= (360 * HEADING_MULTIPLIER)) 
       {
         azimuth = azimuth - (360 * HEADING_MULTIPLIER);
       }
     } else 
     {
-      if (raw_azimuth < 0) 
+      if (AzFiltered < 0) 
       {
-        azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
+        azimuth = AzFiltered + (360 * HEADING_MULTIPLIER);
       } else 
       {
         azimuth = raw_azimuth;
@@ -458,7 +452,7 @@ void ReadAzimuthISR()
       
       if (AZIMUTH_SMOOTHING_FACTOR > 0) 
       {
-        raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+        raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_AzTopMap*(AZIMUTH_SMOOTHING_FACTOR/100));
       }      
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) 
       {
@@ -560,7 +554,7 @@ void ReadAzimuthISR()
     if(heading > 2*PI) heading -= 2*PI;
     raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; //radians to degree
     if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_AzTopMap*(AZIMUTH_SMOOTHING_FACTOR/100));
     }    
     #ifdef FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
@@ -578,7 +572,7 @@ void ReadAzimuthISR()
     raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; //radians to degree
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
     {
-      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
+      raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_AzTopMap*(AZIMUTH_SMOOTHING_FACTOR/100));
     }    
     #ifdef FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
@@ -882,7 +876,7 @@ void check_az_preset_potentiometer()
                               
         // if significant change in preset pot and significantly different from azimuth
         if ((abs(last_pot_read - pot_read) > 4) && 
-        	(abs(new_pot_azimuth - (raw_azimuth/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) 
+        	(abs(new_pot_azimuth - (AzFiltered/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) 
         {
           pot_change_flag = 1;
           if (debug_mode) 
@@ -1289,7 +1283,7 @@ void check_overlap()
   if ((overlap_led) && ((millis() - last_check_time) > 500)) 
   {
      //if ((analog_az > (500*HEADING_MULTIPLIER)) && (azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
-     if ((raw_azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
+     if ((AzFiltered > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
      {
        digitalWrite(overlap_led, HIGH);
        overlap_led_status = 1;
@@ -1302,7 +1296,7 @@ void check_overlap()
      } else 
      {
        //if (((analog_az < (500*HEADING_MULTIPLIER)) || (azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
-       if ((raw_azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
+       if ((AzFiltered < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
        {
          digitalWrite(overlap_led, LOW);
          overlap_led_status = 0;
@@ -2383,7 +2377,7 @@ void output_debug()
     Serial.print(F("\tAZ: "));
     Serial.print(azimuth            / HEADING_MULTIPLIER, DECIMAL_PLACES);
     Serial.print(F(" (raw: "));
-    Serial.print(raw_azimuth        / HEADING_MULTIPLIER, DECIMAL_PLACES);
+    Serial.print(AzFiltered        / HEADING_MULTIPLIER, DECIMAL_PLACES);
     Serial.print(")");
     
     Serial.print(F("\tTarget: "));
@@ -3416,6 +3410,12 @@ void initialize_pins()
     pinMode(brake_az, OUTPUT);
     digitalWrite(brake_az, BRAKE_RELEASE_OFF);
   }
+
+  #ifdef FEATURE_HCO_ADC
+  pinMode(PositionPosPin, INPUT);
+  pinMode(PositionNegPin, INPUT);
+  #endif
+
   if (az_speed_pot) 
   {
     pinMode(az_speed_pot, INPUT);
@@ -3845,7 +3845,7 @@ void service_rotation_azimuth()
   if ((az_state == SLOW_DOWN_CW) || (az_state == SLOW_DOWN_CCW)) 
   {     
     // is it time to do another step down?
-    if (abs((target_raw_azimuth - raw_azimuth)/HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_AZ*((float)az_slow_down_step/(float)AZ_SLOW_DOWN_STEPS))))
+    if (abs((target_raw_azimuth - AzFiltered)/HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_AZ*((float)az_slow_down_step/(float)AZ_SLOW_DOWN_STEPS))))
     {
       #ifdef DEBUG_SERVICE_ROTATION
       if (debug_mode) 
@@ -3870,7 +3870,7 @@ void service_rotation_azimuth()
         ) && 
         (az_request_queue_state == IN_PROGRESS_TO_TARGET) && 
         az_slowdown_active && 
-        (abs((target_raw_azimuth - raw_azimuth)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ)
+        (abs((target_raw_azimuth - AzFiltered)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ)
       )  
   { 
     #ifdef DEBUG_SERVICE_ROTATION
@@ -3913,19 +3913,19 @@ void service_rotation_azimuth()
         )
     {
       if  (
-            (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+            (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
             (
-              (raw_azimuth > target_raw_azimuth) && 
-              ( (raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+              (AzFiltered > target_raw_azimuth) && 
+              ( (AzFiltered - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
             )
           ) 
       {
         delay(50);
         read_azimuth();
         if  (
-              (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
-              ((raw_azimuth > target_raw_azimuth) && 
-              ( (raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+              (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+              ((AzFiltered > target_raw_azimuth) && 
+              ( (AzFiltered - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
               )
             ) 
         {
@@ -3941,19 +3941,19 @@ void service_rotation_azimuth()
     } else 
     {
       if  ( 
-            (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
-            ( (raw_azimuth < target_raw_azimuth) &&
-              ( (target_raw_azimuth - raw_azimuth) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+            (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
+            ( (AzFiltered < target_raw_azimuth) &&
+              ( (target_raw_azimuth - AzFiltered) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
 		        )
           ) 
       {
         delay(50);
         read_azimuth();
         if  (
-              (abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+              (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
               (
-                (raw_azimuth < target_raw_azimuth) && 
-                ((target_raw_azimuth - raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER))
+                (AzFiltered < target_raw_azimuth) && 
+                ((target_raw_azimuth - AzFiltered) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER))
               )
             ) 
         {
@@ -4082,12 +4082,12 @@ void service_request_queue()
             if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) < 
                 ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)) 
             { // is there a second possible heading in overlap?
-              if (abs(raw_azimuth - work_target_raw_azimuth) < abs((work_target_raw_azimuth+(360*HEADING_MULTIPLIER)) - raw_azimuth)) 
+              if (abs(AzFiltered - work_target_raw_azimuth) < abs((work_target_raw_azimuth+(360*HEADING_MULTIPLIER)) - AzFiltered)) 
               { // is second possible heading closer?
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
                 if (debug_mode) {Serial.print(F("->C"));}
                 #endif //DEBUG_SERVICE_REQUEST_QUEUE
-                if (work_target_raw_azimuth  > raw_azimuth) 
+                if (work_target_raw_azimuth  > AzFiltered) 
                 { // not closer, use position in non-overlap
                   direction_to_go = CW;                   
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
@@ -4106,7 +4106,7 @@ void service_request_queue()
                 if (debug_mode) {Serial.print(F("->D"));}
                 #endif //DEBUG_SERVICE_REQUEST_QUEUE        
                 target_raw_azimuth = work_target_raw_azimuth + (360*HEADING_MULTIPLIER);
-                if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) > raw_azimuth) 
+                if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) > AzFiltered) 
                 {
                   direction_to_go = CW; 
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
@@ -4125,7 +4125,7 @@ void service_request_queue()
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
                 if (debug_mode) {Serial.print(F("->E"));}
                 #endif //DEBUG_SERVICE_REQUEST_QUEUE               
-              if (work_target_raw_azimuth  > raw_azimuth) 
+              if (work_target_raw_azimuth  > AzFiltered) 
               {
                 direction_to_go = CW;
               } else 
@@ -4143,7 +4143,7 @@ void service_request_queue()
           {
             target_azimuth = az_request_parm - (360*HEADING_MULTIPLIER);
             target_raw_azimuth = az_request_parm;
-            if (az_request_parm > raw_azimuth) 
+            if (az_request_parm > AzFiltered) 
             {
               direction_to_go = CW;
             } else 
@@ -4214,7 +4214,7 @@ void service_request_queue()
         target_azimuth = target_raw_azimuth;
         if (target_azimuth >= (360*HEADING_MULTIPLIER)) {target_azimuth = target_azimuth - (360*HEADING_MULTIPLIER);}
         
-        if (((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) && (az_state == IDLE)) 
+        if (((abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) && (az_state == IDLE)) 
         {
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {Serial.print(F(" request within tolerance"));}          
@@ -4222,7 +4222,7 @@ void service_request_queue()
           az_request_queue_state = NONE;
         } else 
         {
-          if (target_raw_azimuth > raw_azimuth) 
+          if (target_raw_azimuth > AzFiltered) 
           {
             if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_slowstart_active)){
               az_state = INITIALIZE_DIR_CHANGE_TO_CW;
@@ -4238,7 +4238,7 @@ void service_request_queue()
               }  
             }
           }
-          if (target_raw_azimuth < raw_azimuth) 
+          if (target_raw_azimuth < AzFiltered) 
           {
             if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (az_slowstart_active))
             {

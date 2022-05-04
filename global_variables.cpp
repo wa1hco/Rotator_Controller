@@ -13,7 +13,7 @@
 
 // azimuth globals
 int azimuth                     = 0;
-float raw_azimuth               = 0;
+float AzFiltered               = 0;
 float analog_az                 = 0;
 float previous_analog_az        = 0;
 

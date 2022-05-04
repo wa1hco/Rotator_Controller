@@ -26,7 +26,7 @@ void initialize_eeprom_with_defaults()
   configuration.analog_el_max_elevation     = ANALOG_EL_MAX_ELEVATION;   
   configuration.azimuth_starting_point      = AZIMUTH_STARTING_POINT_DEFAULT;
   configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
-  configuration.last_azimuth                = raw_azimuth;
+  configuration.last_azimuth                = AzFiltered;
   #ifdef FEATURE_ELEVATION_CONTROL
   configuration.last_elevation              = elevation; 
   #else    

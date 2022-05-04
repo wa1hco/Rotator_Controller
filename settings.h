@@ -143,8 +143,8 @@ You can tweak these, but read the online documentation!
 #define BRAKE_RELEASE_OFF                LOW  // means braked, used inside *break_release*() control functions
 #define BRAKE_RELEASE_ON                 HIGH // means brake released, used inside *break_release*() control functions
 
-#define AZIMUTH_SMOOTHING_FACTOR         50.0 // value = 0 to 99.9
-#define ELEVATION_SMOOTHING_FACTOR        0.0 // value = 0 to 99.9
+#define AZIMUTH_SMOOTHING_FACTOR         ((float)0.90) // value = 0 to 99.9
+#define ELEVATION_SMOOTHING_FACTOR       ((float)0.00) // value = 0 to 99.9
 
 #define AZIMUTH_MEASUREMENT_FREQUENCY_MS   0  // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
 #define ELEVATION_MEASUREMENT_FREQUENCY_MS 0  // this does not apply if using FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT
@@ -165,5 +165,62 @@ You can tweak these, but read the online documentation!
 #define MAX6959_BUTTON_RIGHT           byte(0x01) // bit
 #define MAX6959_BUTTON_LEFT            byte(0x10) // bit
 #endif
+
+
+
+#ifdef FEATURE_FIR_FILTER
+/*FIR filter designed with
+http://t-filter.appspot.com
+
+sampling frequency: 500 Hz
+
+* 0 Hz - 12 Hz
+  gain = 1
+  desired ripple = 3 dB
+  actual ripple = 1.8546120940647706 dB
+
+* 50 Hz - 250 Hz
+  gain = 0
+  desired attenuation = -60 dB
+  actual attenuation = -62.10264715535345 dB
+
+*/
+
+#define FILTER_TAP_NUM 31
+
+static float filter_taps[FILTER_TAP_NUM] = {
+  -0.0006588258621099302,
+  -0.0005076833208036739,
+  -0.00016704763377099784,
+   0.0009639835626704757,
+   0.003314583636094818,
+   0.0073075779557706146,
+   0.01327417006891984,
+   0.02136009802855521,
+   0.031451398843779524,
+   0.043126796981180875,
+   0.05566622022547508,
+   0.0681093838277933,
+   0.07936329271004,
+   0.08834787640574435,
+   0.09414903093413482,
+   0.09615457532202126,
+   0.09414903093413482,
+   0.08834787640574435,
+   0.07936329271004,
+   0.0681093838277933,
+   0.05566622022547508,
+   0.043126796981180875,
+   0.031451398843779524,
+   0.02136009802855521,
+   0.01327417006891984,
+   0.0073075779557706146,
+   0.003314583636094818,
+   0.0009639835626704757,
+  -0.00016704763377099784,
+  -0.0005076833208036739,
+  -0.0006588258621099302
+};
+#endif // FIR filter
 
 #endif /* SETTINGS_H_ */

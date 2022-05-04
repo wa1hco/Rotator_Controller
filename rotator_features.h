@@ -21,6 +21,7 @@
   #define FEATURE_MAX7221_DISPLAY
   #define FEATURE_HCO_BUTTONS
   #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
+  #define FEATURE_HCO_ADC
 #endif
 
 #define AZIMUTH_INTERRUPT                          // use 1 msec ISR for ADC read
@@ -98,6 +99,7 @@
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
 //#define DEBUG_HCO_BUTTONS
+#define DEBUG_HCO_ADC
 //#define DEBUG_7_SEGMENTS
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS

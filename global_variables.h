@@ -19,7 +19,7 @@
 
 // azimuth globals
 extern int azimuth;
-extern float raw_azimuth;
+extern float AzFiltered;
 extern int target_azimuth;
 extern int target_raw_azimuth;
 extern byte az_request;
