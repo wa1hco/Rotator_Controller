@@ -194,7 +194,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <MsTimer2.h>
-#include <FIR.h>
 
 // C++ functions
 #include <math.h> 
@@ -219,6 +218,12 @@
 #include "serial_command_processing.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"
+
+#ifdef FEATURE_FIR_FILTER
+#include <FIR.h>
+FIR<float, 31> fir_top;
+FIR<float, 31> fir_bot;
+#endif
 
 // define external functions
 void initialize_serial();
@@ -264,7 +269,7 @@ void TimedService()
 void ReadAzimuthISR() 
 {
   #ifdef AZIMUTH_INTERRUPT
-  unsigned int previous_AzTopMap = AzFiltered;
+  unsigned int previous_AzFixMap = AzFiltered;
 
   #ifdef DEBUG_HEADING_READING_TIME
   static unsigned long last_time = 0;
@@ -280,23 +285,38 @@ void ReadAzimuthISR()
   #define ROTOR_POT 500.0
   #define HCO_BOARD_RESISTOR 330.0
 
-  float Az_adc_top = (float) analogRead(PositionPosPin); // adc reading for top    of azimuth pot
-  float Az_adc_bot = (float) analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+  float Az_adc_top_raw = (float) analogRead(PositionPosPin); // adc reading for top    of azimuth pot
+  float Az_adc_bot_raw = (float) analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+
+  float Az_adc_top = fir_top.processReading(Az_adc_top_raw);
+  float Az_adc_bot = fir_bot.processReading(Az_adc_bot_raw);
 
   static float Vs = 3.3; // Volts, azimuth pot bias voltage
   static float Rs = 330; // Ohms, bias voltage to end of pot
-  static float Rp = 830; // Ohms, rotator pot specified 500, measures 800
-  float VtAz = Vs * Az_adc_top / 1023.0; // Volts, at top    of azimuth pot
-  float VbAz = Vs * Az_adc_bot / 1023.0; // Volts, at bottom of azimuth pot
+  static float Rp = 500; // Ohms, rotator pot specified 500, measures 800
+  float Vt = Vs * Az_adc_top / 1023.0; // Volts, at top    of azimuth pot
+  float Vb = Vs * Az_adc_bot / 1023.0; // Volts, at bottom of azimuth pot
 
-  float Rt = Rs * VtAz / (Vs - VtAz);
-  float Rb = Rs * VbAz / (Vs - VbAz);
+  float Rt = Rs * Vt / (Vs - Vt);
+  float Rb = Rs * Vb / (Vs - Vb);  
 
-  float AzTop = 360 / Rp * Rs * VtAz / (Vs - VtAz);
-  float AzBot = 360 / Rp * (VbAz * Rs + VbAz * Rp - Vs * Rp) / (VbAz - Vs);
+  float RpRw = Rt + Rb;
+  float RpExcess = RpRw / ROTOR_POT;
 
-  if (AzTop > 360) {AzTop = 360;}
-  if (AzBot > 360) {AzBot = 360;}
+  float RtFix = Rt / RpExcess;
+  float RbFix = Rb / RpExcess;
+
+  float VtFix = Vs * RtFix / (Rs + RtFix);
+  float VbFix = Vs * RbFix / (Rs + RbFix);
+
+  float AzTop = 360 / Rp * Rs * VtFix / (Vs - VtFix);
+  float AzBot = 360 * (VbFix * Rs + VbFix * Rp - Vs * Rp) / (Rp * (VbFix - Vs));
+
+  float AzTopFix = AzTop / RpExcess;
+  float AzBotFix = AzBot / RpExcess;
+
+  //if (AzTop > 360) {AzTop = 360;}
+  //if (AzBot > 360) {AzBot = 360;}
   
   // TODO wiper appears as increased voltage at wiper
 
@@ -309,8 +329,9 @@ void ReadAzimuthISR()
   float Az_capability = configuration.azimuth_rotation_capability;
   float Az_stop       = Az_start + Az_capability * HEADING_MULTIPLIER;
 
-  float AzTopMap = map(AzTop, ADC_ccw, ADC_cw, Az_start, Az_stop);
-  float AzBotMap = map(AzBot, ADC_ccw, ADC_cw, Az_start, Az_stop);
+  //float AzTopMap = map(AzTop, ADC_ccw, ADC_cw, Az_start, Az_stop);
+  //float AzBotMap = map(AzBot, ADC_ccw, ADC_cw, Az_start, Az_stop);
+  float AzFixMap = map(AzTopFix, ADC_ccw, ADC_cw, Az_start, Az_stop);
 
   # if 0 //#ifdef DEBUG_HCO_ADC
   Serial.print("read_az: config, ccw, cw, start, capabilty, stop ");
@@ -326,60 +347,67 @@ void ReadAzimuthISR()
   Serial.println();
   #endif
 
-    if (AZIMUTH_SMOOTHING_FACTOR > 0) 
-    {
-      AzFiltered = AzTopMap * (1 - AZIMUTH_SMOOTHING_FACTOR) + (previous_AzTopMap * AZIMUTH_SMOOTHING_FACTOR);
-    }  
 
-    // wrap raw azimuth into azimuth
-    azimuth = (int) AzFiltered;
-    if (azimuth >= 360) 
+  if (AZIMUTH_SMOOTHING_FACTOR > 0) 
+  {
+    AzFiltered = AzFixMap * (1 - AZIMUTH_SMOOTHING_FACTOR) + (previous_AzFixMap * AZIMUTH_SMOOTHING_FACTOR);
+  }
+  else
+  {
+    AzFiltered = AzFixMap;
+  }  
+
+  // wrap raw azimuth into azimuth
+  azimuth = (int) AzFiltered;
+  if (azimuth >= 360) 
+  {
+    azimuth -= 360;
+  } 
+  
+  if (AzFiltered < 0) 
+  {
+    azimuth += 360;
+  }
+
+  #ifdef DEBUG_HCO_ADC
+  {
+    static bool isFirstWrite = true;
+    float Time_usec;
+    // format for csv file with header
+    if (isFirstWrite)
     {
-      azimuth -= 360;
-    } 
-    
-    if (AzFiltered < 0) 
-    {
-      azimuth += 360;
+      Serial.println("HCO Board analog");
+      Serial.println("Time, adcTop, adcBot, azTop, azBot, raw, az "); // header line
+      isFirstWrite = false;
     }
+    Time_usec = micros();;
+    Serial.print(Time_usec);
+    Serial.print(", ");
+    Serial.print(Vt); // top voltage
+    Serial.print(", ");
+    Serial.print(Vb); // bottom voltage
+    Serial.print(", ");
+    Serial.print(Rt);   // top part of pot
+    Serial.print(", ");
+    Serial.print(Rb);   // bottom part of pot
+    Serial.print(", ");
+    Serial.print(AzTop);
+    Serial.print(", ");
+    Serial.print(AzBot);
+    Serial.print(", ");
+    Serial.print(AzTopFix);
+    Serial.print(", ");
+    Serial.print(AzBotFix);
+    Serial.print(", ");
+    Serial.print(AzFixMap);
+     Serial.print(", ");
+    Serial.print(azimuth);
 
-    #ifdef DEBUG_HCO_ADC
-    {
-      static bool isFirstWrite = true;
-      float Time_usec;
-      // format for csv file with header
-      if (isFirstWrite)
-      {
-        Serial.println("HCO Board analog");
-        Serial.println("Time, adcTop, adcBot, azTop, azBot, raw, az "); // header line
-        isFirstWrite = false;
-      }
-      Time_usec = micros();;
-      Serial.print(Time_usec);
-      Serial.print(", ");
-      Serial.print(VtAz); // top voltage
-      Serial.print(", ");
-      Serial.print(VbAz); // bottom voltage
-      Serial.print(", ");
-      Serial.print(Rt);   // top part of pot
-      Serial.print(", ");
-      Serial.print(Rb);   // bottom part of pot
-      Serial.print(", ");
-       Serial.print(AzTop);
-      Serial.print(", ");
-      Serial.print(AzBot);
-      Serial.print(", ");
-      Serial.print(AzTopMap);
-      Serial.print(", ");
-      Serial.print(AzBotMap);
-      Serial.print(", ");
-      Serial.print(azimuth);
+    Serial.println();
+  }
+  #endif // ifdef debug HCO
 
-      Serial.println();
-    }
-    #endif // ifdef debug HCO
-
-#endif
+  #endif
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
     // read analog input and convert it to degrees; this gets funky because of 450 degree rotation
@@ -659,6 +687,11 @@ void setup()
 
   initialize_rotary_encoders(); 
   initialize_interrupts();
+
+  #ifdef FEATURE_FIR_FILTER
+  fir_top.setFilterCoeffs(filter_taps);
+  fir_bot.setFilterCoeffs(filter_taps);
+  #endif
 
   // setup the timer and start it
   // timer used to read values and run state machine

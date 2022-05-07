@@ -22,6 +22,7 @@
   #define FEATURE_HCO_BUTTONS
   #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
   #define FEATURE_HCO_ADC
+  #define FEATURE_FIR_FILTER
 #endif
 
 #define AZIMUTH_INTERRUPT                          // use 1 msec ISR for ADC read

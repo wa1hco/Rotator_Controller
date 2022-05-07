@@ -143,7 +143,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_RELEASE_OFF                LOW  // means braked, used inside *break_release*() control functions
 #define BRAKE_RELEASE_ON                 HIGH // means brake released, used inside *break_release*() control functions
 
-#define AZIMUTH_SMOOTHING_FACTOR         ((float)0.90) // value = 0 to 99.9
+#define AZIMUTH_SMOOTHING_FACTOR         0 // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR       ((float)0.00) // value = 0 to 99.9
 
 #define AZIMUTH_MEASUREMENT_FREQUENCY_MS   0  // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
