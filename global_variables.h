@@ -26,9 +26,6 @@ extern byte az_request;
 extern int  az_request_parm;
 extern byte az_request_queue_state;
 
-extern float analog_az;
-extern float previous_analog_az;
-
 extern byte az_state;
 extern unsigned long az_last_rotate_initiation;
 extern bool isAzButtonPressed;

@@ -14,8 +14,14 @@ You can tweak these, but read the online documentation!
 
 // analog voltage calibration - these are default values;
 // you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
+#ifdef FEATURE_HCO_ADC
+#define ANALOG_AZ_FULL_CCW               0  // Ohms, min wiper noise corrected pot reading
+#define ANALOG_AZ_FULL_CW              500  // Ohms, max wiper noise corrected pot reading
+#else
 #define ANALOG_AZ_FULL_CCW               0  
 #define ANALOG_AZ_FULL_CW              360  // max expected on 0 to 1023 scale
+#endif
+
 #define ANALOG_EL_0_DEGREES              2
 #define ANALOG_EL_MAX_ELEVATION        180  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
@@ -155,72 +161,5 @@ You can tweak these, but read the online documentation!
 #define ROTATION_INDICATOR_PIN_INACTIVE_STATE LOW
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
-
-// MAX6959 information
-#ifdef FEATURE_MAX6959_DISPLAY
-#define MAX6959A_ADDR                  int( 0x38) // I2C addr
-#define MAX6959_READ_BUTTONS_DEBOUNCED int( 0x08) // register
-#define MAX6959_READ_BUTTONS_PRESSED   int( 0x0c) // register
-#define MAX6959_PORT_CONFIG            int( 0x06) // register
-#define MAX6959_BUTTON_RIGHT           byte(0x01) // bit
-#define MAX6959_BUTTON_LEFT            byte(0x10) // bit
-#endif
-
-
-
-#ifdef FEATURE_FIR_FILTER
-/*FIR filter designed with
-http://t-filter.appspot.com
-
-sampling frequency: 500 Hz
-
-* 0 Hz - 12 Hz
-  gain = 1
-  desired ripple = 3 dB
-  actual ripple = 1.8546120940647706 dB
-
-* 50 Hz - 250 Hz
-  gain = 0
-  desired attenuation = -60 dB
-  actual attenuation = -62.10264715535345 dB
-
-*/
-
-#define FILTER_TAP_NUM 31
-
-static float filter_taps[FILTER_TAP_NUM] = {
-  -0.0006588258621099302,
-  -0.0005076833208036739,
-  -0.00016704763377099784,
-   0.0009639835626704757,
-   0.003314583636094818,
-   0.0073075779557706146,
-   0.01327417006891984,
-   0.02136009802855521,
-   0.031451398843779524,
-   0.043126796981180875,
-   0.05566622022547508,
-   0.0681093838277933,
-   0.07936329271004,
-   0.08834787640574435,
-   0.09414903093413482,
-   0.09615457532202126,
-   0.09414903093413482,
-   0.08834787640574435,
-   0.07936329271004,
-   0.0681093838277933,
-   0.05566622022547508,
-   0.043126796981180875,
-   0.031451398843779524,
-   0.02136009802855521,
-   0.01327417006891984,
-   0.0073075779557706146,
-   0.003314583636094818,
-   0.0009639835626704757,
-  -0.00016704763377099784,
-  -0.0005076833208036739,
-  -0.0006588258621099302
-};
-#endif // FIR filter
 
 #endif /* SETTINGS_H_ */

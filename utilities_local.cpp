@@ -162,31 +162,13 @@ void read_azimuth()
 
       #define ROTOR_POT 823.0
       #define HCO_BOARD_RESISTOR 330.0
-      static const int ADCmax = (int) (1023 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT));  //  616 max ADC reading expected
+      static const int ADC_MAX = (int) (1023 * ROTOR_POT / (HCO_BOARD_RESISTOR + ROTOR_POT));  //  616 max ADC reading expected
 
       int   Az_adc_top = analogRead(PositionPosPin); // adc reading for top    of azimuth pot
       int   Az_adc_bot = analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
       float Az_top     = 99.0; // init to uninitialized flag value
       float Az_bot     = 99.0;
       float Az_avg     = 99.0;
-
-      // test for open wiper using fix point techniques
-      if( (Az_adc_top < (ADCmax + (ADCmax >> 2))) | (Az_adc_bot < (ADCmax + (ADCmax >> 2)))) 
-      {
-        // convert top and bottom ADC reading to azimuth
-        Az_top = (360 * Az_adc_top)            / ADCmax;
-        Az_bot = (360 * (ADCmax - Az_adc_bot)) / ADCmax;
-
-        Az_avg = (Az_top + Az_bot) / 2.0; //average the two readings, probably not that helpful
-        analog_az = Az_avg;  // global for other
-        previous_analog_az = Az_avg; // remember the az in case wiper glitches
-      } else // wiper has gone intermittent, skip update
-      {
-        Az_top = 99.0; // flag variables not used
-        Az_bot = 99.0;
-        Az_avg = previous_analog_az; // wiper glitched, use previous az
-        analog_az = Az_avg;
-      }
 
     // map(value, fromLow, fromHigh, toLow, toHigh)
     
