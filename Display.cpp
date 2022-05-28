@@ -26,10 +26,6 @@
 #include <Wire.h>
 #endif
 
-#ifdef FEATURE_MAX6959_DISPLAY
-#define MAX6959A 0x38
-#endif
-
 #ifdef FEATURE_MAX7221_DISPLAY
 #include <SPI.h>
 #endif
@@ -198,25 +194,6 @@ void SPI_Transfer(uint8_t address, uint8_t data)
   Serial.println();
   #endif
 }
-
-//------------------------------------------------------------------------------
-// 7 segment display on I2C bus using MAX6959
-// MAX7221 Register   Command Address
-// NOP                0x00
-#define DIGIT0        byte(0x01)
-#define DIGIT1        byte(0x02)
-#define DIGIT2        byte(0x03)
-#define DIGIT3        byte(0x04)
-//#define Digit4        byte(0x05)
-//#define Digit5        byte(0x06)
-//#define Digit6        byte(0x07)
-//#define Digit7        byte(0x08)
-#define DECODE_MODE   byte(0x09)  // BCD mode B (0-9, E, H, L, P, -) or raw, Digits 7 to 0
-#define INTENSITY     byte(0x0A)  // PWM 15/16 to 1/16, bits 3 to 0
-#define SCAN_LIMIT    byte(0x0B)  // 0 only to 0 to 7, bits 2 to 0
-#define SHUTDOWN      byte(0x0C) // 
-#define TEST          byte(0x0F)  // 
-
 
 #ifdef FEATURE_MAX7221_DISPLAY
 void initialize_MAX7221_display()

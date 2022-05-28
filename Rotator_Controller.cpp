@@ -618,10 +618,6 @@ void setup()
   initialize_lcd_display();
   #endif
 
-  #ifdef FEATURE_MAX6959_DISPLAY
-  initialize_MAX6959_display();
-  #endif
-
   #ifdef FEATURE_MAX7221_DISPLAY
   initialize_MAX7221_display();
   #endif
@@ -726,10 +722,6 @@ void loop()
 
   #ifdef FEATURE_LCD_DISPLAY
   update_display(); // Azimuth display with the large fonts
-  #endif
-
-  #ifdef FEATURE_MAX6959_DISPLAY
-  update_MAX6959_display();
   #endif
 
   #ifdef FEATURE_MAX7221_DISPLAY
@@ -1755,7 +1747,7 @@ void check_buttons()
   buttons = readButtons();
   if (buttons & BUTTON_RIGHT) 
   {
-  #else // not adafruit or max6959 buttons
+  #else // not adafruit
   if (button_cw && (digitalRead(button_cw) == LOW)) 
   {
   #endif //FEATURE_ADAFRUIT_BUTTONS
@@ -1785,12 +1777,6 @@ void check_buttons()
   {
     #ifdef FEATURE_ADAFRUIT_BUTTONS
     if (buttons & BUTTON_LEFT) 
-    {
-
-    #elif defined(FEATURE_MAX6959_BUTTONS)
-    int buttons = 0;
-    buttons = read_MAX6959_buttons();
-    if (buttons & MAX6959_BUTTON_LEFT)
     {
 
     #else
@@ -1836,21 +1822,6 @@ void check_buttons()
     isAzButtonPressed = 0;
   }
 
-  #elif defined(FEATURE_MAX6959_BUTTONS)
-  // if button was pushed and not neither pushed now
-   if ((isAzButtonPressed) && (!(buttons & (MAX6959_BUTTON_LEFT | MAX6959_BUTTON_RIGHT)))) 
-  {
-    #ifdef DEBUG_BUTTONS
-    if (debug_mode) 
-    {
-      Serial.println(F("check_buttons: no button depressed"));
-    }    
-    #endif // DEBUG_BUTTONS
-    submit_request(AZ,REQUEST_STOP,0);
-    isAzButtonPressed = 0;
-  }
-
-  
   #else // not adafruit buttons
   if ((isAzButtonPressed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
   {
@@ -1867,7 +1838,7 @@ void check_buttons()
       isAzButtonPressed = false;
     }
   }
-  #endif //adafruit or max6959 or directly connected buttons
+  #endif //adafruit or directly connected buttons
 
   #ifdef FEATURE_ELEVATION_CONTROL
   #ifdef FEATURE_ADAFRUIT_BUTTONS

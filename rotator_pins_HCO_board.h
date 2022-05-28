@@ -31,11 +31,6 @@
 // Unused   |0|1|2|3|4|5|6|7|   |  |  |  |  |  |  |  |   |   |   |   |  |21|22|23|
 //--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
 
-#ifdef FEATURE_MAX6959_DISPLAY
-#define I2CClockPin    19 // SCL0, I2c, when using MAX6959
-#define I2CDataPin     18 // SDA0, I2c, when using MAX6959
-#endif
-
 #ifdef FEATURE_MAX7221_DISPLAY
 #define MAX7221_CS_PIN 10 // MAX7221 SPI bus chip select pin
 #endif

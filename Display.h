@@ -14,9 +14,6 @@ char *azimuth_direction(int azimuth_in);
 
 void initialize_display();
 void update_lcd_display();
-void initialize_MAX6959_display();
-void update_MAX6959_display();
-int  read_MAX6959_buttons();
 void initialize_MAX7221_display();
 void update_MAX7221_display();
 int  read_HCO_buttons();

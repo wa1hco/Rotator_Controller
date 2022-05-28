@@ -29,7 +29,6 @@ extern byte az_request_queue_state;
 extern byte az_state;
 extern unsigned long az_last_rotate_initiation;
 extern bool isAzButtonPressed;
-extern byte MAX6959_buttons_debounced;
 extern byte brake_az_engaged;
 extern byte brake_el_engaged;
 
