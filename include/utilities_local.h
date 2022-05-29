@@ -14,7 +14,6 @@
 
 #include "global_variables.h"
 
-
 void print_help();
 void read_azimuth();
 void check_for_dirty_configuration();

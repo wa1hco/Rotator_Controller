@@ -91,16 +91,16 @@
 #define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
-//#define DEBUG_BUTTONS
+#define DEBUG_BUTTONS
 //#define DEBUG_SERIAL
 //#define DEBUG_SERVICE_REQUEST_QUEUE
-//#define DEBUG_EEPROM
+#define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT
 //#define DEBUG_AZ_PRESET_POT
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
 //#define DEBUG_HCO_BUTTONS
-#define DEBUG_HCO_ADC      // write ADC values to serial port for plotting
+//#define DEBUG_HCO_ADC      // write ADC values to serial port for plotting
 //#define DEBUG_7_SEGMENTS
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS

@@ -12,31 +12,36 @@
 // -------------global variable declarations -----------------------
 
 // azimuth globals
-int azimuth                     = 0;
-float AzFiltered                = 0;
-
-int target_azimuth              = 0;
-int target_raw_azimuth          = 0;
-
-byte az_request                 = 0;
-int az_request_parm             = 0;
-byte az_request_queue_state = NONE;
-
-byte az_state = IDLE;
+float analog_az                         = 0; // output of reading something about azimuth
+int azimuth                             = 0; // output of mapping analog_az to azimuth in degrees
+float AzFiltered                        = 0;
+int target_azimuth                      = 0;
+int target_raw_azimuth                  = 0;
+byte az_request                         = 0;
+int az_request_parm                     = 0;
+byte az_request_queue_state             = NONE;
+byte az_state                           = IDLE;
 unsigned long az_last_rotate_initiation = 0;
-bool isAzButtonPressed           = false;
-byte brake_az_engaged            = 0;
-
+bool isAzButtonPressed                  = false; // original az button variable
+bool is_cw_button_pressed               = false; // HCO board az button variables
+bool is_ccw_button_pressed              = false;
+bool is_cw_button_cal_press             = false;
+bool is_ccw_button_cal_press            = false;
+byte brake_az_engaged                   = 0;
 unsigned long az_slowstart_start_time   = 0;
 byte az_slow_start_step                 = 0;
 unsigned long az_last_step_time         = 0;
-byte az_slow_down_step = 0;
+byte az_slow_down_step                  = 0;
 unsigned long az_timed_slow_down_start_time = 0;
+byte normal_az_speed_voltage            = 0;
+byte current_az_speed_voltage           = 0;
+byte az_slowstart_active                = AZ_SLOWSTART_DEFAULT;
+byte az_slowdown_active                 = AZ_SLOWDOWN_DEFAULT;
 
-byte normal_az_speed_voltage    = 0;
-byte current_az_speed_voltage   = 0;
-byte az_slowstart_active        = AZ_SLOWSTART_DEFAULT;
-byte az_slowdown_active         = AZ_SLOWDOWN_DEFAULT;
+#ifdef FEATURE_HCO_BUTTONS
+int button_cw_press_time                = 0; // msec pressed, 0 means not pressed
+int button_ccw_press_time               = 0; // msec pressed, 0 means not pressed
+#endif
 
 int IsrTime =  0;  // test variable, ISR execution time in msec
 
@@ -58,7 +63,7 @@ struct config_t
 struct config_t configuration;
 
 byte serial0_buffer[COMMAND_BUFFER_SIZE];
-int serial0_buffer_index;
+int  serial0_buffer_index;
 byte incoming_serial_byte;
 unsigned long last_serial_receive_time;
 
@@ -78,32 +83,30 @@ byte timed_buffer_status = 0;
 byte push_lcd_update = 0;
 
 #ifdef FEATURE_ELEVATION_CONTROL
-int elevation = 0;
-int target_elevation    = 0;
-
-byte brake_el_engaged   = 0;
-byte el_request         = 0;
-int el_request_parm     = 0;
-byte el_request_queue_state = NONE;
-byte el_slowstart_active = EL_SLOWSTART_DEFAULT;
-byte el_slowdown_active = EL_SLOWDOWN_DEFAULT;
-unsigned long el_slowstart_start_time = 0;
-byte el_slow_start_step = 0;
-unsigned long el_last_step_time = 0;
-byte el_slow_down_step = 0;
+int elevation                               = 0;
+int target_elevation                        = 0;
+byte brake_el_engaged                       = 0;
+byte el_request                             = 0;
+int el_request_parm                         = 0;
+byte el_request_queue_state                 = NONE;
+byte el_slowstart_active                    = EL_SLOWSTART_DEFAULT;
+byte el_slowdown_active                     = EL_SLOWDOWN_DEFAULT;
+unsigned long el_slowstart_start_time       = 0;
+byte el_slow_start_step                     = 0;
+unsigned long el_last_step_time             = 0;
+byte el_slow_down_step                      = 0;
 unsigned long el_timed_slow_down_start_time = 0;
-byte normal_el_speed_voltage = 0;
-byte current_el_speed_voltage = 0;
-
-int display_elevation = 0;   // Variable added to handle elevation beyond 90 degrees.  /// W3SA
-byte el_state = IDLE;
-int analog_el = 0;
+byte normal_el_speed_voltage                = 0;
+byte current_el_speed_voltage               = 0;
+int display_elevation                       = 0;   // Variable added to handle elevation beyond 90 degrees.  /// W3SA
+byte el_state                               = IDLE;
+int analog_el                               = 0;
 
 unsigned long el_last_rotate_initiation = 0;
 #ifdef FEATURE_TIMED_BUFFER
 int timed_buffer_elevations[TIMED_INTERVAL_ARRAY_SIZE];
 #endif //FEATURE_TIMED_BUFFER
-byte elevation_button_was_pushed = 0;
+byte elevation_button_was_pushed        = 0;
 #endif
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT

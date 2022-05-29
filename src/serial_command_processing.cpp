@@ -592,7 +592,7 @@ void yaesu_o_command() // fully ccw, L command
 
   Serial.println(F("Rotate to full CCW and send keystroke..."));
   get_keystroke();
-  read_azimuth();
+  read_azimuth(); // NOP if using interrupts
   configuration.analog_az_full_ccw = azimuth; //analog_az;
   write_settings_to_eeprom();
   print_wrote_to_memory();
@@ -634,7 +634,7 @@ void yaesu_f_command() // fully cw, R command
 
   Serial.println(F("Rotate to full CW and send keystroke..."));
   get_keystroke();
-  read_azimuth();
+  read_azimuth(); // NOP is using interrupts
   configuration.analog_az_full_cw = azimuth; //analog_az;
   write_settings_to_eeprom();
   print_wrote_to_memory();

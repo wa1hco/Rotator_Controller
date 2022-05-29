@@ -110,11 +110,12 @@ You can tweak these, but read the online documentation!
 #define DISPLAY_UPDATE_INTERVAL        200     // msec, display update interval, LCD or 7 segment
 #define AZ_BRAKE_DELAY                1000     // msec
 #define EL_BRAKE_DELAY                1000     // msec
-#define TIME_BETWEEN_INTERRUPTS          5     // msec
+#define TIME_BETWEEN_INTERRUPTS          5     // msec, 200 Hz
+#define BUTTON_BOUNCE_DELAY            100     // msec
+#define BUTTON_LONG_PRESS             2000     // msec, 2 seconds
 
 #define EEPROM_MAGIC_NUMBER 100
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
-
 
 #ifdef FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 #define HEADING_MULTIPLIER              10

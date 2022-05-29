@@ -135,6 +135,7 @@ void update_az_variable_outputs(byte speed_voltage)
 }
 
 //--------------------------------------------------------------
+// read azimuth is a NOP if azimuth interrupt is in use
 void read_azimuth()
 {
   #ifndef AZIMUTH_INTERRUPT
@@ -227,9 +228,7 @@ void read_azimuth()
       Serial.println(" adc counts");
     #endif
 
-
 #endif
-
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
     // read analog input and convert it to degrees; this gets funky because of 450 degree rotation
@@ -475,7 +474,7 @@ void read_azimuth()
     
     last_measurement_time = millis();
   }
-  #endif // AZIMUTH_INTERRUPT
+  #endif // ifndef AZIMUTH_INTERRUPT
 }
 
 //--------------------------------------------------------------
