@@ -607,7 +607,9 @@ void yaesu_o_command() // fully ccw, L command
 #ifdef FEATURE_YAESU_EMULATION
 void print_wrote_to_memory()
 {
+  #ifdef DEBUG_EEPROM
   Serial.println(F("Wrote to memory"));
+  #endif
 }
 
 #endif //FEATURE_YAESU_EMULATION
