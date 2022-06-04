@@ -569,7 +569,7 @@ void check_hco_buttons()
 
   if ( is_ccw_button_cal_press && (button_cw_press_time == 0))
   {
-    configuration.analog_az_full_ccw = azimuth; // azimuth is a global
+    configuration.analog_az_full_ccw = analog_az; // azimuth is a global
     write_settings_to_eeprom();
     print_wrote_to_memory();  
     read_settings_from_eeprom();  // print on serial port if debugging on

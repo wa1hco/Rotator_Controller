@@ -319,7 +319,8 @@ void ReadAzimuthISR()
   // Isolating all the terms with Rtop on the left results in
   // Rtop*(2*U-Vtop-Vbot)=(Rb+Rc)*(Vtop-Vbot)+500*(U-Vbot)
   // rename Rtop to analog_az for compatibility with K3NG functions
-  float analog_az = ((Rb + Rc) * (Vt - Vb) + Rp * (Vs - Vb)) / (2 * Vs - Vt - Vb);
+  float Rt = ((Rb + Rc) * (Vt - Vb) + Rp * (Vs - Vb)) / (2 * Vs - Vt - Vb);
+  analog_az = Rt;
 
   // map(value, fromLow, fromHigh, toLow, toHigh)
   
@@ -331,6 +332,8 @@ void ReadAzimuthISR()
   float Az_stop       = Az_start + Az_capability * HEADING_MULTIPLIER;
 
   azimuth = (int) map(analog_az, analog_az_ccw, analog_az_cw, Az_start, Az_stop);
+
+  AzFiltered = azimuth;  // for compatibility
 
   #ifdef DEBUG_HCO_ADC
   {

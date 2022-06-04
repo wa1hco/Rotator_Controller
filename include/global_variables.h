@@ -18,7 +18,8 @@
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
-extern int azimuth;
+extern int analog_az;      // az reading from sensor, prior to mapping
+extern int azimuth;        // az after mapping used for display and control
 extern float AzFiltered;
 extern int target_azimuth;
 extern int target_raw_azimuth;

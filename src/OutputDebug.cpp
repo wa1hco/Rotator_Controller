@@ -98,8 +98,8 @@ void output_debug()
     
     Serial.print(F("\tAZ: "));
     Serial.print(azimuth            / HEADING_MULTIPLIER, DECIMAL_PLACES);
-    Serial.print(F(" (raw: "));
-    Serial.print(AzFiltered        / HEADING_MULTIPLIER, DECIMAL_PLACES);
+    Serial.print(F(" (sensor: "));
+    Serial.print(analog_az);
     Serial.print(")");
     
     Serial.print(F("\tTarget: "));

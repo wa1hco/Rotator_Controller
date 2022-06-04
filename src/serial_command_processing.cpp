@@ -75,7 +75,7 @@ void yaesu_serial_command()
         #ifdef DEBUG_SERIAL
         if (debug_mode) {Serial.println(F("yaesu_serial_command: S cmd"));}
         #endif //DEBUG_SERIAL
-        submit_request(AZ,REQUEST_STOP,0);
+        submit_request(AZ, REQUEST_STOP, 0);
         #ifdef FEATURE_ELEVATION_CONTROL
         submit_request(EL,REQUEST_STOP,0);
         #endif
@@ -131,12 +131,14 @@ void yaesu_serial_command()
         break;          
       case 'B': report_current_elevation(); break;        // B - return current elevation   
       #endif
+      #ifdef FEATURE_ELEVATION_CONTROL
       case 'W':  // W - auto elevation rotation
         #ifdef DEBUG_SERIAL
         if (debug_mode) {Serial.println(F("yaesu_serial_command: W cmd"));}
         #endif //DEBUG_SERIAL
         yaesu_w_command();
-        break;       
+        break;   
+      #endif    
       #ifdef OPTION_GS_232B_EMULATION
       case 'P': yaesu_p_command(); break;                 ged// P - switch between 360 and 450 degree mode
       case 'Z':                                           // Z - Starting point toggle
@@ -206,10 +208,12 @@ void check_serial(){
             if (debug_mode) 
             {
               debug_mode = 0;
+              Serial.println(F("debug mode 0"));
             } 
             else 
             {
               debug_mode = 1;
+              Serial.println(F("debug mode 1"));
             } 
             break;    
 
@@ -593,7 +597,7 @@ void yaesu_o_command() // fully ccw, L command
   Serial.println(F("Rotate to full CCW and send keystroke..."));
   get_keystroke();
   read_azimuth(); // NOP if using interrupts
-  configuration.analog_az_full_ccw = azimuth; //analog_az;
+  configuration.analog_az_full_ccw = analog_az; //analog_az;
   write_settings_to_eeprom();
   print_wrote_to_memory();
 }

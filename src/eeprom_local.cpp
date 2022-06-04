@@ -20,8 +20,8 @@ void initialize_eeprom_with_defaults()
   }
   #endif //DEBUG_EEPROM
 
-  configuration.analog_az_full_ccw          = ANALOG_AZ_FULL_CCW;
-  configuration.analog_az_full_cw           = ANALOG_AZ_FULL_CW;
+  configuration.analog_az_full_ccw          = ANALOG_AZ_FULL_CCW; // sensor reading
+  configuration.analog_az_full_cw           = ANALOG_AZ_FULL_CW;  // sensor reading
   configuration.analog_el_0_degrees         = ANALOG_EL_0_DEGREES;
   configuration.analog_el_max_elevation     = ANALOG_EL_MAX_ELEVATION;   
   configuration.azimuth_starting_point      = AZIMUTH_STARTING_POINT_DEFAULT;
@@ -41,7 +41,7 @@ void write_settings_to_eeprom()
   #ifdef DEBUG_EEPROM
   if (debug_mode) 
   {
-    Serial.print(F("write_settings_to_eeprom: writing settings to eeprom\n"));
+    Serial.println(F("write_settings_to_eeprom: writing settings to eeprom\n"));
   }
   #endif //DEBUG_EEPROM
   

@@ -766,13 +766,13 @@ void service_request_queue()
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         if (debug_mode) {Serial.print(F("REQUEST_AZIMUTH"));} 
         #endif //DEBUG_SERVICE_REQUEST_QUEUE
-        if ((az_request_parm >= 0) && (az_request_parm <= (360*HEADING_MULTIPLIER))) 
+        if ((az_request_parm >= 0) && (az_request_parm <= (360 * HEADING_MULTIPLIER))) 
         {
           target_azimuth = az_request_parm;
           target_raw_azimuth = az_request_parm;
           if (target_azimuth == (360*HEADING_MULTIPLIER)) {target_azimuth = 0;}      
-          if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) &&
-        	  (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))))
+          if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))) &&
+        	    (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))))
           {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
             if (debug_mode) {Serial.print(F(" request within tolerance"));}
@@ -782,21 +782,22 @@ void service_request_queue()
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
             if (debug_mode) {Serial.print(F(" ->A"));}
             #endif //DEBUG_SERVICE_REQUEST_QUEUE
-            work_target_raw_azimuth = target_azimuth;            
+            work_target_raw_azimuth = target_azimuth;   
+
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
             if (debug_mode) 
             {
               Serial.print(F(" work_target_raw_azimuth:"));
-              Serial.print(work_target_raw_azimuth/HEADING_MULTIPLIER);
+              Serial.println(work_target_raw_azimuth/HEADING_MULTIPLIER);
               Serial.print(F(" configuration.azimuth_starting_point:"));
-              Serial.print(configuration.azimuth_starting_point);
+              Serial.println(configuration.azimuth_starting_point);
               Serial.print(" ");
             }
             #endif //DEBUG_SERVICE_REQUEST_QUEUE            
             
-            if (work_target_raw_azimuth < (configuration.azimuth_starting_point*HEADING_MULTIPLIER)) 
+            if (work_target_raw_azimuth < (configuration.azimuth_starting_point * HEADING_MULTIPLIER)) 
             {
-              work_target_raw_azimuth = work_target_raw_azimuth + (360*HEADING_MULTIPLIER);
+              work_target_raw_azimuth = work_target_raw_azimuth + (360 * HEADING_MULTIPLIER);
               target_raw_azimuth = work_target_raw_azimuth;
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
               if (debug_mode) {Serial.print(F("->B"));}
