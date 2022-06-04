@@ -481,7 +481,7 @@ void loop()
   #endif
 
   #ifdef FEATURE_MAX7221_DISPLAY
-  update_MAX7221_display();
+  update_Az_MAX7221_display();
   #endif
 
   read_headings();

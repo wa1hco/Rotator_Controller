@@ -18,7 +18,8 @@
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
-extern int azimuth;
+extern int analog_az;                // azimuth reading for calibration mapping
+extern int azimuth;                  // azimuth after calibration
 extern float AzFiltered;
 extern int target_azimuth;
 extern int target_raw_azimuth;
@@ -29,17 +30,13 @@ extern byte az_request_queue_state;
 extern byte az_state;
 extern unsigned long az_last_rotate_initiation;
 extern bool isAzButtonPressed; 
-extern bool is_cw_button_pressed;
-extern bool is_ccw_button_pressed;
-extern bool is_cw_button_cal_press;
-extern bool is_ccw_button_cal_press;
 
 extern byte brake_az_engaged;
 extern byte brake_el_engaged;
 extern unsigned long az_slowstart_start_time;
-extern          byte az_slow_start_step;
+extern byte az_slow_start_step;
 extern unsigned long az_last_step_time;
-extern          byte az_slow_down_step;
+extern byte az_slow_down_step;
 extern unsigned long az_timed_slow_down_start_time;
 extern byte normal_az_speed_voltage;
 extern byte current_az_speed_voltage;

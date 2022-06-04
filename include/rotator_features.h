@@ -92,7 +92,7 @@
 
 //#define DEBUG_MEMORY
 #define DEBUG_BUTTONS
-//#define DEBUG_SERIAL
+#define DEBUG_SERIAL
 //#define DEBUG_SERVICE_REQUEST_QUEUE
 #define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT

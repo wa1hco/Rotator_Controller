@@ -475,10 +475,16 @@ void check_hco_buttons()
   Serial.print(" ");
   #endif
 
-  // check for clockwise rotation and not ccw rotation
+  static bool is_cw_button_pressed  = false; // HCO board az button variables
+  static bool is_ccw_button_pressed = false;
+  static bool is_fullscale_cal_mode = false;
+  static bool is_offset_cal_mode    = false;
+
+  // Rotation ---------------------------------------------------------------
+  // check for cw button and not ccw button
   if ((button_cw_press_time > BUTTON_BOUNCE_DELAY) && (button_ccw_press_time == 0)) // might be first press or continued press
     {
-    if (!is_cw_button_pressed) // still low
+    if (!is_cw_button_pressed) // pressed now, not before
     {
       #ifdef DEBUG_HCO_BUTTONS
       if (debug_mode) 
@@ -506,16 +512,10 @@ void check_hco_buttons()
     }
   } // if button_cw
 
-  #ifdef DEBUG_HCO_BUTTONS
-  Serial.print("CCW: ");
-  Serial.print(digitalRead(button_ccw));
-  Serial.print(" ");
-  #endif
-
-  // check for counter clockwise rotation and cw button not pressed
+  // check for ccw button and not cw button
   if ((button_ccw_press_time > BUTTON_BOUNCE_DELAY) && (button_cw_press_time == 0))
   {
-    if (!is_ccw_button_pressed) // still low
+    if (!is_ccw_button_pressed) // pressed now, now before
     {
       #ifdef DEBUG_HCO_BUTTONS
       Serial.println(F("check_buttons: button_ccw pushed"));      
@@ -540,73 +540,64 @@ void check_hco_buttons()
     }
   } // if button pressed
 
-  #ifdef DEBUG_HCO_BUTTONS
-  Serial.print("isAzPressed ");
-  Serial.print(isAzButtonPressed);
-  Serial.print(" ");
-  #endif
-
-  // handle release of cw button press
-  // if button was press and no buttons pressed now
-  if (is_cw_button_pressed && (button_cw_press_time == 0))
+  // handle release of cw button press at end of rotation
+  if (is_cw_button_pressed && (button_cw_press_time == 0)) // was pressed, not now
   {
+      is_cw_button_pressed = false;
+
       #ifdef DEBUG_HCO_BUTTONS
       Serial.println(F("check_buttons: no AZ button depressed"));
       #endif
 
-      submit_request(AZ, REQUEST_STOP,0);
-      is_cw_button_pressed = false;
+      submit_request(AZ, REQUEST_STOP, 0);
   } // if cw button released
 
-  if ( is_cw_button_cal_press && (button_ccw_press_time == 0))
+  // handle release of ccw button press at end of rotation
+  if (is_ccw_button_pressed && (button_ccw_press_time == 0)) // was pressed, not now
   {
-    configuration.analog_az_full_cw = azimuth; // azimuth is a global
-    write_settings_to_eeprom();
-    print_wrote_to_memory();   
-    read_settings_from_eeprom(); // print on serial port if debugging on
-    is_cw_button_cal_press = false;
+      is_ccw_button_pressed = false;
+
+      #ifdef DEBUG_HCO_BUTTONS
+      Serial.println(F("check_buttons: no AZ button depressed"));
+      #endif
+
+      submit_request(AZ, REQUEST_STOP, 0);
+  } // if cw button released
+
+  // Calibration -------------------------------------------------------------------
+  // Set fullscale calibration mode, rotate to full cw, hold while press ccw button for 2 seconds
+  if ((button_cw_press_time > button_ccw_press_time) && (button_ccw_press_time > BUTTON_LONG_PRESS))
+  {
+    is_fullscale_cal_mode = true;
   }
 
-  if ( is_ccw_button_cal_press && (button_cw_press_time == 0))
+  // Set offset calibration mode, rotate to full ccw, hold while press cw button for 2 seconds
+  if ((button_ccw_press_time > button_cw_press_time) && (button_cw_press_time > BUTTON_LONG_PRESS))
   {
-    configuration.analog_az_full_ccw = azimuth; // azimuth is a global
+    is_offset_cal_mode = true;
+  }
+
+  // handle release of other button (ccw), at end of full scale (cw) calibration
+  if ( is_fullscale_cal_mode && (button_ccw_press_time == 0))
+  {
+    is_fullscale_cal_mode = false;
+
+    configuration.analog_az_full_cw = analog_az; // azimuth before mapping
+    print_wrote_to_memory();   
+    read_settings_from_eeprom(); // print on serial port if debugging on
+  }
+
+  // handle release of other button (cw), at end of offset (cvw) calibration
+  if ( is_offset_cal_mode && (button_cw_press_time == 0))
+  {
+    is_offset_cal_mode = false;
+
+    configuration.analog_az_full_ccw = analog_az; // azimuth before mapping
     write_settings_to_eeprom();
     print_wrote_to_memory();  
     read_settings_from_eeprom();  // print on serial port if debugging on
-    is_ccw_button_cal_press = false;
   }
 
-  // handle release of ccw button press for normal rotation
-  if (is_ccw_button_pressed && (button_ccw_press_time == 0)) 
-  {
-    if ((digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) // still no buttons pressed
-    {
-      #ifdef DEBUG_HCO_BUTTONS
-      Serial.println(F("check_buttons: no AZ button depressed"));
-      #endif
-
-      submit_request(AZ, REQUEST_STOP,0);
-      is_ccw_button_pressed = false;
-
-      is_ccw_button_cal_press = false;
-    }
-  } // if ccw button released
- 
-  // calibration buttons
-  // hold cw or ccw to end, continue holding while press and hold other button for 2 seconds
-  // handle fullscale calibration
-  // ccw button pressed longer than cw, long press on cw button
-  if ((button_cw_press_time > button_ccw_press_time) && (button_ccw_press_time > BUTTON_LONG_PRESS))
-  {
-    is_cw_button_cal_press = true;
-  }
-
-  // handle offset calibration
-  // cw button pressed longer than ccw, long press on ccw button
-  if ((button_ccw_press_time > button_cw_press_time) && (button_cw_press_time > BUTTON_LONG_PRESS))
-  {
-    is_ccw_button_cal_press = true;
-  }
 
   #ifdef DEBUG_HCO_BUTTONS
   Serial.println();
@@ -834,7 +825,7 @@ void check_buttons()
       #ifdef DEBUG_BUTTONS
       if (debug_mode) {Serial.println(F("check_buttons: button_stop pushed"));} 
       #endif //DEBUG_BUTTONS
-      submit_request(AZ,REQUEST_STOP,0);
+      submit_request(AZ,REQUEST_STOP, 0);
       #ifdef FEATURE_ELEVATION_CONTROL
       submit_request(EL,REQUEST_STOP,0);
       #endif //FEATURE_ELEVATION_CONTROL

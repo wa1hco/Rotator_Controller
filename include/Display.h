@@ -15,7 +15,7 @@ char *azimuth_direction(int azimuth_in);
 void initialize_display();
 void update_lcd_display();
 void initialize_MAX7221_display();
-void update_MAX7221_display();
+void update_Az_MAX7221_display();
 void display_turning();
 void clear_display_row(byte row_number);
 
