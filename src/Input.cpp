@@ -564,25 +564,17 @@ void check_hco_buttons()
       submit_request(AZ, REQUEST_STOP,0);
   } // if cw button released
 
-  // Calibration -------------------------------------------------------------------
+  // -------------Calibration ------------------------------------
   // Set fullscale calibration mode, rotate to full cw, hold while press ccw button for 2 seconds
   if ((button_cw_press_time > button_ccw_press_time) && (button_ccw_press_time > BUTTON_LONG_PRESS))
   {
-    configuration.analog_az_full_cw = analog_az; // azimuth is a global
-    write_settings_to_eeprom();
-    print_wrote_to_memory();   
-    read_settings_from_eeprom(); // print on serial port if debugging on
-    is_cw_button_cal_press = false;
+    is_fullscale_cal_mode = true;
   }
 
   // Set offset calibration mode, rotate to full ccw, hold while press cw button for 2 seconds
   if ((button_ccw_press_time > button_cw_press_time) && (button_cw_press_time > BUTTON_LONG_PRESS))
   {
-    configuration.analog_az_full_ccw = analog_az; // azimuth is a global
-    write_settings_to_eeprom();
-    print_wrote_to_memory();  
-    read_settings_from_eeprom();  // print on serial port if debugging on
-    is_ccw_button_cal_press = false;
+    is_offset_cal_mode = true;
   }
 
   // handle release of other button (ccw), at end of full scale (cw) calibration
@@ -591,7 +583,8 @@ void check_hco_buttons()
     is_fullscale_cal_mode = false;
 
     configuration.analog_az_full_cw = analog_az; // azimuth before mapping
-    print_wrote_to_memory();   
+    write_settings_to_eeprom();  // write the cal
+    print_wrote_to_memory();     // message about updating cal eeprom
     read_settings_from_eeprom(); // print on serial port if debugging on
     }
  
@@ -601,9 +594,9 @@ void check_hco_buttons()
     is_offset_cal_mode = false;
 
     configuration.analog_az_full_ccw = analog_az; // azimuth before mapping
-    write_settings_to_eeprom();
-    print_wrote_to_memory();  
-    read_settings_from_eeprom();  // print on serial port if debugging on
+    write_settings_to_eeprom();  // write the cal
+    print_wrote_to_memory();     // message about updating cal eeprom
+    read_settings_from_eeprom(); // print on serial port if debugging on
   }
 
 

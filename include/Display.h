@@ -18,6 +18,7 @@ void initialize_MAX7221_display();
 void update_Az_MAX7221_display();
 void display_turning();
 void clear_display_row(byte row_number);
+void display_calibration_settings();
 
 void loadchars();
 void printbigazimuth(int azimuth);

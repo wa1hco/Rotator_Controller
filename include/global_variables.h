@@ -18,6 +18,8 @@
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
+extern float Vt;           // Voltage at top of azimuth pot
+extern float Vb;           // Voltage at bottom of azimuth pot
 extern int analog_az;      // az reading from sensor, prior to mapping
 extern int azimuth;        // az after mapping used for display and control
 extern float AzFiltered;

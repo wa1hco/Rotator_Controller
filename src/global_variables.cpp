@@ -12,6 +12,8 @@
 // -------------global variable declarations -----------------------
 
 // azimuth globals
+float Vt                                = 0;
+float Vb                                = 0;
 float analog_az                         = 0; // output of reading something about azimuth
 int azimuth                             = 0; // output of mapping analog_az to azimuth in degrees
 float AzFiltered                        = 0;

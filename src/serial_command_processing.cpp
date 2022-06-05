@@ -9,6 +9,7 @@
 #include "global_variables.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"
+#include "Display.h"
 
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
@@ -204,7 +205,7 @@ void check_serial(){
       {  // do we have a carriage return?
         switch(serial0_buffer[1])
         {
-          case 'D': // D - Debug, invert debug state
+          case 'D':                                                                    // \D - Debug, invert debug state
             if (debug_mode) 
             {
               debug_mode = 0;
@@ -217,12 +218,16 @@ void check_serial(){
             } 
             break;    
 
-          case 'E' :                                                                   // E - Initialize eeprom
+          case 'E' :                                                                   // \E - Initialize eeprom
             initialize_eeprom_with_defaults();
             Serial.println(F("Initialized eeprom, please reset..."));
             break;
+
+          case 'C':                                                                    // \C - read calibration memory
+            display_calibration_settings();
+            break;
             
-          case 'L':                                                                    // L - rotate to long path
+          case 'L':                                                                    // \L - rotate to long path
             if (azimuth < (180*HEADING_MULTIPLIER))
             {
               submit_request(AZ,REQUEST_AZIMUTH,(azimuth+(180*HEADING_MULTIPLIER)));

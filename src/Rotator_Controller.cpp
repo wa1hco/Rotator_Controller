@@ -307,8 +307,8 @@ void ReadAzimuthISR()
   static float Rc     =    1;   // Ohms, cable resistance
   static float ADCmax = 1023;
 
-  float Vt = Vs * FIRt / ADCmax; // Volts, at top    of azimuth pot
-  float Vb = Vs * FIRb / ADCmax; // Volts, at bottom of azimuth pot
+  Vt = Vs * FIRt / ADCmax; // Volts, at top    of azimuth pot
+  Vb = Vs * FIRb / ADCmax; // Volts, at bottom of azimuth pot
 
   // WA8USA equations
   // float Vwt=Vs-((Vs-Vtop)/Rb*(Rb+Rc+Rtop))
@@ -331,11 +331,15 @@ void ReadAzimuthISR()
   float Az_capability = configuration.azimuth_rotation_capability;  // degress of rotation
   float Az_stop       = Az_start + Az_capability * HEADING_MULTIPLIER;
 
+  if (analog_az < analog_az_ccw)  analog_az = analog_az_ccw; // clamp to lower limit
+  if (analog_az > analog_az_cw)   analog_az = analog_az_cw;  // clamp to upper limit
+
   azimuth = (int) map(analog_az, analog_az_ccw, analog_az_cw, Az_start, Az_stop);
 
   AzFiltered = azimuth;  // for compatibility
 
   #ifdef DEBUG_HCO_ADC
+  if (debug_mode == 1)
   {
     static bool isFirstWrite = true;
     float Time_usec;
@@ -349,13 +353,13 @@ void ReadAzimuthISR()
     Time_usec = micros();;
     Serial.print(Time_usec);
     Serial.print(", ");
-    Serial.print(Vt);      // top voltage
+    Serial.print(Vt);         // top voltage
     Serial.print(", ");
-    Serial.print(Vb);      // bottom voltage
+    Serial.print(Vb);         // bottom voltage
     Serial.print(", ");
-    Serial.print(analog_az);      // top part of pot
+    Serial.print(analog_az);  // Ohms, Rt, top part of pot
     Serial.print(", ");
-    Serial.print(azimuth);
+    Serial.print(azimuth);    // deg, from mapping Rt and Cal to azimuth
     Serial.println();
   }
   #endif // ifdef debug HCO

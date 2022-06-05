@@ -61,6 +61,29 @@ void SPI_Transfer(uint8_t address, uint8_t data)
   #endif
 }
 
+// called from \C command
+void display_calibration_settings()
+{
+  Serial.println(F("Analog and cal settings: "));
+  Serial.print("Vt: ");
+  Serial.print(Vt);         // top voltage
+  Serial.print(", Vb: ");
+  Serial.print(Vb);         // bottom voltage
+  Serial.println();  
+  Serial.print("analog_az                    ");
+  Serial.println(analog_az,                                 DEC);
+  Serial.print("analog_az_full_ccw           ");
+  Serial.println(configuration.analog_az_full_ccw,          DEC);
+  Serial.print("analog_az_full_cw            ");
+  Serial.println(configuration.analog_az_full_cw,           DEC);
+  Serial.print("azimuth_starting_point       ");
+  Serial.println(configuration.azimuth_starting_point,      DEC);
+  Serial.print("azimuth_rotation_capability  ");
+  Serial.println(configuration.azimuth_rotation_capability, DEC);
+  Serial.print("azimuth:                     ");
+  Serial.println(azimuth,                                   DEC);       
+}
+
 //------------------------------------------------------------------------------
 // 7 segment display on I2C bus
 // MAX7221 Register   Command Address
@@ -92,10 +115,10 @@ void initialize_MAX7221_display()
   // Segment     x  a  b  c  d  e  f  g
   SPI.begin();
   delayMicroseconds(1000);
-  SPI_Transfer(TEST,        byte(0x01)); // take it out of test mode
+  SPI_Transfer(TEST,        byte(0x01)); // put display in test mode, all segments lit
   delay(1000);                           // msec, display test delay
-  SPI_Transfer(TEST,        byte(0x00)); // take it out of test mode
-  SPI_Transfer(SHUTDOWN,    byte(0x01)); // normal operation
+  SPI_Transfer(TEST,        byte(0x00)); // take display out of test mode
+  SPI_Transfer(SHUTDOWN,    byte(0x01)); // normal operation, not shutdown
   SPI_Transfer(DECODE_MODE, byte(0x00)); // bypass decoder for all digits
   SPI_Transfer(INTENSITY,   byte(0x07)); // 8/16 intensity
   SPI_Transfer(SCAN_LIMIT,  byte(0x02)); // 4 digits
@@ -131,21 +154,18 @@ void update_Az_MAX7221_display()
     Serial.println("update MAX7221");
     #endif
 
-    uint16_t binaryTemp;
+    uint16_t AzTemp = azimuth; // working variable display conversion
     uint8_t digit[4]; // bcd digits
 
     last_az_update = millis_now;
 
-    //get the azimuth
-    binaryTemp = azimuth; 
-
     // binary to bcd and write to led
-    digit[2] = (uint8_t) binaryTemp % 10; //
-    binaryTemp /= 10;
-    digit[1] = (uint8_t) binaryTemp % 10;  
-    binaryTemp /= 10;
-    digit[0] = (uint8_t) binaryTemp % 10;  // most significant digit
-    binaryTemp /= 10;
+    digit[2] = (uint8_t) AzTemp % 10; //
+    AzTemp /= 10;
+    digit[1] = (uint8_t) AzTemp % 10;  
+    AzTemp /= 10;
+    digit[0] = (uint8_t) AzTemp % 10;  // most significant digit
+    AzTemp /= 10;
  
     SPI_Transfer(DIGIT0, digit[0]); // \b
     SPI_Transfer(DIGIT1, digit[1]); // \b
