@@ -154,22 +154,34 @@ void update_Az_MAX7221_display()
     Serial.println("update MAX7221");
     #endif
 
-    uint16_t AzTemp = azimuth; // working variable display conversion
-    uint8_t digit[4]; // bcd digits
+    int AzTemp = azimuth; // working variable display conversion
 
     last_az_update = millis_now;
 
     // binary to bcd and write to led
-    digit[2] = (uint8_t) AzTemp % 10; //
+    byte digit_2 = (byte) (AzTemp % 10); // ones digit
     AzTemp /= 10;
-    digit[1] = (uint8_t) AzTemp % 10;  
+    byte digit_1 = (byte) (AzTemp % 10); // tens digit
     AzTemp /= 10;
-    digit[0] = (uint8_t) AzTemp % 10;  // most significant digit
-    AzTemp /= 10;
+    byte digit_0 = (byte) (AzTemp % 10); // most significant digit
  
-    SPI_Transfer(DIGIT0, digit[0]); // \b
-    SPI_Transfer(DIGIT1, digit[1]); // \b
-    SPI_Transfer(DIGIT2, digit[2]); // \b
+    SPI_Transfer(DIGIT0, digit_0); // hundreds
+    SPI_Transfer(DIGIT1, digit_1); // tens
+    SPI_Transfer(DIGIT2, digit_2); // ones
+
+    #ifdef DEBUG_HCO_DISPLAY
+    Serial.print("azimuth: ");
+    Serial.print(azimuth);
+    Serial.print(", ");
+    Serial.print("digits: ");
+    Serial.print(digit_0);
+    Serial.print(", ");
+    Serial.print(digit_1);
+    Serial.print(", ");
+    Serial.print(digit_2);
+    Serial.println();
+    #endif
+
   } // if time to update digits
 } // update_Az_MAX7221_display()
 #endif
