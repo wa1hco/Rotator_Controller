@@ -1,0 +1,18 @@
+.cproject
+.ino.cpp
+.project
+Release/*
+.settings/*
+libraries/*
+core/*
+/sloeber.ino.cpp
+<<<<<<< HEAD
+.pio/build/teensy40/FrameworkArduino/CrashReport.cpp.o
+*.o
+*.hex
+*.elf
+*.checksum
+*.dblite
+*.a
+=======
+>>>>>>> origin
