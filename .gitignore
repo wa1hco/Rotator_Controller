@@ -6,3 +6,10 @@ Release/*
 libraries/*
 core/*
 /sloeber.ino.cpp
+.pio/build/teensy40/FrameworkArduino/CrashReport.cpp.o
+*.o
+*.hex
+*.elf
+*.checksum
+*.dblite
+*.a
