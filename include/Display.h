@@ -12,16 +12,16 @@ void display_az_preset(int target_azimuth);
 void display_az_string();
 char *azimuth_direction(int azimuth_in);
 
-void initialize_display();
-void update_display();
+void update_lcd_display();
+void initialize_MAX7221_display();
+void update_Az_MAX7221_display();
 void display_turning();
 void clear_display_row(byte row_number);
+void display_calibration_settings();
 
 void loadchars();
 void printbigazimuth(int azimuth);
 void printbigchar(int digit, int col, int row, int symbol);
-
-void display_L298_pins();
 
 //#define LCD_COLUMNS and ROWS
 #define LCD_COLUMNS            20

@@ -6,16 +6,28 @@
  */
 
 #include <Arduino.h>
-#include <LiquidCrystal.h>
-
 #include "rotator_features.h"
-#include "rotator_pins.h"
+#include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
 
-#include "Display.h"
-#include <LiquidCrystal.h>
+#include "global_variables.h"
 
+#include "Display.h"
+
+#ifdef FEATURE_LCD_DISPLAY
+#include <LiquidCrystal.h>
+#endif
+
+#ifdef FEATURE_WIRE_SUPPORT
+#include <Wire.h>
+#endif
+
+#ifdef FEATURE_MAX7221_DISPLAY
+#include <SPI.h>
+#endif
+
+#ifdef FEATURE_LCD_DISPLAY
 LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_enable_pin,
                   lcd_4_bit_d4_pin,
@@ -23,6 +35,158 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_d6_pin,
                   lcd_4_bit_d7_pin);
 /* end of classic 4 bit interface LCD display section */
+<<<<<<< HEAD:src/Display.cpp
+#endif
+
+//-----------------------------------Display private variables--------------------------
+unsigned long last_az_update;
+String last_direction_string;\
+
+// SPI transfer function for MAX7221 7 segment LED controller
+void SPI_Transfer(uint8_t address, uint8_t data)
+{
+  SPI.beginTransaction(SPISettings((uint32_t) 400000, MSBFIRST, SPI_MODE0));
+  digitalWrite(MAX7221_CS_PIN, LOW);
+  SPI.transfer(address); // decode mode register
+  SPI.transfer(data);    // bypass decoder for all digits
+  digitalWrite(MAX7221_CS_PIN, HIGH);
+  SPI.endTransaction();
+  delayMicroseconds(10);
+
+  #ifdef DEBUG_HCO_DISPLAY
+  Serial.print("SPI_Transfer: addr, data ");
+  Serial.print(address);
+  Serial.print(", ");
+  Serial.print(data);
+  Serial.println();
+  #endif
+}
+
+// called from \C command
+void display_calibration_settings()
+{
+  Serial.println(F("Analog and cal settings: "));
+  Serial.print("Vt: ");
+  Serial.print(Vt);         // top voltage
+  Serial.print(", Vb: ");
+  Serial.print(Vb);         // bottom voltage
+  Serial.println();  
+  Serial.print("analog_az                    ");
+  Serial.println(analog_az,                                 DEC);
+  Serial.print("analog_az_full_ccw           ");
+  Serial.println(configuration.analog_az_full_ccw,          DEC);
+  Serial.print("analog_az_full_cw            ");
+  Serial.println(configuration.analog_az_full_cw,           DEC);
+  Serial.print("azimuth_starting_point       ");
+  Serial.println(configuration.azimuth_starting_point,      DEC);
+  Serial.print("azimuth_rotation_capability  ");
+  Serial.println(configuration.azimuth_rotation_capability, DEC);
+  Serial.print("azimuth:                     ");
+  Serial.println(azimuth,                                   DEC);       
+}
+
+//------------------------------------------------------------------------------
+// 7 segment display on I2C bus
+// MAX7221 Register   Command Address
+// NOP                0x00
+#define DIGIT0        byte(0x01)
+#define DIGIT1        byte(0x02)
+#define DIGIT2        byte(0x03)
+#define DIGIT3        byte(0x04)
+//#define Digit4        byte(0x05)
+//#define Digit5        byte(0x06)
+//#define Digit6        byte(0x07)
+//#define Digit7        byte(0x08)
+#define DECODE_MODE   byte(0x09)  // BCD mode B (0-9, E, H, L, P, -) or raw, Digits 7 to 0
+#define INTENSITY     byte(0x0A)  // PWM 15/16 to 1/16, bits 3 to 0
+#define SCAN_LIMIT    byte(0x0B)  // 0 only to 0 to 7, bits 2 to 0
+#define SHUTDOWN      byte(0x0C)  // 
+#define TEST          byte(0x0F)  // 
+
+
+// MAX7221 initialize
+#ifdef FEATURE_MAX7221_DISPLAY
+void initialize_MAX7221_display()
+{  
+  #ifdef DEBUG_HCO_DISPLAY
+  Serial.println("init MAX7221");
+  #endif
+  
+  // Register   D7 D6 D5 D4 D3 D2 D1 D0
+  // Segment     x  a  b  c  d  e  f  g
+  SPI.begin();
+  delayMicroseconds(1000);
+  SPI_Transfer(TEST,        byte(0x01)); // put display in test mode, all segments lit
+  delay(1000);                           // msec, display test delay
+  SPI_Transfer(TEST,        byte(0x00)); // take display out of test mode
+  SPI_Transfer(SHUTDOWN,    byte(0x01)); // normal operation, not shutdown
+  SPI_Transfer(DECODE_MODE, byte(0x00)); // bypass decoder for all digits
+  SPI_Transfer(INTENSITY,   byte(0x07)); // 8/16 intensity
+  SPI_Transfer(SCAN_LIMIT,  byte(0x02)); // 4 digits
+
+  // display 'hco' or 'HCO' with decode turned off
+  SPI_Transfer(DIGIT0,      byte(0x17)); // h
+  SPI_Transfer(DIGIT1,      byte(0x0D)); // c
+  SPI_Transfer(DIGIT2,      byte(0x1D)); // o
+  SPI_Transfer(DIGIT3,      byte(0x00)); // \b
+  delay(3000); // 3 seconds
+
+  // blank the display
+  SPI_Transfer(DIGIT0,      byte(0x00)); // \b
+  SPI_Transfer(DIGIT1,      byte(0x00)); // \b
+  SPI_Transfer(DIGIT2,      byte(0x00)); // \b
+  SPI_Transfer(DIGIT3,      byte(0x00)); // \b
+
+  SPI_Transfer(DECODE_MODE, byte(0x0F)); // decode mode address, set hex decode
+}
+#endif
+
+// Write azimuth to display
+// assumes MAX7221 configured and set for digits
+#ifdef FEATURE_MAX7221_DISPLAY
+void update_Az_MAX7221_display()
+{
+  static uint32_t last_az_update = 0;
+  uint32_t millis_now = millis();
+
+  if ((millis_now - last_az_update) > DISPLAY_UPDATE_INTERVAL)
+  { 
+    #ifdef DEBUG_HCO_DISPLAY
+    Serial.println("update MAX7221");
+    #endif
+
+    int AzTemp = azimuth; // working variable display conversion
+
+    last_az_update = millis_now;
+
+    // binary to bcd and write to led
+    byte digit_2 = (byte) (AzTemp % 10); // ones digit
+    AzTemp /= 10;
+    byte digit_1 = (byte) (AzTemp % 10); // tens digit
+    AzTemp /= 10;
+    byte digit_0 = (byte) (AzTemp % 10); // most significant digit
+ 
+    SPI_Transfer(DIGIT0, digit_0); // hundreds
+    SPI_Transfer(DIGIT1, digit_1); // tens
+    SPI_Transfer(DIGIT2, digit_2); // ones
+
+    #ifdef DEBUG_HCO_DISPLAY
+    Serial.print("azimuth: ");
+    Serial.print(azimuth);
+    Serial.print(", ");
+    Serial.print("digits: ");
+    Serial.print(digit_0);
+    Serial.print(", ");
+    Serial.print(digit_1);
+    Serial.print(", ");
+    Serial.print(digit_2);
+    Serial.println();
+    #endif
+
+  } // if time to update digits
+} // update_Az_MAX7221_display()
+#endif
+=======
 
 // global variables referenced below
 extern int azimuth;
@@ -33,11 +197,16 @@ extern byte push_lcd_update;
 unsigned long last_lcd_update;
 extern int target_azimuth;
 String last_direction_string;
+>>>>>>> origin:Display.cpp
 
 //----------------------------------------------------------------------------------------
 // Azimuth Pre-set value at Col 16 and row 2
 void display_az_preset(int target)
 {
+<<<<<<< HEAD:src/Display.cpp
+  #ifdef FEATURE_LCD_DISPLAY
+=======
+>>>>>>> origin:Display.cpp
 	int hundreds;
 	int tens;
 	int ones;
@@ -74,11 +243,16 @@ void display_az_preset(int target)
 		Serial.println(target);
 	}
 	#endif //DEBUG_DISPLAY
+<<<<<<< HEAD:src/Display.cpp
+  #endif // feature lcd display
+=======
+>>>>>>> origin:Display.cpp
 }
 
 //----------------------------------------------------------------
 void display_az_string()
 {
+  #ifdef FEATURE_LCD_DISPLAY
   String direction_string;
   direction_string = azimuth_direction(azimuth);  // NE, ENE, NNE, etc
 
@@ -93,6 +267,7 @@ void display_az_string()
     Serial.println(direction_string);
   }
   #endif //DEBUG_AZ_STR
+  #endif // feature lcd display
 }
 
 //--------------------------------------------------------------
@@ -119,10 +294,10 @@ char *azimuth_direction(int azimuth_in)
   return (char *) "N";
 }
 
-
 //--------------------------------------------------------------
-void initialize_display()
+void initialize_lcd_display()
 {
+  #ifdef FEATURE_LCD_DISPLAY
   #ifndef OPTION_INITIALIZE_YOURDUINO_I2C
   lcd.begin(LCD_COLUMNS, LCD_ROWS);
   #endif
@@ -143,13 +318,14 @@ void initialize_display()
   lcd.print("Rotor Controller");
   lcd.setCursor((LCD_COLUMNS-16)/2, 2);
   lcd.print("DC Motor, Az Pot");
-  last_lcd_update = millis();
+  last_az_update = millis();
 
  //============================================
  // code inserted for font setup
  loadchars(); // configure the LCD for Big Fonts
 
  delay(3000);  // display intro screen for 3 seconds
+ #endif // feature lcd display
 }
 
 //--------------------------------------------------------------
@@ -166,7 +342,8 @@ void initialize_display()
 // Col 16-20, Row 2,   {000 to 359}, Preset knob position
 // Col 16-20, Row 3,   {MAN, PRE, REM, M/S, M/C, S/C, OF1, OF2, DBG}
 //-----------------------------------------------------------------------
-void update_display()
+#ifdef FEATURE_LCD_DISPLAY
+void update_lcd_display()
 {
   // update the LCD display
   static byte lcd_state_row_0 = 0;
@@ -180,7 +357,7 @@ void update_display()
   // target from preset knob
   // azimuth_direction(azimuth)
 
-  if (((millis() - last_lcd_update) > LCD_UPDATE_TIME) || (push_lcd_update))
+  if (((millis() - last_az_update) > DISPLAY_UPDATE_TIME) || (push_lcd_update))
   {
     // initialization
     if ((lcd_state_row_0 == 0) && (lcd_state_row_1 == 0))
@@ -199,7 +376,7 @@ void update_display()
   }
 
   // Large Azimuth Characters
-  if ((millis()-last_lcd_update) > LCD_UPDATE_TIME)
+  if ((millis()-last_az_update) > DISPLAY_UPDATE_TIME)
   {
     if (last_azimuth != azimuth)
     {
@@ -208,11 +385,13 @@ void update_display()
       lcd_state_row_1 = LCD_HEADING;
     }
   }
-  if ((millis() - last_lcd_update) > LCD_UPDATE_TIME) {last_lcd_update = millis();}
+  if ((millis() - last_az_update) > DISPLAY_UPDATE_TIME) {last_lcd_update = millis();}
   last_direction_string = direction_string;
 } // update_big_display()
+#endif
 
 //----------------------------------------------------------------
+#ifdef FEATURE_LCD_DISPLAY
 void display_turning()
 {
   String direction_string;
@@ -276,8 +455,10 @@ void display_turning()
     #endif //DEBUG_TURNING
   }
 }
+#endif
 
 //--------------------------------------------------------------
+#ifdef FEATURE_LCD_DISPLAY
 void clear_display_row(byte row_number)
 {
   lcd.setCursor(0,row_number);
@@ -376,6 +557,7 @@ void loadchars()
   lcd.createChar(6, custchar[6]);
   lcd.createChar(7, custchar[7]);
 }
+#endif
 
 //------------------------------------------------------------------------
 // digit 0-9; col, row in LCD character, symbol
@@ -386,6 +568,7 @@ void loadchars()
 // row, col define the upper left corner of the digit display
 // symbol put a deg symbol on the character
 //
+#ifdef FEATURE_LCD_DISPLAY
 void printbigchar(int digit, int col, int row, int symbol = 0)
 {
   // Define the large fonts, borrowed from GreenHerron RT-21 pictures
@@ -494,11 +677,13 @@ void printbigchar(int digit, int col, int row, int symbol = 0)
 	}
   }
 }
+#endif
 
 //-----------------------------------------------------------------------
 // print the azimuth big characters
 // blank most significant zero
 // add degree symbol at the end
+#ifdef FEATURE_LCD_DISPLAY
 void printbigazimuth(int azimuth)
 {
   int hundreds;
@@ -514,6 +699,7 @@ void printbigazimuth(int azimuth)
   printbigchar(tens,     5,   0,  0);
   printbigchar(ones,    10,   0,  1);  // flag degree symbol
 }
+#endif
 
 // adafruit has a build in readbuttons() for their LCD on I2C
 #ifdef FEATURE_ADAFRUIT_BUTTONS

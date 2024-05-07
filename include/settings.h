@@ -14,11 +14,20 @@ You can tweak these, but read the online documentation!
 
 // analog voltage calibration - these are default values;
 // you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
-#define ANALOG_AZ_FULL_CCW               0
-#define ANALOG_AZ_FULL_CW             1023
-#define ANALOG_EL_0_DEGREES              2
-#define ANALOG_EL_MAX_ELEVATION       1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
+#ifdef FEATURE_HCO_ADC
+#define ANALOG_AZ_FULL_CCW               0  // Ohms, min wiper noise corrected pot reading
+#define ANALOG_AZ_FULL_CW              500  // Ohms, max wiper noise corrected pot reading
+#else
+#define ANALOG_AZ_FULL_CCW               0  
+#define ANALOG_AZ_FULL_CW              360  // max expected on 0 to 1023 scale
+#endif
 
+<<<<<<< HEAD:include/settings.h
+#define ANALOG_EL_0_DEGREES              2
+#define ANALOG_EL_MAX_ELEVATION        180  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
+
+=======
+>>>>>>> origin:settings.h
 #define ANALOG_AZ_OVERLAP_DEGREES      360  // if overlap_led is enabled, turn on overlap led line if azimuth is greater than this setting
                                             // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
                                             // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
@@ -28,7 +37,7 @@ You can tweak these, but read the online documentation!
 
 #define AZIMUTH_STARTING_POINT_DEFAULT        0 // the starting point in degrees of the azimuthal rotator
                                                 // (the Yaesu GS-232B Emulation Z command will override this and write the setting to eeprom)
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 360 // the default rotation capability of the rotator in degrees
                                                 // (the Yaesu P36 and P45 commands will override this and write the setting to eeprom)
 #define ELEVATION_MAXIMUM_DEGREES           180 // change this to set the maximum elevation in degrees
 
@@ -39,8 +48,8 @@ You can tweak these, but read the online documentation!
 #define PWM_SPEED_VOLTAGE_X4           255
 
 //AZ
-#define AZ_SLOWSTART_DEFAULT             1    // 0 = off ; 1 = on
-#define AZ_SLOWDOWN_DEFAULT              1    // 0 = off ; 1 = on
+#define AZ_SLOWSTART_DEFAULT             0    // 0 = off ; 1 = on
+#define AZ_SLOWDOWN_DEFAULT              0    // 0 = off ; 1 = on
 #define AZ_SLOW_START_UP_TIME         2000    // if slow start is enabled, the unit will ramp up speed for this many milliseconds
 #define AZ_SLOW_START_STARTING_PWM       1    // PWM starting value for slow start
 #define AZ_SLOW_START_STEPS             20
@@ -66,13 +75,13 @@ You can tweak these, but read the online documentation!
 
 //Variable frequency output settings
 #define AZ_VARIABLE_FREQ_OUTPUT_LOW      1    // Frequency in hertz of minimum speed
-#define AZ_VARIABLE_FREQ_OUTPUT_HIGH    50    // Frequency in hertz of maximum speed
+#define AZ_VARIABLE_FREQ_OUTPUT_HIGH    60    // Frequency in hertz of maximum speed
 #define EL_VARIABLE_FREQ_OUTPUT_LOW      1    // Frequency in hertz of minimum speed
-#define EL_VARIABLE_FREQ_OUTPUT_HIGH    50    // Frequency in hertz of maximum speed
+#define EL_VARIABLE_FREQ_OUTPUT_HIGH    60    // Frequency in hertz of maximum speed
 
 // Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
 #define AZ_MANUAL_ROTATE_CCW_LIMIT       0    // if using a rotator that starts at 180 degrees, set this to something like 185
-#define AZ_MANUAL_ROTATE_CW_LIMIT      450    // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
+#define AZ_MANUAL_ROTATE_CW_LIMIT      360    // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
 
 // Settings for OPTION_EL_MANUAL_ROTATE_LIMITS
 #define EL_MANUAL_ROTATE_DOWN_LIMIT     -1
@@ -101,13 +110,15 @@ You can tweak these, but read the online documentation!
 #define SERIAL1_BAUD_RATE             9600     // 9600
 #define SERIAL2_BAUD_RATE             9600     // 9600
 #define SERIAL3_BAUD_RATE             9600     // 9600
-#define LCD_UPDATE_TIME                200     // LCD update time in milliseconds
-#define AZ_BRAKE_DELAY                1000     // in milliseconds
-#define EL_BRAKE_DELAY                1000     // in milliseconds
+#define DISPLAY_UPDATE_INTERVAL        200     // msec, display update interval, LCD or 7 segment
+#define AZ_BRAKE_DELAY                1000     // msec
+#define EL_BRAKE_DELAY                1000     // msec
+#define TIME_BETWEEN_INTERRUPTS          5     // msec, 200 Hz
+#define BUTTON_BOUNCE_DELAY            100     // msec
+#define BUTTON_LONG_PRESS             2000     // msec, 2 seconds
 
 #define EEPROM_MAGIC_NUMBER 100
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
-
 
 #ifdef FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 #define HEADING_MULTIPLIER              10
@@ -115,8 +126,7 @@ You can tweak these, but read the online documentation!
 #define LCD_DECIMAL_PLACES               1
 #else //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 #define HEADING_MULTIPLIER               1
-#define LCD_HEADING_MULTIPLIER           1.0
-#define LCD_DECIMAL_PLACES               0
+#define DECIMAL_PLACES                   0
 #endif //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
@@ -138,13 +148,13 @@ You can tweak these, but read the online documentation!
 // Define polarity, depends on rotator interface
 //   Values for wa1hco "do everything" box
 //     Arduino digital pin, optoisolator pull down to light, optoisolator pulls down relay coil
-#define ROTATE_PIN_INACTIVE_VALUE        HIGH
-#define ROTATE_PIN_ACTIVE_VALUE          LOW
-#define BRAKE_RELEASE_OFF                HIGH // means braked, used inside *break_release*() control functions
-#define BRAKE_RELEASE_ON                 LOW  // means brake released, used inside *break_release*() control functions
+#define ROTATE_PIN_INACTIVE_VALUE        LOW
+#define ROTATE_PIN_ACTIVE_VALUE          HIGH
+#define BRAKE_RELEASE_OFF                LOW  // means braked, used inside *break_release*() control functions
+#define BRAKE_RELEASE_ON                 HIGH // means brake released, used inside *break_release*() control functions
 
-#define AZIMUTH_SMOOTHING_FACTOR           0  // value = 0 to 99.9
-#define ELEVATION_SMOOTHING_FACTOR         0  // value = 0 to 99.9
+#define AZIMUTH_SMOOTHING_FACTOR         0 // value = 0 to 99.9
+#define ELEVATION_SMOOTHING_FACTOR       ((float)0.00) // value = 0 to 99.9
 
 #define AZIMUTH_MEASUREMENT_FREQUENCY_MS   0  // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
 #define ELEVATION_MEASUREMENT_FREQUENCY_MS 0  // this does not apply if using FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT
@@ -155,7 +165,5 @@ You can tweak these, but read the online documentation!
 #define ROTATION_INDICATOR_PIN_INACTIVE_STATE LOW
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
-
-
 
 #endif /* SETTINGS_H_ */
