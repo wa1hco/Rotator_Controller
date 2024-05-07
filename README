@@ -1,8 +1,8 @@
 Rotator_Controller derives from the K3NG rotator controller code.
 
 The changes include
---- Developed for Teensy 3.2 and 4.0 microcontroller
---- Include BigFont to make it more like the GreenHeron controller
---- support 7 segmenet display for HCO board
+--- Developed for Teensy 3 and 4 series microcontroller
+--- Version for HCO_board with relays and 7 segment
+--- BigFont for 4x20 lcd to make it more like the GreenHeron controller
 --- Lots of changes to better suit my programming style
 --- Scratchy pot filter for rotors with grounded wiper
