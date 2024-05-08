@@ -8,7 +8,7 @@ core/*
 .pio/build/teensy40/FrameworkArduino/CrashReport.cpp.o
 *.o
 *.hex
-*.elf
+.elf
 *.checksum
 *.dblite
 *.a
