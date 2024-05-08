@@ -22,12 +22,9 @@ You can tweak these, but read the online documentation!
 #define ANALOG_AZ_FULL_CW              360  // max expected on 0 to 1023 scale
 #endif
 
-<<<<<<< HEAD:include/settings.h
 #define ANALOG_EL_0_DEGREES              2
 #define ANALOG_EL_MAX_ELEVATION        180  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
-=======
->>>>>>> origin:settings.h
 #define ANALOG_AZ_OVERLAP_DEGREES      360  // if overlap_led is enabled, turn on overlap led line if azimuth is greater than this setting
                                             // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
                                             // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED

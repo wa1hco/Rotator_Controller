@@ -35,7 +35,6 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
                   lcd_4_bit_d6_pin,
                   lcd_4_bit_d7_pin);
 /* end of classic 4 bit interface LCD display section */
-<<<<<<< HEAD:src/Display.cpp
 #endif
 
 //-----------------------------------Display private variables--------------------------
@@ -186,27 +185,12 @@ void update_Az_MAX7221_display()
   } // if time to update digits
 } // update_Az_MAX7221_display()
 #endif
-=======
-
-// global variables referenced below
-extern int azimuth;
-extern byte az_state;
-extern byte push_lcd_update;
-
-//-----------------------------------Display private variables--------------------------
-unsigned long last_lcd_update;
-extern int target_azimuth;
-String last_direction_string;
->>>>>>> origin:Display.cpp
 
 //----------------------------------------------------------------------------------------
 // Azimuth Pre-set value at Col 16 and row 2
 void display_az_preset(int target)
 {
-<<<<<<< HEAD:src/Display.cpp
   #ifdef FEATURE_LCD_DISPLAY
-=======
->>>>>>> origin:Display.cpp
 	int hundreds;
 	int tens;
 	int ones;
@@ -243,10 +227,7 @@ void display_az_preset(int target)
 		Serial.println(target);
 	}
 	#endif //DEBUG_DISPLAY
-<<<<<<< HEAD:src/Display.cpp
   #endif // feature lcd display
-=======
->>>>>>> origin:Display.cpp
 }
 
 //----------------------------------------------------------------
