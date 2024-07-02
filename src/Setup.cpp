@@ -35,10 +35,20 @@
 */
 
 // Arduino environment
+#include <global_variables.h>
 #include <Arduino.h>
 #include "eeprom_local.h"
-#include "Display.h"
+
+#ifdef FEATURE_LCD_DISPLAY
+#include "Display_LCD.h"
+#endif
+
+#ifdef FEATURE_MAX7221_DISPLAY
+#include "Display_MAX7221.h"
+#endif
+
 #include "rotator_features.h"
+
 #include "serial_command_processing.h"
 #include "Input.h"
 #include <MsTimer2.h>

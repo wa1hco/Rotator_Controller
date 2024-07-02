@@ -94,7 +94,6 @@
 #endif
 
 #if !defined(FEATURE_HCO_AZ_POSITION) && !defined(FEATURE_AZ_POSITION_POTENTIOMETER) && !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT) && !defined(FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT) && !defined(FEATURE_AZ_POSITION_HMC5883L)  && !defined(FEATURE_AZ_POSITION_LSM303)
-
 #error "You must specify one AZ position sensor feature"
 #endif
 
@@ -102,19 +101,13 @@
 #error "You must specify one EL position sensor feature"
 #endif
 
-
 #if (defined(FEATURE_AZ_PRESET_ENCODER) || defined(FEATURE_EL_PRESET_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER)) && !defined(FEATURE_ROTARY_ENCODER_SUPPORT)
 #define FEATURE_ROTARY_ENCODER_SUPPORT
 #endif
 
-
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) && !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS)
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 #endif
-
-
-
-
 
 
 #endif /* DEPENDENCIES_H_ */

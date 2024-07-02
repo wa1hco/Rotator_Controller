@@ -214,7 +214,15 @@
 // Project functions
 #include "global_variables.h"
 #include "Service_Blink_LED.h"
-#include "Display.h"
+
+#ifdef FEATURE_LCD_DISPLAY
+#include "Display_LCD.h"
+#endif
+
+#ifdef FEATURE_MAX7221_DISPLAY
+#include "Display_MAX7221.h"
+#endif
+
 #include "serial_command_processing.h"
 #include "eeprom_local.h"
 #include "StateMachine.h"
@@ -335,9 +343,12 @@ void loop()
   
   #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder or Preset Selector
   check_preset_encoders();
-  #else
-  check_az_preset_potentiometer();
   #endif //FEATURE_AZ_PRESET_ENCODER
+
+  #ifdef FEATURE_AZ_PRESET_POT
+  check_az_preset_potentiometer();
+  #endif //FEATURE_AZ_PRESET_POT
+
   #endif //ndef FEATURE_REMOTE_UNIT_SLAVE
   
   //output_debug();
@@ -1126,17 +1137,19 @@ void initialize_pins()
   pinMode(PositionPosPin, INPUT);
   pinMode(PositionNegPin, INPUT);
   #endif
+  
+  if (az_preset_pot) 
+  {
+    pinMode(az_preset_pot, INPUT);
+    //digitalWrite(az_preset_pot, LOW);
+  }
 
   if (az_speed_pot) 
   {
     pinMode(az_speed_pot, INPUT);
     digitalWrite(az_speed_pot, LOW);
   }
-  if (az_preset_pot) 
-  {
-    pinMode(az_preset_pot, INPUT);
-    digitalWrite(az_preset_pot, LOW);
-  }
+
   
   if (preset_start_button) 
   {

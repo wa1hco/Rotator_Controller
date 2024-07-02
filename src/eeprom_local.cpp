@@ -98,6 +98,7 @@ void read_settings_from_eeprom()
     
     #ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
     raw_azimuth = int(configuration.last_azimuth*HEADING_MULTIPLIER);
+    // unwrap raw_azimuth
     if (raw_azimuth >= (360*HEADING_MULTIPLIER))
     {
       azimuth = raw_azimuth - (360*HEADING_MULTIPLIER);

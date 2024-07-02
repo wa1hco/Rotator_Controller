@@ -29,6 +29,7 @@
 
 // position sensors - pick one for azimuth and one for elevation if using an az/el rotator
 //#define FEATURE_AZ_POSITION_POTENTIOMETER          //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+                                                     // not used if HCO_AZ_POSITION
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
 //#define FEATURE_AZ_POSITION_PULSE_INPUT
 //#define FEATURE_AZ_POSITION_HMC5883L             // HMC5883L digital compass support (also uncomment object declaration below)
@@ -44,7 +45,8 @@
 //#define FEATURE_EL_POSITION_LSM303                          // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 
 /* preset rotary encoder features and options */
-//#define FEATURE_AZ_PRESET_ENCODER                 // Uncomment for Rotary Encoder Azimuth Preset support
+#define FEATURE_AZ_PRESET_POT                     // Uncomment for azimuth preset rotary potentiometer
+//#define FEATURE_AZ_PRESET_ENCODER                 // Uncomment for Rotary Encoder Preset support
 //#define FEATURE_EL_PRESET_ENCODER                 // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 //#define OPTION_ENCODER_HALF_STEP_MODE
 //#define OPTION_ENCODER_ENABLE_PULLUPS             // define to enable weak pullups on rotary encoder pins
@@ -96,12 +98,12 @@
 //#define DEBUG_SERVICE_REQUEST_QUEUE
 //#define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT
-//#define DEBUG_AZ_PRESET_POT
+#define DEBUG_AZ_PRESET_POT
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
 //#define DEBUG_HCO_BUTTONS
 //#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
-//#define DEBUG_PRESET_ENCODERS
+#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
 //#define DEBUG_BRAKE
 //#define DEBUG_OVERLAP
@@ -115,7 +117,7 @@
 //#define DEBUG_ROTATOR
 //#define DEBUG_SUBMIT_REQUEST
 //#define DEBUG_SERVICE_ROTATION
-//#define DEBUG_POSITION_ROTARY_ENCODER
+#define DEBUG_POSITION_ROTARY_ENCODER
 //#define DEBUG_PROFILE_LOOP_TIME
 //#define DEBUG_POSITION_PULSE_INPUT
 //#define DEBUG_ACCEL

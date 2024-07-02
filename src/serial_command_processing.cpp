@@ -9,7 +9,7 @@
 #include "global_variables.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"
-#include "Display.h"
+#include "display_calibration_settings.h"
 
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION

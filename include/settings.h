@@ -91,12 +91,12 @@ You can tweak these, but read the online documentation!
 #define SPEED_POT_HIGH_MAP             255
 
 // Azimuth preset pot settings
-#define AZ_PRESET_POT_FULL_CW            0
-#define AZ_PRESET_POT_FULL_CCW        1023
+#define AZ_PRESET_POT_FULL_CCW           0
+#define AZ_PRESET_POT_FULL_CW         1023
 #define AZ_PRESET_POT_FULL_CW_MAP        0     // azimuth pot fully counter-clockwise degrees
-#define AZ_PRESET_POT_FULL_CCW_MAP     450     // azimuth pot fully clockwise degrees
+#define AZ_PRESET_POT_FULL_CCW_MAP     360     // azimuth pot fully clockwise degrees
 
-#define ENCODER_PRESET_TIMEOUT 5000
+#define ENCODER_PRESET_TIMEOUT        5000
 
 // various code settings
 #define AZIMUTH_TOLERANCE                3.0   // rotator will stop within X degrees when doing autorotation

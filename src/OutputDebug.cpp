@@ -27,7 +27,7 @@
 // Project functions
 #include "global_variables.h"
 #include "Service_Blink_LED.h"
-#include "Display.h"
+//#include "Display.h"
 #include "serial_command_processing.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"
@@ -114,11 +114,12 @@ void output_debug()
     Serial.println(analog_az);
     #endif //FEATURE_AZ_POSITION_POTENTIOMETER
     
+    #ifdef DEBUG_AZ_SPEED_POT
     if (normal_az_speed_voltage) 
-    //{
+    {
       Serial.print(F("\tAZ Speed Norm: "));
       Serial.print(normal_az_speed_voltage, DEC);
-    //}
+    }
     
     Serial.print(F(" Current: "));
     Serial.print(current_az_speed_voltage,DEC);
@@ -128,14 +129,18 @@ void output_debug()
       Serial.print(F("\tAZ Speed Pot: "));
       Serial.print(analogRead(az_speed_pot));
     }    
+    #endif
+
+    #ifdef DEBUG_AZ_PRESET_POT
     if (az_preset_pot) 
     {
       Serial.print(F("\tAZ Preset Pot Analog: "));
       Serial.print(analogRead(az_preset_pot));
       Serial.print(F("\tAZ Preset Pot Setting: "));
       Serial.print(map(analogRead(az_preset_pot), AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP));
-    }
-        
+    } 
+    #endif
+    
     Serial.println();
 
     #ifdef FEATURE_ELEVATION_CONTROL

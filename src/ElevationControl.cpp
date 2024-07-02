@@ -27,7 +27,7 @@
 // Project functions
 #include "global_variables.h"
 #include "Service_Blink_LED.h"
-#include "Display.h"
+//#include "Display.h"
 #include "serial_command_processing.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"

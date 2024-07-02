@@ -2,6 +2,7 @@
 
 #ifndef ROTATOR_PINS_H_
 #define ROTATOR_PINS_H_
+#include "rotator_features.h"
 
 // You need to look at these and set them appropriately !
 // Most pins can be disabled by setting them to 0 (zero).  If you're not using a pin or function, set it to 0.
@@ -22,13 +23,13 @@
 // HCO Rotator custom board use of pins
 // Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
 //--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
-// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|   |   |   |   |  |  |  |  |
+// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|   |   |   |   |  |A7|  |  |
 // I2C      | | | | | | | | |   |  |  |  |  |  |  |  |   |   |DA0|CL0|  |  |  |  |
 // Buttons  | | | | | | | | |CCW|CW|  |  |  |  |  |  |   |   |   |   |  |  |  |  |
 // SPI      | | | | | | | | |   |  |CS|SI|SO|CL|  |  |   |   |   |   |  |  |  |  |
 // Relays   | | | | | | | | |   |  |  |  |  |  |  |  |BR |LR |   |   |MV|  |  |  |
 //--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
-// Unused   |0|1|2|3|4|5|6|7|   |  |  |  |  |  |  |  |   |   |   |   |  |21|22|23|
+// Unused   |0|1|2|3|4|5|6|7|   |  |  |  |  |  |  |  |   |   |   |   |  |  |22|23|
 //--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
 
 #ifdef FEATURE_MAX7221_DISPLAY
@@ -47,6 +48,7 @@
 
 #define PositionPosPin 14         // A0, grounded wiper
 #define PositionNegPin 15         // A1, grounded wiper
+#define AzPresetPin    21         // A7, 10K pot, 3V3 to GND
 
 #define TeensyLED      13
 
@@ -63,7 +65,7 @@
 #define overlap_led             0               // line goes high when azimuth rotator is in overlap (> 360 rotators)
 #define brake_az                BrakeAzPin      // goes high to disengage azimuth brake (set to 0 to disable)
 #define az_speed_pot            0               // connect to wiper of 1K to 10K potentiometer for speed control (set to 0 to disable)
-#define az_preset_pot           0               // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
+#define az_preset_pot           AzPresetPin     // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
 #define preset_start_button     0               // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 #define button_stop             0               // connect to momentary switch (ground on button press) for preset stop (set to 0 to disable or for preset automatic start)
 
