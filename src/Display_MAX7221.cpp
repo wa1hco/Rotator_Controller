@@ -77,7 +77,7 @@ void initialize_MAX7221_display()
   SPI_Transfer(SHUTDOWN,    char(0x01)); // normal operation, not shutdown
   SPI_Transfer(DECODE_MODE, char(0x00)); // bypass decoder for all digits
   SPI_Transfer(INTENSITY,   char(0x07)); // 8/16 intensity
-  SPI_Transfer(SCAN_LIMIT,  char(0x02)); // 4 digits
+  SPI_Transfer(SCAN_LIMIT,  char(0x03)); // 4 digits
 
   // display 'hco' or 'HCO' with decode turned off
   SPI_Transfer(DIGIT0,      char(0x17)); // h
@@ -98,7 +98,6 @@ void initialize_MAX7221_display()
 
 // Write azimuth to display
 // assumes MAX7221 configured and set for digits
-#ifdef FEATURE_MAX7221_DISPLAY
 void update_Az_MAX7221_display()
 {
   static uint32_t last_az_update = 0;
@@ -110,7 +109,18 @@ void update_Az_MAX7221_display()
     Serial.println("update MAX7221");
     #endif
 
-    int AzTemp = azimuth; // working variable display conversion
+    int AzTemp;
+    char digit_3;
+    if(is_display_preset)
+    {
+      AzTemp = azimuth_preset;
+      digit_3 = char(0x0E); // "P"
+    }
+    else
+    {
+      AzTemp = azimuth; // working variable display conversion
+      digit_3 = char(0x0F); // blank
+    }
 
     last_az_update = millis_now;
 
@@ -124,6 +134,8 @@ void update_Az_MAX7221_display()
     SPI_Transfer(DIGIT0, digit_0); // hundreds
     SPI_Transfer(DIGIT1, digit_1); // tens
     SPI_Transfer(DIGIT2, digit_2); // ones
+    SPI_Transfer(DIGIT3, digit_3); // preset or blank
+    
 
     #ifdef DEBUG_HCO_DISPLAY
     Serial.print("azimuth: ");
@@ -140,4 +152,4 @@ void update_Az_MAX7221_display()
 
   } // if time to update digits
 } // update_Az_MAX7221_display()
-#endif
+

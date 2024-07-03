@@ -107,6 +107,11 @@ const unsigned char ttable[7][4] =
 };
 #endif //OPTION_ENCODER_HALF_STEP_MODE
 
+#ifdef FEATURE_AZ_PRESET_POT
+bool          is_display_preset                = false;
+int           azimuth_preset;
+#endif
+
 #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
 int                    az_encoder_raw_degrees   = 0;
 volatile unsigned char az_encoder_state         = 0;

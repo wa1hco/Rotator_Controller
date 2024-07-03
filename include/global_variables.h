@@ -123,6 +123,11 @@ extern const unsigned char ttable[6][4];
 extern const unsigned char ttable[7][4];
 #endif //OPTION_ENCODER_HALF_STEP_MODE
 
+#ifdef FEATURE_AZ_PRESET_POT
+extern bool        is_display_preset;
+extern int         azimuth_preset;
+#endif
+
 #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
 extern int az_encoder_raw_degrees;
 #define ENCODER_IDLE 0

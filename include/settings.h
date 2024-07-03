@@ -91,10 +91,13 @@ You can tweak these, but read the online documentation!
 #define SPEED_POT_HIGH_MAP             255
 
 // Azimuth preset pot settings
+#define AZ_PRESET_CHECK_INTERVAL       250     // 250 ms
+#define AZ_PRESET_RATE                   3     // turning defined as 3 adc counts per 250 msec
+#define AZ_PRESET_STOP_COUNT             6
 #define AZ_PRESET_POT_FULL_CCW           0
 #define AZ_PRESET_POT_FULL_CW         1023
-#define AZ_PRESET_POT_FULL_CW_MAP        0     // azimuth pot fully counter-clockwise degrees
-#define AZ_PRESET_POT_FULL_CCW_MAP     360     // azimuth pot fully clockwise degrees
+#define AZ_PRESET_POT_FULL_CCW_MAP       0     // azimuth pot fully clockwise degrees
+#define AZ_PRESET_POT_FULL_CW_MAP      360     // azimuth pot fully counter-clockwise degrees
 
 #define ENCODER_PRESET_TIMEOUT        5000
 

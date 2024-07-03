@@ -33,7 +33,7 @@
 #include "Input.h"
 
 #ifdef FEATURE_LCD_DISPLAY
-#include "Display.h"
+#include "Display_LCD.h"
 #endif
 
 #ifdef FEATURE_MAX7221_DISPLAY
@@ -45,11 +45,11 @@
 void check_az_speed_pot() 
 {
 #ifdef OPTION_AZIMUTH_MOTOR_DIR_CONTROL
-  static unsigned long last_pot_check_time = 0;
+  static unsigned long last_az_preset_check_time = 0;
   int pot_read = 0;
   byte new_azimuth_speed_voltage = 0;
    
-  if (az_speed_pot && azimuth_speed_voltage && ((millis() - last_pot_check_time) > 500))
+  if (az_speed_pot && azimuth_speed_voltage && ((millis() - last_az_preset_check_time) > 500))
   {
     pot_read = analogRead(az_speed_pot);
     new_azimuth_speed_voltage = map(pot_read, SPEED_POT_LOW, SPEED_POT_HIGH, SPEED_POT_LOW_MAP, SPEED_POT_HIGH_MAP);
@@ -72,7 +72,7 @@ void check_az_speed_pot()
       update_el_variable_outputs(normal_el_speed_voltage);
       #endif //OPTION_EL_SPEED_FOLLOWS_AZ_SPEED
     }
-    last_pot_check_time = millis();  
+    last_az_preset_check_time = millis();  
   }
 #endif
 }
@@ -84,45 +84,162 @@ void check_az_speed_pot()
 // 7 segment display has indication of preset display mode, decimal points, flicker, something
 // On startup, no motion is detected, preset value is not used
 // pressing CW or CCW button stops preset movement
-// read the preset pot if button or time
+// read the preset pot if preset button or time to read
 
 // deal with first indication of change and as pot continues to change
 void check_az_preset_potentiometer()
 {
-  bool                 check_pot_flag      = 0;
-  static unsigned long last_pot_check_time = 0;
-  static int           last_pot_read       = 9999;
-  int                  pot_read            = 0;      // current pot setting
-  int                  new_pot_azimuth     = 0;      // set when pot stops turning
-  byte                 button_read         = 0;
-  static bool          is_pot_moving       = false;
+  unsigned long         az_preset_check_time;     
+  static unsigned long  last_az_preset_check_time = 0;
+  int                   az_preset_interval        = 0;
+  static int            turning_stopped_count     = 5;    // init to stopped
+  static int            last_pot_read             = 9999;
+  int                   pot_read                  = 0;      // current pot setting
+  int                   pot_rate                  = 0;
+  //static bool           is_pot_stopped;
+  //byte                  button_read               = 0;
+  //bool                  check_pot_flag            = 0;
 
-
-  if (az_preset_pot == 0) // if az preset pot pin not defined
+  if (az_preset_pot) // if az preset pot pin not defined
   {  
-    return;
-  }
+    // initialize last_pot_read the first time we hit this subroutine
+    if (last_pot_read == 9999) 
+    {
+      last_pot_read = analogRead(az_preset_pot);
+      last_az_preset_check_time = millis();
+    }
 
-  // initialize last_pot_read the first time we hit this subroutine
-  if (last_pot_read == 9999) 
-  {
-    last_pot_read = analogRead(az_preset_pot);
-  }
+    // read pot and measure turning rate
+    az_preset_check_time = millis();
+    az_preset_interval = az_preset_check_time - last_az_preset_check_time;
+    
+    // execute preset algorithm at intervals
+    if ((az_preset_interval) > AZ_PRESET_CHECK_INTERVAL)
+    {
+      last_az_preset_check_time = az_preset_check_time;
 
-  // the preset pot can be stopped or in motion
-  if (is_pot_moving) // if preset turn in progress
+      pot_read = analogRead(az_preset_pot);
+      pot_rate = pot_read - last_pot_read;
+      last_pot_read = pot_read;
+      // set global apply calibration to pot reading, updated on each preset interval
+      azimuth_preset = map(pot_read,
+                            AZ_PRESET_POT_FULL_CCW,
+                            AZ_PRESET_POT_FULL_CW,
+                            AZ_PRESET_POT_FULL_CCW_MAP,
+                            AZ_PRESET_POT_FULL_CW_MAP);
+
+
+      #ifdef DEBUG_AZ_PRESET_POT
+      Serial.print("check_az_preset: ");
+      Serial.print("millis ");
+      Serial.print(az_preset_check_time);
+      Serial.print(", preset ");
+      Serial.print(pot_read);
+      Serial.print(", rate ");
+      Serial.print(pot_rate);
+      //Serial.print("\n");
+      #endif
+    
+      // detect when pot transisitions from turning to not turning
+      // stop counter 
+      //  set to 0 on turning
+      //  increments when stopped
+      //  triggers preset when passing through 4
+      //  if greater than 4, set to 5
+
+      // check if preset pot turning 
+      if (abs(pot_rate) > AZ_PRESET_RATE)
+      {
+        turning_stopped_count = 0;
+
+        #ifdef DEBUG_AZ_PRESET_POT
+        Serial.print(" stop count ");
+        Serial.print(turning_stopped_count);
+        Serial.print(" turning");
+        Serial.print("\n");
+        #endif
+
+      }
+      else // not currently turning
+      {
+        turning_stopped_count += 1;
+
+        #ifdef DEBUG_AZ_PRESET_POT
+        Serial.print(" stop count ");
+        Serial.print(turning_stopped_count);
+        Serial.print(" not turning");
+        Serial.print("\n");
+        #endif
+      }
+
+      // if-else sequence based on turning stop count
+      if (turning_stopped_count == 0) // currently turning, display preset
+      {
+        is_display_preset = true;
+      }
+      else if (turning_stopped_count > 0 && turning_stopped_count < 4) // waiting for end of movement, continue display
+      {
+        is_display_preset = true; 
+
+        #ifdef DEBUG_AZ_PRESET_STATE
+        Serial.print("check_az_preset: turning ");
+        Serial.print("stop count ");
+        Serial.print(turning_stopped_count);
+        Serial.print("\n");
+        #endif    
+
+        #ifdef FEATURE_LCD_DISPLAY
+        display_az_preset_LCD(new_pot_azimuth);
+        #endif
+     
+      }
+      else if (turning_stopped_count == AZ_PRESET_STOP_COUNT) // trigger rotation
+      {
+        is_display_preset = false;
+        #ifdef DEBUG_AZ_PRESET_STATE
+        Serial.print("check_az_preset: stopping ");
+        Serial.print("stop count ");
+        Serial.print(turning_stopped_count);
+        Serial.print(", pot read ");
+        Serial.print(pot_read);
+        Serial.print(", azimuth ");
+        Serial.print(azimuth_preset);
+        Serial.print("\n");
+        #endif
+
+        // initiate movement to preset
+        submit_request(AZ, REQUEST_AZIMUTH_RAW, azimuth_preset * HEADING_MULTIPLIER);
+      }
+      else if (turning_stopped_count > AZ_PRESET_STOP_COUNT) // waiting for movement
+      {
+        is_display_preset = false;
+        turning_stopped_count = AZ_PRESET_STOP_COUNT + 1; // clamp the upper limit
+        #ifdef DEBUG_AZ_PRESET_STATE
+        Serial.print("check_az_preset: stopped ");
+        Serial.print("stop count ");
+        Serial.print(turning_stopped_count);
+        Serial.print("\n");
+        #endif
+      }
+    }  // if az_preset_interval
+  } // if az_preset_pot
+
+
+  /*
+  // the preset pot can be stopped or turning
+  if (is_pot_turning) // if preset turn in progress
   {  
     pot_read = analogRead(az_preset_pot);
     // measure preset pot motion as change in value per read
     if (abs(pot_read - last_pot_read) > 3) // preset pot is turning
     {  
-      last_pot_check_time = millis();  // remember time turning checked
+      last_az_preset_check_time = millis();  // remember time turning checked
       last_pot_read = pot_read;        // remember pot reading
     } // pot moving
     else // preset pot has stopped moving,
     { 
       // wait an additional time after preset pot has stopped moving
-      if ((millis() - last_pot_check_time) >= 1000) // has it been 1 sec since the last pot change?
+      if ((millis() - last_az_preset_check_time) >= 1000) // has it been 1 sec since the last pot change?
       {  
         new_pot_azimuth = map(pot_read,
                 AZ_PRESET_POT_FULL_CCW,
@@ -133,9 +250,9 @@ void check_az_preset_potentiometer()
         display_az_preset(new_pot_azimuth);
 
         submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth*HEADING_MULTIPLIER);
-        is_pot_moving = false;
+        is_pot_turning = false;
         last_pot_read = pot_read;
-        last_pot_check_time = millis();
+        last_az_preset_check_time = millis();
 
         #ifdef DEBUG_AZ_PRESET_POT
         if (debug_mode)
@@ -159,7 +276,7 @@ void check_az_preset_potentiometer()
     } 
     else // if not, check the pot every 250 mS
     {  
-      if ((millis() - last_pot_check_time) < 250) {check_pot_flag = 1;}     
+      if ((millis() - last_az_preset_check_time) < 250) {check_pot_flag = 1;}     
     }  
 
     // check the preset pot two ways, with and without change waiting
@@ -183,7 +300,7 @@ void check_az_preset_potentiometer()
       if ((abs(last_pot_read - pot_read) > 4) && 
         (abs(new_pot_azimuth - (AzFiltered/HEADING_MULTIPLIER)) > AZIMUTH_TOLERANCE)) 
       {
-        is_pot_moving = true;
+        is_pot_turning = true;
         if (debug_mode) 
         {
           Serial.println(F("check_az_preset_potentiometer: in pot_changed_waiting"));
@@ -191,9 +308,11 @@ void check_az_preset_potentiometer()
         last_pot_read = pot_read;
       }              
     }
-    last_pot_check_time = millis();
+    last_az_preset_check_time = millis();
   } // not turning
+  */
 } //check_az_preset_potentiometer()
+
 
 //--------------------------------------------------------------
 void initialize_rotary_encoders()

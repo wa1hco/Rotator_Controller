@@ -42,7 +42,7 @@ LiquidCrystal lcd(lcd_4_bit_rs_pin,
 
 //----------------------------------------------------------------------------------------
 // Azimuth Pre-set value at Col 16 and row 2
-void display_az_preset(int target)
+void display_az_preset_LCD(int target)
 {
   #ifdef FEATURE_LCD_DISPLAY
 	int hundreds;

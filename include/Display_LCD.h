@@ -9,6 +9,8 @@
 #define DISPLAY_H_
 
 void display_az_preset(int target_azimuth);
+void display_az_preset_LCD(int target_azimuth);
+void display_az_preset_MAX7221(int target_azimuth);
 void display_az_string();
 char *azimuth_direction(int azimuth_in);
 

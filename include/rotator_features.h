@@ -90,7 +90,7 @@
   */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
-#define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
@@ -98,12 +98,13 @@
 //#define DEBUG_SERVICE_REQUEST_QUEUE
 //#define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT
-#define DEBUG_AZ_PRESET_POT
+//#define DEBUG_AZ_PRESET_POT
+//#define DEBUG_AZ_PRESET_STATE
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
 //#define DEBUG_HCO_BUTTONS
 //#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
-#define DEBUG_PRESET_ENCODERS
+//#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
 //#define DEBUG_BRAKE
 //#define DEBUG_OVERLAP
@@ -117,7 +118,7 @@
 //#define DEBUG_ROTATOR
 //#define DEBUG_SUBMIT_REQUEST
 //#define DEBUG_SERVICE_ROTATION
-#define DEBUG_POSITION_ROTARY_ENCODER
+//#define DEBUG_POSITION_ROTARY_ENCODER
 //#define DEBUG_PROFILE_LOOP_TIME
 //#define DEBUG_POSITION_PULSE_INPUT
 //#define DEBUG_ACCEL

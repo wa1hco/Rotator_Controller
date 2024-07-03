@@ -2,6 +2,7 @@
 .ino.cpp
 .project
 .pio/*
+.vscode/*
 Release/*
 .settings/*
 libraries/*

@@ -254,7 +254,8 @@ void service_rotation_indicator_pin();
 #endif //FEATURE_ROTATION_INDICATOR_PIN  
 
 // Enter at TimeInterval specified in global
-// calls ReadAzimuthISR() to read ADCs
+// callback from interrupt
+// ReadAzimuthISR() to read ADCs
 // Sets DisplayFlag when it's time to update Display
 // Entered at TIME_BETWEEN_INTERRUPTS
 void TimedService() 
@@ -1137,17 +1138,15 @@ void initialize_pins()
   pinMode(PositionPosPin, INPUT);
   pinMode(PositionNegPin, INPUT);
   #endif
-  
+
   if (az_preset_pot) 
   {
     pinMode(az_preset_pot, INPUT);
-    //digitalWrite(az_preset_pot, LOW);
   }
 
   if (az_speed_pot) 
   {
     pinMode(az_speed_pot, INPUT);
-    digitalWrite(az_speed_pot, LOW);
   }
 
   

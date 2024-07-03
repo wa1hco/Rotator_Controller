@@ -37,9 +37,7 @@ extern FIR<float, 31> fir_bot;
 // This function is called from MsTimer2 every TIME_BETWEEN_INTERRUPTS msec
 void ReadAzimuthISR() 
 {
-  #ifdef AZIMUTH_INTERRUPT
-
-  #ifdef HCO_BOARD // read + and - ends of pot with grounded wiper
+  // read + and - ends of pot with grounded wiper
 
   float ADCt = (float) analogRead(PositionPosPin); // adc reading for top    of azimuth pot
   float ADCb = (float) analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
@@ -111,8 +109,5 @@ void ReadAzimuthISR()
     Serial.println();
   }
   #endif // ifdef debug HCO
-
-  #endif
-
-  #endif // ifdef azimuth interrupt
+  
 } // ReadAzimuthISR()
