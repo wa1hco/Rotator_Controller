@@ -8,6 +8,7 @@
 #include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
+#include "dependencies.h"
 
 // initialize global variables called from setup()
 

@@ -24,8 +24,8 @@
 #include "global_variables.h"
 #include "rotator_features.h"
 #include "rotator_pins_HCO_board.h"
+#include "dependencies.h"
 
-#include <FIR.h>
 extern FIR<float, 31> fir_top;
 extern FIR<float, 31> fir_bot;
 

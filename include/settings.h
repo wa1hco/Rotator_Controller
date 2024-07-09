@@ -113,7 +113,7 @@ You can tweak these, but read the online documentation!
 #define DISPLAY_UPDATE_INTERVAL        200     // msec, display update interval, LCD or 7 segment
 #define AZ_BRAKE_DELAY                1000     // msec
 #define EL_BRAKE_DELAY                1000     // msec
-#define TIME_BETWEEN_INTERRUPTS          5     // msec, 200 Hz
+#define TIME_BETWEEN_AZ_ADC_READ         5     // msec, 200 Hz
 #define BUTTON_BOUNCE_DELAY            100     // msec
 #define BUTTON_LONG_PRESS             2000     // msec, 2 seconds
 

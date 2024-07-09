@@ -15,8 +15,8 @@
 //#define FEATURE_REMOTE_UNIT_SLAVE       //uncomment this to make this unit a remote unit controlled by a host unit
 
 //#define FEATURE_LCD_DISPLAY
-#define HCO_BOARD
-#ifdef HCO_BOARD
+#define FEATURE_HCO_BOARD
+#ifdef FEATURE_HCO_BOARD
   //#define FEATURE_WIRE_SUPPORT
   #define FEATURE_MAX7221_DISPLAY
   #define FEATURE_HCO_BUTTONS
