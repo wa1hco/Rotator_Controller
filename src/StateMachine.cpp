@@ -32,9 +32,9 @@
 
 // Project configuration
 #include "rotator_features.h"
-#include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
+#include "dependencies.h"
 
 // #include "PID.h"
 

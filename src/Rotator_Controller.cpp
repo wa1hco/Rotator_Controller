@@ -189,7 +189,6 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
-#include <Wire.h>
 #include <avr/wdt.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -201,9 +200,9 @@
 // Project configuration
 #include "rotator_features.h"
 #include "rotator_pins_HCO_board.h"
-#include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
+#include "dependencies.h"
 
 // #include "PID.h"
 
@@ -215,13 +214,10 @@
 #include "global_variables.h"
 #include "Service_Blink_LED.h"
 
-#ifdef FEATURE_LCD_DISPLAY
-#include "Display_LCD.h"
-#endif
-
-#ifdef FEATURE_MAX7221_DISPLAY
-#include "Display_MAX7221.h"
-#endif
+#include "global_variables.h"
+#include "rotator_features.h"
+#include "rotator_pins_HCO_board.h"
+#include "dependencies.h"
 
 #include "serial_command_processing.h"
 #include "eeprom_local.h"
@@ -229,7 +225,6 @@
 #include "utilities_local.h"
 #include "Input.h"
 
-#include <FIR.h>
 FIR<float, 31> fir_top;
 FIR<float, 31> fir_bot;
 
@@ -257,7 +252,7 @@ void service_rotation_indicator_pin();
 // callback from interrupt
 // ReadAzimuthISR() to read ADCs
 // Sets DisplayFlag when it's time to update Display
-// Entered at TIME_BETWEEN_INTERRUPTS
+// Entered at TIME_BETWEEN_AZ_ADC_READ msec
 void TimedService() 
 {
   // read azimuth on every interrupt
@@ -269,7 +264,7 @@ void TimedService()
   {
     if (button_cw_press_time < 100000) // count up to 100 seconds, arbitrary limit
     {
-      button_cw_press_time += TIME_BETWEEN_INTERRUPTS;
+      button_cw_press_time += TIME_BETWEEN_AZ_ADC_READ;
     }
   }
   else
@@ -281,7 +276,7 @@ void TimedService()
   {
     if (button_ccw_press_time < 100000) // count up to 100 seconds, arbitrary limit
     {
-      button_ccw_press_time += TIME_BETWEEN_INTERRUPTS;
+      button_ccw_press_time += TIME_BETWEEN_AZ_ADC_READ;
     }
   }
   else

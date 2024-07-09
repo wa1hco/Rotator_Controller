@@ -39,21 +39,15 @@
 #include <Arduino.h>
 #include "eeprom_local.h"
 
-#ifdef FEATURE_LCD_DISPLAY
-#include "Display_LCD.h"
-#endif
-
-#ifdef FEATURE_MAX7221_DISPLAY
-#include "Display_MAX7221.h"
-#endif
-
+#include "global_variables.h"
 #include "rotator_features.h"
+#include "rotator_pins_HCO_board.h"
+#include "dependencies.h"
 
 #include "serial_command_processing.h"
 #include "Input.h"
 #include <MsTimer2.h>
 
-#include <FIR.h>
 extern FIR<float, 31> fir_top;
 extern FIR<float, 31> fir_bot;
 
@@ -95,7 +89,6 @@ void setup()
   initialize_rotary_encoders(); 
   initialize_interrupts();
 
-  #ifdef FEATURE_FIR_FILTER
   /*
   FIR filter designed with
   http://t-filter.appspot.com
@@ -113,27 +106,25 @@ void setup()
     actual attenuation = -66.03868970041013 dB
 
   */
-
+  #ifdef FEATURE_FIR_FILTER
   #define FILTER_TAP_NUM 15
-
   static float filter_taps[FILTER_TAP_NUM] = {
     -0.004942353838242621,
     -0.018993776250465885,
     -0.034906800521284226,
     -0.02689862294067124,
-    0.03329097458407915,
-    0.14355647714952716,
-    0.25568358157357024,
-    0.3034216074312329,
-    0.25568358157357024,
-    0.14355647714952716,
-    0.03329097458407915,
+     0.03329097458407915,
+     0.14355647714952716,
+     0.25568358157357024,
+     0.3034216074312329,
+     0.25568358157357024,
+     0.14355647714952716,
+     0.03329097458407915,
     -0.02689862294067124,
     -0.034906800521284226,
     -0.018993776250465885,
     -0.004942353838242621
   };
-
 
   fir_top.setFilterCoeffs(filter_taps);
   fir_bot.setFilterCoeffs(filter_taps);
@@ -141,8 +132,7 @@ void setup()
 
   // setup the timer and start it
   // timer used to read values and run state machine
-
-  MsTimer2::set(TIME_BETWEEN_INTERRUPTS, TimedService); // interval, function call
+  MsTimer2::set(TIME_BETWEEN_AZ_ADC_READ, TimedService); // interval, function call
   // interrupts enabled after this point
   MsTimer2::start(); 
 } //setup()

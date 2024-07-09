@@ -7,6 +7,15 @@
 
 #ifndef DEPENDENCIES_H_
 #define DEPENDENCIES_H_
+
+#if !defined ROTATOR_FEATURES_H_
+#error dependencies.h requires rotator_features.h
+#endif
+
+#if !defined SETTINGS_H_
+#error dependences.h requires settings.h
+#endif
+
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 // added Teensy 3.2, 3.1 as M20DX256
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644P__) || defined(__MK20DX256__)
@@ -76,8 +85,13 @@
 #define FEATURE_WIRE_SUPPORT
 #endif
 
-#ifdef FEATURE_WIRE_SUPPORT
-#include <Wire.h>
+#if defined FEATURE_HCO_BOARD
+  //#define FEATURE_WIRE_SUPPORT
+  #define FEATURE_MAX7221_DISPLAY
+  #define FEATURE_HCO_BUTTONS
+  #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
+  #define FEATURE_HCO_ADC
+  #define FEATURE_FIR_FILTER
 #endif
 
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) && defined(FEATURE_YAESU_EMULATION)
@@ -87,7 +101,6 @@
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) && defined(FEATURE_EASYCOM_EMULATION)
 #error "You must turn off FEATURE_EASYCOM_EMULATION if using FEATURE_REMOTE_UNIT_SLAVE"
 #endif
-
 
 #if !defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_EL_PRESET_ENCODER)
 #undef FEATURE_EL_PRESET_ENCODER
@@ -107,6 +120,24 @@
 
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) && !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS)
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
+#endif
+
+#ifdef FEATURE_WIRE_SUPPORT
+#include <Wire.h>
+#endif
+
+#ifdef FEATURE_LCD_DISPLAY
+#include <LiquidCrystal.h>
+#include "Display_LCD.h"
+#endif
+
+#ifdef FEATURE_MAX7221_DISPLAY
+#include <SPI.h>
+#include "Display_MAX7221.h"
+#endif
+
+#ifdef FEATURE_FIR_FILTER
+#include <FIR.h>
 #endif
 
 

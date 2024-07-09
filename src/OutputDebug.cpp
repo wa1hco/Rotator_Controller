@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
-#include <Wire.h>
+//#include <Wire.h>
 #include <avr/wdt.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -14,9 +14,9 @@
 // Project configuration
 #include "rotator_features.h"
 #include "rotator_pins_HCO_board.h"
-#include "dependencies.h"
 #include "macros.h"
 #include "settings.h"
+#include "dependencies.h"
 
 // #include "PID.h"
 
@@ -27,7 +27,6 @@
 // Project functions
 #include "global_variables.h"
 #include "Service_Blink_LED.h"
-//#include "Display.h"
 #include "serial_command_processing.h"
 #include "eeprom_local.h"
 #include "utilities_local.h"

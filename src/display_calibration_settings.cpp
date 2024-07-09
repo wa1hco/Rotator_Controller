@@ -13,6 +13,7 @@
 #include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
+#include "dependencies.h"
 
 // called from \C command
 // prints global variables related to calibration

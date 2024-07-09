@@ -14,20 +14,9 @@
 #include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
+#include "dependencies.h"
 
 #include "Display_LCD.h"
-
-#ifdef FEATURE_LCD_DISPLAY
-#include <LiquidCrystal.h>
-#endif
-
-#ifdef FEATURE_WIRE_SUPPORT
-#include <Wire.h>
-#endif
-
-#ifdef FEATURE_MAX7221_DISPLAY
-#include <SPI.h>
-#endif
 
 #ifdef FEATURE_LCD_DISPLAY
 LiquidCrystal lcd(lcd_4_bit_rs_pin,

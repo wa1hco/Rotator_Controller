@@ -15,7 +15,7 @@
 #include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
-#include <SPI.h>
+#include "dependencies.h"
 
 
 

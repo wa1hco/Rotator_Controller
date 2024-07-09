@@ -5,6 +5,7 @@
 #include "rotator_pins_HCO_board.h"
 #include "settings.h"
 #include "macros.h"
+#include "dependencies.h"
 
 #include "global_variables.h"
 #include "serial_command_processing.h"
