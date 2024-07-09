@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
-#include <avr/wdt.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <MsTimer2.h>

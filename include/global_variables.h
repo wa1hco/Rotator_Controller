@@ -5,9 +5,6 @@
 #ifndef GLOBAL_VARIABLES_H_
 #define GLOBAL_VARIABLES_H_
 
-//#include <Arduino.h>
-//#include <avr/pgmspace.h>
-
 #include "rotator_features.h"
 #include "rotator_pins_HCO_board.h"
 #include "settings.h"

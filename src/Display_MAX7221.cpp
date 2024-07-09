@@ -6,7 +6,6 @@
  */
 
 #include <Arduino.h>
-#include <avr/pgmspace.h>
 
 #include "global_variables.h"
 #include "Display_MAX7221.h"

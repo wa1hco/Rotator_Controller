@@ -14,7 +14,6 @@
 
 // Arduino environment
 #include <Arduino.h>
-#include <avr/interrupt.h>
 #include <MsTimer2.h>
 
 // C++ functions

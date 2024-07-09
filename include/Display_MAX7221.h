@@ -8,9 +8,6 @@
 #ifndef DISPLAY_MAX7221_H_
 #define DISPLAY_MAX7221_H_
 
-#include <Arduino.h>
-#include <avr/pgmspace.h>
-
 //-----------------------------------Display_MAX7221 private functions--------------------------
 void SPI_Transfer(uint8_t address, uint8_t data);
 void initialize_MAX7221_display();

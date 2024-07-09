@@ -3,9 +3,7 @@
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 //#include <Wire.h>
-#include <avr/wdt.h>
 #include <avr/io.h>
-#include <avr/interrupt.h>
 #include <MsTimer2.h>
 
 // C++ functions
