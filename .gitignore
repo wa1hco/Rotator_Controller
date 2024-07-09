@@ -1,6 +1,7 @@
 .cproject
 .ino.cpp
 .project
+.pio
 .pio/*
 .vscode/*
 Release/*
