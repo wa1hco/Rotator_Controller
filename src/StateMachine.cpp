@@ -50,7 +50,7 @@
 //    rotation_action: is activate or deactivate
 //    rotation_type: is CW or CCW
 // global variables
-//  pin numbers, otate_cw, rotate_ccw, rotate_cw_pwn, etc 
+//  pin numbers, rotate_cw, rotate_ccw, rotate_cw_pwn, etc 
 void rotator(byte rotation_action, byte rotation_type) 
 {  
   #ifdef DEBUG_ROTATOR

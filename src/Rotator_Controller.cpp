@@ -199,7 +199,6 @@
 
 // Project functions
 #include "Service_Blink_LED.h"
-//#include "Input.h"
 
 FIR<float, 31> fir_top;
 FIR<float, 31> fir_bot;
@@ -256,95 +255,6 @@ void TimedService()
   }
 } 
 
-/*---------------- here's where the magic happens --------------------*/
-void loop() 
-{ 
-  check_serial();
-  read_headings(); // read az and el if configured
-  #ifndef FEATURE_REMOTE_UNIT_SLAVE
-  service_request_queue();
-  service_rotation_azimuth();
-  az_check_operation_timeout();
-  #ifdef FEATURE_TIMED_BUFFER
-  check_timed_interval();
-  #endif //FEATURE_TIMED_BUFFER
-  read_headings();
-
-  #ifdef FEATURE_HCO_BUTTONS
-  check_hco_buttons();
-  #else
-  check_buttons();
-  #endif
-
-  check_overlap();
-  check_brake_release();  // manages the timing of pending brake operations
-  #ifdef FEATURE_ELEVATION_CONTROL
-  el_check_operation_timeout();
-  #endif
-  #endif // ifndef FEATURE_REMOTE_UNIT_SLAVE
-
-  read_headings();
-
-  #ifdef FEATURE_LCD_DISPLAY
-  update_display(); // Azimuth display with the large fonts
-  #endif
-
-  #ifdef FEATURE_MAX7221_DISPLAY
-  update_Az_MAX7221_display();
-  #endif
-
-  read_headings();
-  
-  #ifndef FEATURE_REMOTE_UNIT_SLAVE
-  #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-  check_az_manual_rotate_limit();
-  #endif
-
-  #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
-  check_el_manual_rotate_limit();
-  #endif
- 
-  #ifdef OPTION_AZIMUTH_MOTOR_DIR_CONTROL
-  check_az_speed_pot();
-  #endif
-  
-  #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder or Preset Selector
-  check_preset_encoders();
-  #endif //FEATURE_AZ_PRESET_ENCODER
-
-  #ifdef FEATURE_AZ_PRESET_POT
-  check_az_preset_potentiometer();
-  #endif //FEATURE_AZ_PRESET_POT
-
-  #endif //ndef FEATURE_REMOTE_UNIT_SLAVE
-  
-  //output_debug();
-  
-  check_for_dirty_configuration();
-  
-  read_headings();
-  
-  profile_loop_time();
-  
-  #ifdef FEATURE_REMOTE_UNIT_SLAVE 
-  service_remote_unit_serial_buffer();
-  #endif //FEATURE_REMOTE_UNIT_SLAVE
-  
-  // TODO, if defined call the function, but the function is not defined in Eclipse. even though it has the same ifdef
-  #ifdef FEATURE_HOST_REMOTE_PROTOCOL
-  //service_remote_communications_incoming_serial_buffer();
-  #endif //FEATURE_HOST_REMOTE_PROTOCOL
-
-  #ifdef FEATURE_JOYSTICK_CONTROL
-  check_joystick();
-  #endif //FEATURE_JOYSTICK_CONTROL
-
-  #ifdef FEATURE_ROTATION_INDICATOR_PIN
-  service_rotation_indicator_pin();
-  #endif //FEATURE_ROTATION_INDICATOR_PIN  
-  
-  service_blink_led();
-}
 
 /* -------------------------------------- subroutines -----------------------------------------------
    Where the real work happens...

@@ -241,7 +241,6 @@ void read_azimuth()
     #ifdef FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
     #endif //FEATURE_AZIMUTH_CORRECTION
-
     
     if (AZIMUTH_SMOOTHING_FACTOR > 0) 
     {

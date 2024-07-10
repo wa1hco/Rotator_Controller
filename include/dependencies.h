@@ -146,5 +146,4 @@
 #include <FIR.h>
 #endif
 
-
 #endif /* DEPENDENCIES_H_ */
