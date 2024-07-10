@@ -1,15 +1,7 @@
-#include <Arduino.h>
+
 #include "EEPROM.h"
 
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
 #include "dependencies.h"
-
-#include "global_variables.h"
-#include "serial_command_processing.h"
-#include "eeprom_local.h"
 
 //--------------------------------------------------------------
 void initialize_eeprom_with_defaults()

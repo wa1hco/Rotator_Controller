@@ -23,29 +23,14 @@
 // SLOW_START_CCW                 -> NORMAL_CCW
 
 // Arduino environment
-#include <Arduino.h>
-#include <avr/pgmspace.h>
-
 
 // C++ functions
 #include <math.h> 
 
 // Project configuration
-#include "rotator_features.h"
-#include "macros.h"
-#include "settings.h"
 #include "dependencies.h"
 
-// #include "PID.h"
-
-//#define CODE_VERSION "2013091101"
-//#define CODE_VERSION "2017021101"
-#define CODE_VERSION "2021040701"
-
 // Project functions
-#include "global_variables.h"
-#include "serial_command_processing.h"
-#include "utilities_local.h"
 
 //--------------------------------------------------------------
 // rotator(), write the rotator controls, analogWrite(), digitalWrite()

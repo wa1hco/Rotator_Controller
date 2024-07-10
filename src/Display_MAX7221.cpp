@@ -7,16 +7,9 @@
 
 #include <Arduino.h>
 
-#include "global_variables.h"
-#include "Display_MAX7221.h"
-
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
 #include "dependencies.h"
 
-
+#include "Display_MAX7221.h"
 
 // SPI transfer function for MAX7221 7 segment LED controller
 void SPI_Transfer(uint8_t address, uint8_t data)

@@ -8,13 +8,19 @@
 #ifndef DEPENDENCIES_H_
 #define DEPENDENCIES_H_
 
-#if !defined ROTATOR_FEATURES_H_
-#error dependencies.h requires rotator_features.h
-#endif
+#include "WProgram.h"
 
-#if !defined SETTINGS_H_
-#error dependences.h requires settings.h
-#endif
+#include "rotator_features.h"
+#include "settings.h"
+#include "rotator_pins_HCO_board.h"
+#include "StateMachine.h"
+#include "serial_command_processing.h"
+#include "eeprom_local.h"
+#include "Input.h"
+#include "utilities_local.h"
+#include "global_variables.h"
+
+#define CODE_VERSION "2024070901"
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 // added Teensy 3.2, 3.1 as M20DX256

@@ -20,9 +20,6 @@
 #include <math.h> 
 
 // Project configuration
-#include "global_variables.h"
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
 #include "dependencies.h"
 
 extern FIR<float, 31> fir_top;
@@ -37,39 +34,47 @@ extern FIR<float, 31> fir_bot;
 void ReadAzimuthISR() 
 {
   // read + and - ends of pot with grounded wiper
-
-  float ADCt = (float) analogRead(PositionPosPin); // adc reading for top    of azimuth pot
-  float ADCb = (float) analogRead(PositionNegPin); // adc reading for bottom of azimuth pot
+  float ADCtop = (float) analogRead(AzPositionTopPin); // adc reading for top    of azimuth pot
+  float ADCbot = (float) analogRead(AzPositionBotPin); // adc reading for bottom of azimuth pot
 
   // FIR filter output, LPF, 12 Hz pass, 40 Hz and up at -60 dB, Fs = 200 Hz, 31 taps
-  float FIRt = fir_top.processReading(ADCt);
-  float FIRb = fir_bot.processReading(ADCb);
+  float FIRtop = fir_top.processReading(ADCtop);
+  float FIRbot = fir_bot.processReading(ADCbot);
 
   // constants related to hardware
   static float Vs     =    3.3; // Volts, azimuth pot bias voltage
-  static float Rb     =  330;   // Ohms, bias resistor to each end of pot
-  static float Rp     =  500;   // Ohms, rotator pot specified 500 Ohms
+  static float Rbias  =  330;   // Ohms, bias resistor to each end of pot
+  static float Rpot   =  500;   // Ohms, rotator pot specified 500 Ohms
   static float Rc     =    1;   // Ohms, cable resistance
   static float ADCmax = 1023;
 
-  Vt = Vs * FIRt / ADCmax; // Volts, at top    of azimuth pot
-  Vb = Vs * FIRb / ADCmax; // Volts, at bottom of azimuth pot
+  Vtop = Vs * FIRtop / ADCmax; // Volts, at top    of azimuth pot
+  Vbot = Vs * FIRbot / ADCmax; // Volts, at bottom of azimuth pot
 
   // WA8USA equations
-  // float Vwt=Vs-((Vs-Vtop)/Rb*(Rb+Rc+Rtop))
-  // float Vwb=Vs-((Vs-Vbot)/Rb*(Rb+Rc+Rbot))
-  // Setting these two to be equal, cancelling U on both sides, 
-  // and then multiplying both sides by Rb, and substituting 500-Rtop for Rbot gives
-  // (Vtop-U)*(Rb+Rc+Rtop)=(Vbot-U)*(Rb+Rc+500-Rtop)
-  // Isolating all the terms with Rtop on the left results in
-  // Rtop*(2*U-Vtop-Vbot)=(Rb+Rc)*(Vtop-Vbot)+500*(U-Vbot)
-  // rename Rtop to analog_az for compatibility with K3NG functions
-  float Rt = ((Rb + Rc) * (Vt - Vb) + Rp * (Vs - Vb)) / (2 * Vs - Vt - Vb);
-  analog_az = Rt;
+  // The simplest solution is to express the voltage at the wiper in terms 
+  // of the drop in each side from the supply.  
+  // The current in the top path is (Vs-Vtop)/Rbias.  
+  // The voltage drop to the wiper is that current times Rs+Rc+Rtop.  
+  // Subtracting that voltage drop from the supply gives the voltage at the wiper.  
+  // The two equations for the voltage Vw at the wiper are
 
-  // map(value, fromLow, fromHigh, toLow, toHigh)
-  
-  //azimuth = map(analog_az, 0, 500, 0, 360); // map from pot to azimuth reading
+  // Vw=Vs-((Vs-Vtop)/Rbias * (Rbias+Rc+Rtop))
+  // Vw=Vs-((Vs-Vbot)/Rbias * (Rbias+Rc+Rbot))
+
+  // Setting these two to be equal, cancelling Vs on both sides, 
+  // and then multiplying both sides by Rbias, and substituting 500-Rtop for Rbot gives
+
+  // (Vtop-Vs) * (Rbias+Rc+Rtop) = (Vbot-Vs) * (Rbias+Rc+500-Rtop)
+
+  // Isolating all the terms with Rtop on the left results in
+
+  // Rtop*(2*Vs-Vtop-Vbot)=(Rbias+Rc)*(Vtop-Vbot)+500*(Vs-Vbot)
+
+   // rename Rtop to analog_az for compatibility with K3NG functions
+  float Rtop = ((Rbias + Rc) * (Vtop - Vbot) + Rpot * (Vs - Vbot)) / (2 * Vs - Vtop - Vbot);
+  analog_az = Rtop;
+
   float analog_az_ccw = configuration.analog_az_full_ccw; // ohms, min analog_az
   float analog_az_cw  = configuration.analog_az_full_cw;  // Ohms, max analog_az
   float Az_start      = configuration.azimuth_starting_point * HEADING_MULTIPLIER;
@@ -79,6 +84,8 @@ void ReadAzimuthISR()
   if (analog_az < analog_az_ccw)  analog_az = analog_az_ccw; // clamp to lower limit
   if (analog_az > analog_az_cw)   analog_az = analog_az_cw;  // clamp to upper limit
 
+  // Rtop is nominally 0 to 500 Ohms for full CCW to full CW rotation
+  // typically analog_az from 8 to 483 (Ohms) maps to 0 to 360 degrees
   azimuth = (int) map(analog_az, analog_az_ccw, analog_az_cw, Az_start, Az_stop);
 
   AzFiltered = azimuth;  // for compatibility
@@ -92,19 +99,19 @@ void ReadAzimuthISR()
     if (isFirstWrite)
     {
       Serial.println("HCO Board analog");
-      Serial.println("Time, Vt, Vb, analog_az, AzTop, AzMap"); // header line
+      Serial.println("Time, Vtop, Vbot, analog_az, AzTop, AzMap"); // header line
       isFirstWrite = false;
     }
     Time_usec = micros();;
     Serial.print(Time_usec);
     Serial.print(", ");
-    Serial.print(Vt);         // top voltage
+    Serial.print(Vtop);         // top voltage
     Serial.print(", ");
-    Serial.print(Vb);         // bottom voltage
+    Serial.print(Vbot);         // bottom voltage
     Serial.print(", ");
-    Serial.print(analog_az);  // Ohms, Rt, top part of pot
+    Serial.print(analog_az);  // Ohms, Rtop, top part of pot
     Serial.print(", ");
-    Serial.print(azimuth);    // deg, from mapping Rt and Cal to azimuth
+    Serial.print(azimuth);    // deg, from mapping Rtop and Cal to azimuth
     Serial.println();
   }
   #endif // ifdef debug HCO

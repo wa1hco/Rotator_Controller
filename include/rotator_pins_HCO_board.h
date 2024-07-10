@@ -1,4 +1,4 @@
-// -------------------------------------   Pin Definitions ------------------------------------------
+// ------------------------------------- Teensy 4.0Pin Definitions ------------------------------------------
 
 #ifndef ROTATOR_PINS_H_
 #define ROTATOR_PINS_H_
@@ -37,26 +37,26 @@
 #endif
 
 #ifdef FEATURE_HCO_BUTTONS
-#define BUTTON_CCW     8
-#define BUTTON_CW      9
+#define BUTTON_CCW       8
+#define BUTTON_CW        9
 #endif
 
 // when using a quad relay board
-#define BrakeAzPin     16         // high to release brake
-#define DirectionPin   17         // high to rotate left
-#define MotorPin       20         // high to run motor
+#define BrakeAzPin       16         // high to release brake
+#define DirectionPin     17         // high to rotate left
+#define MotorPin         20         // high to run motor
 
-#define PositionPosPin 14         // A0, grounded wiper
-#define PositionNegPin 15         // A1, grounded wiper
-#define AzPresetPin    21         // A7, 10K pot, 3V3 to GND
+#define AzPositionTopPin 14         // A0, top pin of pot with grounded wiper
+#define AzPositionBotPin 15         // A1, bottom pin of pot with grounded wiper
+#define AzPresetPin      21         // A7, 10K pot, 3V3 to GND
 
-#define TeensyLED      13
+#define TeensyLED        13
 
 // when using motor and direction relays or...
 // when using an L298N H-bridge PWM motor controller
-#define ENAPin         20         // ENA on L298n, Motor control pin
-#define IN1Pin         17         // IN1 on L298n, Direction controlpin
-#define IN2Pin         0          // IN2 on L298n
+#define ENAPin           20         // ENA on L298n, Motor control pin
+#define IN1Pin           17         // IN1 on L298n, Direction controlpin
+#define IN2Pin           0          // IN2 on L298n
 
 
 // azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator)
@@ -85,7 +85,7 @@
 #define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
 
-#define rotator_analog_az       PositionPosPin  // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
+#define rotator_analog_az       0               // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
 #define rotation_indication_pin 0
 
 
@@ -130,7 +130,7 @@
 #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
 #define az_position_pulse_pin           0   // must be an interrupt capable pin!
 #define AZ_POSITION_PULSE_PIN_INTERRUPT 0   // Uno: pin 2 = interrupt 0, pin 3 = interrupt 1
-#endif                                                // read http://arduino.cc/en/Reference/AttachInterrupt for details on hardware and interrupts
+#endif                                      // read http://arduino.cc/en/Reference/AttachInterrupt for details on hardware and interrupts
 
 #ifdef FEATURE_EL_POSITION_PULSE_INPUT
 #define el_position_pulse_pin           0   // must be an interrupt capable pin!

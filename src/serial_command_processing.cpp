@@ -1,15 +1,5 @@
-#include <Arduino.h>
 
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
 #include "dependencies.h"
-
-#include "serial_command_processing.h"
-#include "global_variables.h"
-#include "eeprom_local.h"
-#include "utilities_local.h"
 #include "display_calibration_settings.h"
 
 //--------------------------------------------------------------

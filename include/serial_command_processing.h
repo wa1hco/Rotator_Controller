@@ -7,12 +7,7 @@
 #ifndef SERIAL_COMMAND_PROCESSING_H_
 #define CHECK_SERIAL_COMMAND_PROCESSING_H_
 
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
-
-#include "global_variables.h"
+#include "dependencies.h"
 
 void submit_request(byte axis, byte request, int parm);
 void check_serial();

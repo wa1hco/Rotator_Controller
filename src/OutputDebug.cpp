@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
-//#include <Wire.h>
 #include <avr/io.h>
 #include <MsTimer2.h>
 
@@ -10,24 +9,11 @@
 #include <math.h> 
 
 // Project configuration
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "macros.h"
-#include "settings.h"
 #include "dependencies.h"
 
-// #include "PID.h"
-
-//#define CODE_VERSION "2013091101"
-//#define CODE_VERSION "2017021101"
-#define CODE_VERSION "2021040701"
-
 // Project functions
-#include "global_variables.h"
+
 #include "Service_Blink_LED.h"
-#include "serial_command_processing.h"
-#include "eeprom_local.h"
-#include "utilities_local.h"
 
 //--------------------------------------------------------------
 void output_debug()

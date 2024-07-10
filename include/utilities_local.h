@@ -7,12 +7,7 @@
 #ifndef UTILITIES_LOCAL_H_
 #define UTILITIES_LOCAL_H_
 
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
-
-#include "global_variables.h"
+#include "dependencies.h"
 
 void print_help();
 void read_azimuth();

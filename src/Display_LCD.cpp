@@ -4,16 +4,6 @@
  *  Created on: Feb 19, 2017
  *      Author: jeff
  */
-
-#include "global_variables.h"
-
-#include <Arduino.h>
-#include <avr/pgmspace.h>
-
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
 #include "dependencies.h"
 
 #include "Display_LCD.h"

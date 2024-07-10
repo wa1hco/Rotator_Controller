@@ -5,16 +5,13 @@
 #ifndef GLOBAL_VARIABLES_H_
 #define GLOBAL_VARIABLES_H_
 
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
+#include "dependencies.h"
 
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
-extern float         Vt;           // Voltage at top of azimuth pot
-extern float         Vb;           // Voltage at bottom of azimuth pot
+extern float         Vtop;           // Voltage at top of azimuth pot
+extern float         Vbot;           // Voltage at bottom of azimuth pot
 extern float         analog_az;      // az reading from sensor, prior to mapping
 extern int           azimuth;        // az after mapping used for display and control
 extern int           raw_azimuth;    // working variable, may be wrapped

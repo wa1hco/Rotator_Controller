@@ -1,20 +1,11 @@
 //
 #include "global_variables.h"
 
-#include <Arduino.h>
-#include <avr/pgmspace.h>
-
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
-#include "settings.h"
-#include "macros.h"
-#include "dependencies.h"
-
 // initialize global variables called from setup()
 
 // azimuth globals
-float         Vt                                  = 0.0;
-float         Vb                                  = 0.0;
+float         Vtop                                  = 0.0;
+float         Vbot                                  = 0.0;
 float         analog_az                           = 0.0; // output of reading something about azimuth
 int           azimuth                             = 0;   // output of mapping analog_az to azimuth in degrees
 int           raw_azimuth                         = 0;   // working variable, may be wrapped
