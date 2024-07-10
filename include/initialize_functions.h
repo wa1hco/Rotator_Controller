@@ -24,20 +24,20 @@
                               http://creativecommons.org/licenses/by-nc-sa/3.0/
 
                           http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
+ 
+ * Dependencies.h
+ *
+ *  Created on: July, 2024
+ *      Author: jeff, wa1hco
+
 */
+#ifndef INITIALIZE_FUNCTION_H_
+#define INITIALIZE_FUNCTION_H_
 
-// eeprom_local.h
-//
-// Created on: Mar 17, 2021
-//      Author: jeff, wa1hco
-//
-#ifndef EEPROM_LOCAL_H_
-#define EEPROM_LOCAL_H_
+// setup functions
+void initialize_peripherals();
+void initialize_interrupts();
+void initialize_serial();
+void initialize_pins();
 
-#include "dependencies.h"
-
-void initialize_eeprom_with_defaults();
-void write_settings_to_eeprom();
-void read_settings_from_eeprom();
-
-#endif /* EEPROM_LOCAL_H_ */
+#endif
