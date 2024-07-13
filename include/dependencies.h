@@ -172,4 +172,12 @@
 #include <FIR.h>
 #endif
 
+#ifdef FEATURE_HCO_AZ_POSITION
+#include <MsTimer2.h> // timed ISR for read ADC and FIR filter az position
+#endif
+
+#ifdef FEATURE_HCO_BUTTONS
+#include <Bounce2.h>
+#endif
+
 #endif /* DEPENDENCIES_H_ */

@@ -102,7 +102,7 @@ You can tweak these, but read the online documentation!
 #define EL_VARIABLE_FREQ_OUTPUT_LOW      1    // Frequency in hertz of minimum speed
 #define EL_VARIABLE_FREQ_OUTPUT_HIGH    60    // Frequency in hertz of maximum speed
 
-// Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
+// Settings for AZ ROTATE_LIMITS
 #define AZ_MANUAL_ROTATE_CCW_LIMIT       0    // if using a rotator that starts at 180 degrees, set this to something like 185
 #define AZ_MANUAL_ROTATE_CW_LIMIT      360    // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
 

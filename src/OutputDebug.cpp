@@ -31,7 +31,6 @@
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <avr/io.h>
-#include <MsTimer2.h>
 
 // C++ functions
 #include <math.h> 

@@ -31,12 +31,9 @@
 
 // initialize global variables called from setup()
 // azimuth globals
-float         Vtop                                  = 0.0;
-float         Vbot                                  = 0.0;
-float         analog_az                           = 0.0; // output of reading something about azimuth
-int           azimuth                             = 0;   // output of mapping analog_az to azimuth in degrees
-int           raw_azimuth                         = 0;   // working variable, may be wrapped
-float         AzFiltered                          = 0.0;
+float         analog_az                           = 0.0;   // output of reading something about azimuth
+float         raw_azimuth                         = 0.0;   // working variable, may be wrapped
+float         azimuth                             = 0.0;   // unwrapped raw_azimuth
 int           target_azimuth                      = 0;
 int           target_raw_azimuth                  = 0;
 char          az_request                          = 0;

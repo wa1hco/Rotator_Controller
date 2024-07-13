@@ -200,8 +200,8 @@
 // Project functions
 #include "Service_Blink_LED.h"
 
-FIR<float, 31> fir_top;
-FIR<float, 31> fir_bot;
+FIR<float, 31> lpf_top;
+FIR<float, 31> lpf_bot;
 
 // define external functions
 void check_serial();
@@ -212,7 +212,8 @@ void check_overlap();
 void output_debug();
 void profile_loop_time();
 void TimedService();
-void ReadAzimuthISR();
+void ReadAzimuthCDE();
+void check_az_manual_rotate_limit();
 
 #ifdef FEATURE_ROTATION_INDICATOR_PIN
 void service_rotation_indicator_pin();
@@ -220,17 +221,17 @@ void service_rotation_indicator_pin();
 
 // Enter at TimeInterval specified in global
 // callback from interrupt
-// ReadAzimuthISR() to read ADCs
+// ReadAzimuthCDE() to read ADCs
 // Sets DisplayFlag when it's time to update Display
 // Entered at TIME_BETWEEN_AZ_ADC_READ msec
 void TimedService() 
 {
   // read azimuth on every interrupt
-  ReadAzimuthISR();
+  ReadAzimuthCDE();
 
   // read buttons on every interrupt
   // if button pressed increment press time value, else clear press time value
-  if (digitalRead(button_cw) == LOW) // might be first press or continued press
+  if (digitalRead(button_cw_pin) == LOW) // might be first press or continued press
   {
     if (button_cw_press_time < 100000) // count up to 100 seconds, arbitrary limit
     {
@@ -242,7 +243,7 @@ void TimedService()
     button_cw_press_time = 0;
   }
 
-  if (digitalRead(button_ccw) == LOW) // might be first press or continued press
+  if (digitalRead(button_ccw_pin) == LOW) // might be first press or continued press
   {
     if (button_ccw_press_time < 100000) // count up to 100 seconds, arbitrary limit
     {
@@ -253,7 +254,7 @@ void TimedService()
   {
     button_ccw_press_time = 0; // reset on any bounce off
   }
-} 
+} // TimedService()
 
 
 /* -------------------------------------- subroutines -----------------------------------------------
@@ -266,7 +267,7 @@ void read_headings()
   #ifdef FEATURE_ELEVATION_CONTROL
   read_elevation();
   #endif 
-}
+} // read_headings()
 
 //--------------------------------------------------------------
 void profile_loop_time()
@@ -288,36 +289,41 @@ void profile_loop_time()
     }
   }
   #endif //DEBUG_PROFILE_LOOP_TIME  
-}
+} // profile_loop_time()
 
 //--------------------------------------------------------------
-#ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
 void check_az_manual_rotate_limit() 
 {
-  if ((current_az_state() == ROTATING_CCW) && (raw_azimuth <= (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER))) 
+  if ((current_az_state() == ROTATING_CCW) && (raw_azimuth < (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER))) 
   {
+    submit_request(AZ, REQUEST_KILL, 0);       
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
     if (debug_mode) 
     {
-      Serial.print(F("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CCW_LIMIT of "));
+      Serial.print(F("check_az_manual_rotate_limit: stopping, "));
+      Serial.print("raw_azimuth ");
+      Serial.print(raw_azimuth);
+      Serial.print(" <= CCW Limit ");
       Serial.println(AZ_MANUAL_ROTATE_CCW_LIMIT);
     } 
     #endif //DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    submit_request(AZ,REQUEST_KILL,0);       
   }
-  if ((current_az_state() == ROTATING_CW) && (raw_azimuth >= (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER))) 
+  if ((current_az_state() == ROTATING_CW) && (raw_azimuth > (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER))) 
   {
+    submit_request(AZ, REQUEST_KILL, 0);   
+
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
     if (debug_mode) 
     {
-      Serial.print(F("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CW_LIMIT of "));
+      Serial.print(F("check_az_manual_rotate_limit: stopping, "));
+      Serial.print("raw_azimuth ");
+      Serial.print(raw_azimuth);
+      Serial.print(" >- CW Limit ");
       Serial.println(AZ_MANUAL_ROTATE_CW_LIMIT);
     } 
     #endif //DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    submit_request(AZ,REQUEST_KILL,0);   
   }
-}
-#endif //#ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
+} // check_az_manual_rotate_limit() 
 
 //--------------------------------------------------------------
 #if defined(OPTION_EL_MANUAL_ROTATE_LIMITS) && defined(FEATURE_ELEVATION_CONTROL)
@@ -345,7 +351,7 @@ void check_el_manual_rotate_limit()
     #endif //DEBUG_EL_MANUAL_ROTATE_LIMITS
     submit_request(EL,REQUEST_KILL,0);   
   }
-}
+} // check_el_manual_rotate_limit() 
 #endif //#ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
 
 
@@ -358,7 +364,7 @@ void check_overlap()
   if ((overlap_led) && ((millis() - last_check_time) > 500)) 
   {
      //if ((analog_az > (500*HEADING_MULTIPLIER)) && (azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
-     if ((AzFiltered > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
+     if ((azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
      {
        digitalWrite(overlap_led, HIGH);
        overlap_led_status = 1;
@@ -371,7 +377,7 @@ void check_overlap()
      } else 
      {
        //if (((analog_az < (500*HEADING_MULTIPLIER)) || (azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
-       if ((AzFiltered < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
+       if ((azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
        {
          digitalWrite(overlap_led, LOW);
          overlap_led_status = 0;
@@ -385,7 +391,7 @@ void check_overlap()
      }
      last_check_time = millis();
   }
-}
+} // check_overlap
 
 //--------------------------------------------------------------
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_ANCILLARY_PIN_CONTROL)
@@ -404,7 +410,7 @@ byte get_analog_pin(byte pin_number)
     case 6: return_output = A6; break;    
   }  
   return return_output;
-}
+} // get_analog_pin
 #endif //FEATURE_REMOTE_UNIT_SLAVE
 
 //--------------------------------------------------------------
@@ -428,7 +434,7 @@ void remote_unit_serial_command()
         serial0_buffer_carriage_return_flag = 1;
       } 
     }
-}
+} // remote_unit_serial_command
 #endif //FEATURE_REMOTE_UNIT_SLAVE 
 
 //--------------------------------------------------------------
@@ -789,7 +795,7 @@ void service_remote_unit_serial_buffer()
       serial0_buffer_index = 0; 
     }
   }
-}
+} // service_remote_unit_serial_buffer()
 #endif //FEATURE_REMOTE_UNIT_SLAVE
 
 //--------------------------------------------------------------
@@ -804,7 +810,7 @@ void az_check_operation_timeout()
     if (debug_mode) {Serial.println(F("az_check_operation_timeout: timeout reached, aborting rotation"));}
     #endif //DEBUG_AZ_CHECK_OPERATION_TIMEOUT
   }
-}
+} // az_check_operation_timeout()
 
 //--------------------------------------------------------------
 #ifdef FEATURE_TIMED_BUFFER
@@ -813,7 +819,7 @@ void clear_timed_buffer()
   timed_buffer_status = EMPTY;
   timed_buffer_number_entries_loaded = 0;
   timed_buffer_entry_pointer = 0;
-}
+} // clear_timed_buffer()
 #endif //FEATURE_TIMED_BUFFER
 
 //--------------------------------------------------------------
@@ -848,7 +854,7 @@ void initiate_timed_buffer()
     }
     #endif
   }
-}
+} // initiate_timed_buffer()
 #endif //FEATURE_TIMED_BUFFER
 
 //--------------------------------------------------------------
@@ -858,7 +864,7 @@ void print_timed_buffer_empty_message()
   #ifdef DEBUG_TIMED_BUFFER
   if (debug_mode) {Serial.println(F("check_timed_interval: completed timed buffer; changing state to EMPTY"));}
   #endif //DEBUG_TIMED_BUFFER
-}
+} // print_timed_buffer_empty_message()
 
 #endif //FEATURE_TIMED_BUFFER
 
@@ -897,7 +903,7 @@ void check_timed_interval()
     }
   }
   #endif
-}
+} // check_timed_interval()
 #endif //FEATURE_TIMED_BUFFER
 
 //--------------------------------------------------------------
@@ -938,7 +944,7 @@ void yaesu_az_load_timed_intervals()
   {
     Serial.println(F("?>"));  // error
   }
-}
+} // yaesu_az_load_timed_intervals()
 #endif //FEATURE_TIMED_BUFFER
 
 //-----------------------------------------------------------------
@@ -967,7 +973,7 @@ void rotator_speed(byte speed)
 		digitalWrite(IN2Pin,      0);
 		digitalWrite(ENAPin,      0);
 	}
-}
+} // rotator_speed(byte speed)
 #endif
 
 //--------------------------------------------------------------
@@ -1026,7 +1032,7 @@ void az_position_pulse_interrupt_handler()
     az_position_pulse_input_azimuth -= 360;
   }
   #endif //OPTION_AZ_POSITION_PULSE_HARD_LIMIT
-}
+} // az_position_pulse_interrupt_handler()
 #endif //FEATURE_AZ_POSITION_PULSE_INPUT
 
 
@@ -1056,7 +1062,7 @@ byte submit_remote_command(byte remote_command_to_send)
     remote_unit_command_results_available = 0;
     return 1;
   }
-}
+} // submit_remote_command(byte remote_command_to_send)
 #endif //FEATURE_HOST_REMOTE_PROTOCOL
 
 //--------------------------------------------------------------------------
@@ -1070,7 +1076,7 @@ byte is_ascii_number(byte char_in)
   {
     return 0;
   }
-}
+} // is_ascii_number(byte char_in)
 #endif //FEATURE_HOST_REMOTE_PROTOCOL
 
 //--------------------------------------------------------------------------
@@ -1167,7 +1173,7 @@ void service_remote_communications_incoming_serial_buffer()
     serial1_buffer_index = 0;
     remote_unit_incoming_buffer_timeouts++;
   }
-}
+} // service_remote_communications_incoming_serial_buffer()
 #endif //FEATURE_HOST_REMOTE_PROTOCOL
 
 //--------------------------------------------------------------------------
@@ -1186,7 +1192,7 @@ float correct_azimuth(float azimuth_in)
     }
   }
   return(azimuth_in);
-}
+} // correct_azimuth(float azimuth_in)
 #endif //FEATURE_AZIMUTH_CORRECTION
 
 //-------------------------------------------------------------------------- 
@@ -1238,5 +1244,5 @@ void service_rotation_indicator_pin()
       }
     }
   } 
-}
+} // service_rotation_indicator_pin()
 #endif //FEATURE_ROTATION_INDICATOR_PIN  

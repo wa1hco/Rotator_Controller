@@ -40,31 +40,41 @@
 #include "dependencies.h"
 #include "initialize_functions.h"
 
-#include "Input.h"
-#include <MsTimer2.h>
-
-extern FIR<float, 31> fir_top;
-extern FIR<float, 31> fir_bot;
+extern FIR<float, 31> lpf_top;
+extern FIR<float, 31> lpf_bot;
 
 // loop functions
 void az_check_operation_timeout();
 void check_overlap();
 void profile_loop_time();
 void service_blink_led();
+void check_hco_buttons();
+void check_az_manual_rotate_limit();
 
 // define external functions
 void read_headings();
 void TimedService();
 
+// define debounced buttons
+Bounce debounceCCW = Bounce();
+Bounce debounceCW  = Bounce();
+
 void setup() 
 {
   delay(500);
+
+  // setup debounded rotation control buttons
+  debounceCCW.attach(button_ccw_pin, INPUT_PULLUP);
+  debounceCW.attach( button_cw_pin,  INPUT_PULLUP);
+  debounceCCW.interval(20); // msec, wait time to settle
+  debounceCW.interval( 20);
+
   initialize_serial();
   initialize_peripherals();
   read_settings_from_eeprom(); 
   initialize_pins();
-
   read_headings();
+
   #ifdef FEATURE_YAESU_EMULATION
   report_current_azimuth();      // Yaesu - report the azimuth right off the bat without a C command; the Arduino doesn't wake up quick enough
                                  // to get first C command from HRD and if HRD doesn't see anything it doesn't connect
@@ -122,8 +132,8 @@ void setup()
     -0.004942353838242621
   };
 
-  fir_top.setFilterCoeffs(filter_taps);
-  fir_bot.setFilterCoeffs(filter_taps);
+  lpf_top.setFilterCoeffs(filter_taps);
+  lpf_bot.setFilterCoeffs(filter_taps);
   #endif // FIR filter
 
   // setup the timer and start it
@@ -177,9 +187,7 @@ void loop()
   read_headings();
   
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
-  #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
   check_az_manual_rotate_limit();
-  #endif
 
   #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
   check_el_manual_rotate_limit();
@@ -227,4 +235,128 @@ void loop()
   service_blink_led();
 }
 
+//--------------------------------------------------------------
+// check and act on button presses
+// button status read from global variables counting press time
+// Need to have press time greater than about 100 msec to get past bounce
+
+// if CW pressed and rotator near max limit and CCW long pressed, then calibrate fullscale
+// if CCW pressed and rotator near max limit and CW long pressed, then calibrate offse
+// function called from ISR at TIME_BETWEEN_AZ_ADC_READ msec
+void check_hco_buttons()
+{
+  static bool is_fullscale_cal_mode = false;
+  static bool is_offset_cal_mode    = false;
+
+  debounceCCW.update();
+  debounceCW.update();
+
+  // Rotation ---------------------------------------------------------------
+  // check for cw button press and not ccw button
+  if (debounceCW.fell() && debounceCCW.read()) 
+  {
+    if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
+    {
+      submit_request(AZ, REQUEST_CW, 0); // on first detection of press
+    } else 
+    {
+      #ifdef DEBUG_HCO_BUTTONS
+      if (debug_mode) 
+      {
+        Serial.print(F("check_hco_buttons: exceeded CW_LIMIT"));
+        Serial.print("raw azimuth ");
+        Serial.print(raw_azimuth);
+        Serial.print(" !< CW limit ");
+        Serial.println(AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER);
+      }
+      #endif
+    }
+
+    #ifdef DEBUG_HCO_BUTTONS
+    if (debug_mode) {Serial.println(F("check_hco_buttons: button_cw_fell"));}       
+    #endif
+  } // CW fell, CCW high
+
+  // check for ccw button and not cw button
+  if (debounceCCW.fell() && debounceCW.read()) // only ccw pressed
+  {
+    if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER)) 
+    {
+      submit_request(AZ, REQUEST_CCW, 0); // on first detection of press
+    } else 
+    {
+      #ifdef DEBUG_HCO_BUTTONS
+      if (debug_mode)
+      {
+        Serial.print(F("check_hco_buttons: exceeded CCW_LIMIT, "));
+        Serial.print("raw azimuth ");
+        Serial.print(raw_azimuth);
+        Serial.print(" !> CCW limit ");
+        Serial.println(AZ_MANUAL_ROTATE_CCW_LIMIT * HEADING_MULTIPLIER);
+      }
+      #endif
+    }
+
+    #ifdef DEBUG_HCO_BUTTONS
+    Serial.println(F("check_hco_buttons: CCW_fell"));      
+    #endif
+  } //CCW fell, CW high
+
+  // handle release of cw button press 
+  if (debounceCW.rose() && debounceCCW.read())
+  {
+    submit_request(AZ, REQUEST_STOP, 0);
+
+    #ifdef DEBUG_HCO_BUTTONS
+    if (debug_mode) {Serial.println(F("check_buttons: CW rose, CCW high"));}
+    #endif
+
+  } // if cw button released
+
+  // handle release of ccw button press 
+  if (debounceCCW.rose() && debounceCW.read())
+  {
+    submit_request(AZ, REQUEST_STOP,0);
+
+    #ifdef DEBUG_HCO_BUTTONS
+    if (debug_mode) {Serial.println(F("check_buttons: CCW rose, CW high"));}
+    #endif
+
+  } // if ccw button released
+
+  // -------------Calibration ------------------------------------
+  // Set fullscale calibration mode, rotate to full cw, hold while press ccw button for 2 seconds
+  if ((button_cw_press_time > button_ccw_press_time) && (button_ccw_press_time > BUTTON_LONG_PRESS))
+  {
+    is_fullscale_cal_mode = true;
+  }
+
+  // Set offset calibration mode, rotate to full ccw, hold while press cw button for 2 seconds
+  if ((button_ccw_press_time > button_cw_press_time) && (button_cw_press_time > BUTTON_LONG_PRESS))
+  {
+    is_offset_cal_mode = true;
+  }
+
+  // handle release of other button (ccw), at end of full scale (cw) calibration
+  if ( is_fullscale_cal_mode && (button_ccw_press_time == 0))
+  {
+    is_fullscale_cal_mode = false;
+
+    configuration.analog_az_full_cw = analog_az; // azimuth before mapping
+    write_settings_to_eeprom();  // write the cal
+    print_wrote_to_memory();     // message about updating cal eeprom
+    read_settings_from_eeprom(); // print on serial port if debugging on
+  }
+ 
+  // handle release of other button (cw), at end of offset (cvw) calibration
+  if ( is_offset_cal_mode && (button_cw_press_time == 0))
+  {
+    is_offset_cal_mode = false;
+
+    configuration.analog_az_full_ccw = analog_az; // azimuth before mapping
+    write_settings_to_eeprom();  // write the cal
+    print_wrote_to_memory();     // message about updating cal eeprom
+    read_settings_from_eeprom(); // print on serial port if debugging on
+  }
+} // check_hco_buttons()
 

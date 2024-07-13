@@ -91,8 +91,6 @@
 //#define FEATURE_TIMED_BUFFER              // Support for Yaesu timed buffer commands
 //#define OPTION_SERIAL_HELP_TEXT           // Yaesu help command prints help
 //#define FEATURE_PARK
-//#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
-//#define OPTION_EL_MANUAL_ROTATE_LIMITS
 //#define OPTION_EASYCOM_AZ_QUERY_COMMAND   // Adds non-standard Easycom command: AZ with no parm returns current azimuth
 //#define OPTION_EASYCOM_EL_QUERY_COMMAND   // Adds non-standard Easycom command: EL with no parm returns current elevation
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
@@ -118,7 +116,7 @@
   */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
-#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
@@ -131,7 +129,7 @@
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
 //#define DEBUG_HCO_BUTTONS
-//#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
+#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
 //#define DEBUG_BRAKE

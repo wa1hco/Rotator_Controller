@@ -39,6 +39,5 @@ void check_az_speed_pot();
 void check_az_preset_potentiometer();
 void initialize_rotary_encoders();
 void check_preset_encoders();
-void check_hco_buttons();
 void check_buttons();
 #endif /* INPUT_H_ */

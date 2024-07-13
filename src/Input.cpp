@@ -516,156 +516,7 @@ void check_preset_encoders()
 #endif //FEATURE_AZ_PRESET_ENCODER
 } 
 
-//--------------------------------------------------------------
-// check and act on button presses
-// button status read from global variables counting press time
-// Need to have press time greater than about 100 msec to get past bounce
 
-// if CW pressed and rotator near max limit and CCW long pressed, then calibrate fullscale
-// if CCW pressed and rotator near max limit and CW long pressed, then calibrate offse
-// function called from ISR at TIME_BETWEEN_AZ_ADC_READ msec
-void check_hco_buttons()
-{
-  #ifdef DEBUG_HCO_BUTTONS
-  Serial.print("check_hco_buttons: ");
-  #endif
-
-  #ifdef DEBUG_HCO_BUTTONS
-  Serial.print("CW: ");
-  Serial.print(digitalRead(button_cw));
-  Serial.print(" ");
-  #endif
-
-  static bool is_cw_button_pressed  = false; // HCO board az button variables
-  static bool is_ccw_button_pressed = false;
-  static bool is_fullscale_cal_mode = false;
-  static bool is_offset_cal_mode    = false;
-
-  // Rotation ---------------------------------------------------------------
-  // check for cw button and not ccw button
-  if ((button_cw_press_time > BUTTON_BOUNCE_DELAY) && (button_ccw_press_time == 0)) // might be first press or continued press
-    {
-    if (!is_cw_button_pressed) // pressed now, not before
-    {
-      #ifdef DEBUG_HCO_BUTTONS
-      if (debug_mode) 
-      {
-        Serial.println(F("check_buttons: button_cw pushed"));
-      }       
-      #endif
-
-      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
-      {
-      #endif    
-
-      submit_request(AZ, REQUEST_CW, 0); // on first detection of press
-      is_cw_button_pressed = true;
-
-      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      } else 
-      {
-        #ifdef DEBUG_BUTTONS
-        if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT"));}
-        #endif //DEBUG_BUTTONS
-      }
-      #endif            
-    }
-  } // if button_cw
-
-  // check for ccw button and not cw button
-  if ((button_ccw_press_time > BUTTON_BOUNCE_DELAY) && (button_cw_press_time == 0))
-  {
-    if (!is_ccw_button_pressed) // pressed now, now before
-    {
-      #ifdef DEBUG_HCO_BUTTONS
-      Serial.println(F("check_buttons: button_ccw pushed"));      
-      #endif
-
-      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER)) 
-      {
-      #endif  
-
-      submit_request(AZ, REQUEST_CCW, 0); // on first detection of press
-      is_ccw_button_pressed = true;
-
-      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      } else 
-      {
-        #ifdef DEBUG_BUTTONS
-        if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CCW_LIMIT"));}
-        #endif //DEBUG_BUTTONS
-      }
-      #endif //OPTION_AZ_MANUAL_ROTATE_LIMITS      
-    }
-  } // if button pressed
-
-  // handle release of cw button press at end of rotation
-  if (is_cw_button_pressed && (button_cw_press_time == 0)) // was pressed, not now
-  {
-      is_cw_button_pressed = false;
-
-  #ifdef DEBUG_HCO_BUTTONS
-      Serial.println(F("check_buttons: no AZ button depressed"));
-  #endif
-
-      submit_request(AZ, REQUEST_STOP, 0);
-  } // if cw button released
-
-  // handle release of ccw button press at end of rotation
-  if (is_ccw_button_pressed && (button_ccw_press_time == 0)) // was pressed, not now
-  {
-      is_ccw_button_pressed = false;
-
-      #ifdef DEBUG_HCO_BUTTONS
-      Serial.println(F("check_buttons: no AZ button depressed"));
-      #endif
-
-      submit_request(AZ, REQUEST_STOP,0);
-  } // if cw button released
-
-  // -------------Calibration ------------------------------------
-  // Set fullscale calibration mode, rotate to full cw, hold while press ccw button for 2 seconds
-  if ((button_cw_press_time > button_ccw_press_time) && (button_ccw_press_time > BUTTON_LONG_PRESS))
-  {
-    is_fullscale_cal_mode = true;
-  }
-
-  // Set offset calibration mode, rotate to full ccw, hold while press cw button for 2 seconds
-  if ((button_ccw_press_time > button_cw_press_time) && (button_cw_press_time > BUTTON_LONG_PRESS))
-  {
-    is_offset_cal_mode = true;
-  }
-
-  // handle release of other button (ccw), at end of full scale (cw) calibration
-  if ( is_fullscale_cal_mode && (button_ccw_press_time == 0))
-  {
-    is_fullscale_cal_mode = false;
-
-    configuration.analog_az_full_cw = analog_az; // azimuth before mapping
-    write_settings_to_eeprom();  // write the cal
-    print_wrote_to_memory();     // message about updating cal eeprom
-    read_settings_from_eeprom(); // print on serial port if debugging on
-    }
- 
-  // handle release of other button (cw), at end of offset (cvw) calibration
-  if ( is_offset_cal_mode && (button_cw_press_time == 0))
-  {
-    is_offset_cal_mode = false;
-
-    configuration.analog_az_full_ccw = analog_az; // azimuth before mapping
-    write_settings_to_eeprom();  // write the cal
-    print_wrote_to_memory();     // message about updating cal eeprom
-    read_settings_from_eeprom(); // print on serial port if debugging on
-  }
-
-
-  #ifdef DEBUG_HCO_BUTTONS
-  Serial.println();
-  #endif
-
-} // check_hco_buttons()
 
 //--------------------------------------------------------------
 // check and act on button presses
@@ -677,30 +528,26 @@ void check_buttons()
   if (buttons & BUTTON_RIGHT) 
   {
   #else // not adafruit
-  if (button_cw && (digitalRead(button_cw) == LOW)) 
+  if (button_cw_pin && (digitalRead(button_cw_pin) == LOW)) 
   {
   #endif //FEATURE_ADAFRUIT_BUTTONS
 
-    if (!isAzButtonPressed) 
+  if (!isAzButtonPressed) 
+  {
+    #ifdef DEBUG_BUTTONS
+    if (debug_mode) {Serial.println(F("check_buttons: button_cw_pin pushed"));}       
+    #endif //DEBUG_BUTTONS
+    if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
+    {
+    submit_request(AZ,REQUEST_CW, 0);
+    isAzButtonPressed = true;
+    } else 
     {
       #ifdef DEBUG_BUTTONS
-      if (debug_mode) {Serial.println(F("check_buttons: button_cw pushed"));}       
+      if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT"));}
       #endif //DEBUG_BUTTONS
-      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
-      {
-      #endif      
-      submit_request(AZ,REQUEST_CW, 0);
-      isAzButtonPressed = true;
-      #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      } else 
-      {
-        #ifdef DEBUG_BUTTONS
-        if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT"));}
-        #endif //DEBUG_BUTTONS
-      }
-      #endif            
     }
+  }
 
   } else // not button cw
   {
@@ -709,7 +556,7 @@ void check_buttons()
     {
 
     #else
-    if (button_ccw && (digitalRead(button_ccw) == LOW)) 
+    if (button_ccw_pin && (digitalRead(button_ccw_pin) == LOW)) 
     {
     #endif //FEATURE_ADAFRUIT_BUTTONS
       if (!isAzButtonPressed) 
@@ -717,23 +564,19 @@ void check_buttons()
         #ifdef DEBUG_BUTTONS
         if (debug_mode) 
         {
-          Serial.println(F("check_buttons: button_ccw pushed"));
+          Serial.println(F("check_buttons: button_ccw_pin pushed"));
         }         
         #endif //DEBUG_BUTTONS 
-        #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
         if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT*HEADING_MULTIPLIER)) 
         {
-        #endif  
         submit_request(AZ,REQUEST_CCW,0);
         isAzButtonPressed = true;
-        #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
         } else 
         {
           #ifdef DEBUG_BUTTONS
           if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CCW_LIMIT"));}
           #endif //DEBUG_BUTTONS
         }
-        #endif //OPTION_AZ_MANUAL_ROTATE_LIMITS      
       }
     }
   }
@@ -752,10 +595,10 @@ void check_buttons()
   }
 
   #else // not adafruit buttons
-  if ((isAzButtonPressed) && (digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
+  if ((isAzButtonPressed) && (digitalRead(button_ccw_pin) == HIGH) && (digitalRead(button_cw_pin) == HIGH)) 
   {
     delay(200); // debouncing
-    if ((digitalRead(button_ccw) == HIGH) && (digitalRead(button_cw) == HIGH)) 
+    if ((digitalRead(button_ccw_pin) == HIGH) && (digitalRead(button_cw_pin) == HIGH)) 
     {
         #ifdef DEBUG_BUTTONS
       if (debug_mode) 

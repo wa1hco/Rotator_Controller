@@ -39,11 +39,6 @@
 void display_calibration_settings()
 {
   Serial.println(F("Analog and cal settings: "));
-  Serial.print("Vtop: ");
-  Serial.print(Vtop);         // top voltage
-  Serial.print(", Vbot: ");
-  Serial.print(Vbot);         // bottom voltage
-  Serial.println();  
   Serial.print("analog_az                    ");
   Serial.println(analog_az,                                 DEC);
   Serial.print("analog_az_full_ccw           ");
@@ -55,5 +50,6 @@ void display_calibration_settings()
   Serial.print("azimuth_rotation_capability  ");
   Serial.println(configuration.azimuth_rotation_capability, DEC);
   Serial.print("azimuth:                     ");
-  Serial.println(azimuth,                                   DEC);       
+  Serial.print(azimuth,                                     DEC);   
+  Serial.println();    
 }

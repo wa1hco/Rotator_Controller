@@ -582,7 +582,7 @@ void service_rotation_azimuth()
   if ((az_state == SLOW_DOWN_CW) || (az_state == SLOW_DOWN_CCW)) 
   {     
     // is it time to do another step down?
-    if (abs((target_raw_azimuth - AzFiltered)/HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_AZ*((float)az_slow_down_step/(float)AZ_SLOW_DOWN_STEPS))))
+    if (abs((target_raw_azimuth - azimuth)/HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_AZ*((float)az_slow_down_step/(float)AZ_SLOW_DOWN_STEPS))))
     {
       #ifdef DEBUG_SERVICE_ROTATION
       if (debug_mode) 
@@ -607,7 +607,7 @@ void service_rotation_azimuth()
         ) && 
         (az_request_queue_state == IN_PROGRESS_TO_TARGET) && 
         az_slowdown_active && 
-        (abs((target_raw_azimuth - AzFiltered)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ)
+        (abs((target_raw_azimuth - azimuth)/HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ)
       )  
   { 
     #ifdef DEBUG_SERVICE_ROTATION
@@ -643,26 +643,26 @@ void service_rotation_azimuth()
         (az_request_queue_state == IN_PROGRESS_TO_TARGET) 
       )  
   {
-    if  (
+    if (
           (az_state == NORMAL_CW) || 
           (az_state == SLOW_START_CW) || 
           (az_state == SLOW_DOWN_CW)
         )
     {
       if  (
-            (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+            (abs(azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
             (
-              (AzFiltered > target_raw_azimuth) && 
-              ( (AzFiltered - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+              (azimuth > target_raw_azimuth) && 
+              ( (azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
             )
           ) 
       {
         delay(50);
         read_azimuth();
         if  (
-              (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
-              ((AzFiltered > target_raw_azimuth) && 
-              ( (AzFiltered - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+              (abs(azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+              ((azimuth > target_raw_azimuth) && 
+              ( (azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
               )
             ) 
         {
@@ -678,19 +678,19 @@ void service_rotation_azimuth()
     } else 
     {
       if  ( 
-            (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
-            ( (AzFiltered < target_raw_azimuth) &&
-              ( (target_raw_azimuth - AzFiltered) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
+            (abs(azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER) ) || 
+            ( (azimuth < target_raw_azimuth) &&
+              ( (target_raw_azimuth - azimuth) < ( (AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER) )
 		        )
           ) 
       {
         delay(50);
         read_azimuth();
         if  (
-              (abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
+              (abs(azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER)) || 
               (
-                (AzFiltered < target_raw_azimuth) && 
-                ((target_raw_azimuth - AzFiltered) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER))
+                (azimuth < target_raw_azimuth) && 
+                ((target_raw_azimuth - azimuth) < ((AZIMUTH_TOLERANCE+5)*HEADING_MULTIPLIER))
               )
             ) 
         {
@@ -820,12 +820,12 @@ void service_request_queue()
             if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) < 
                 ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)*HEADING_MULTIPLIER)) 
             { // is there a second possible heading in overlap?
-              if (abs(AzFiltered - work_target_raw_azimuth) < abs((work_target_raw_azimuth+(360*HEADING_MULTIPLIER)) - AzFiltered)) 
+              if (abs(azimuth - work_target_raw_azimuth) < abs((work_target_raw_azimuth+(360*HEADING_MULTIPLIER)) - azimuth)) 
               { // is second possible heading closer?
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
                 if (debug_mode) {Serial.print(F("->C"));}
                 #endif //DEBUG_SERVICE_REQUEST_QUEUE
-                if (work_target_raw_azimuth  > AzFiltered) 
+                if (work_target_raw_azimuth  > azimuth) 
                 { // not closer, use position in non-overlap
                   direction_to_go = CW;                   
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
@@ -844,7 +844,7 @@ void service_request_queue()
                 if (debug_mode) {Serial.print(F("->D"));}
                 #endif //DEBUG_SERVICE_REQUEST_QUEUE        
                 target_raw_azimuth = work_target_raw_azimuth + (360*HEADING_MULTIPLIER);
-                if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) > AzFiltered) 
+                if ((work_target_raw_azimuth + (360*HEADING_MULTIPLIER)) > azimuth) 
                 {
                   direction_to_go = CW; 
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
@@ -863,7 +863,7 @@ void service_request_queue()
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
                 if (debug_mode) {Serial.print(F("->E"));}
                 #endif //DEBUG_SERVICE_REQUEST_QUEUE               
-              if (work_target_raw_azimuth  > AzFiltered) 
+              if (work_target_raw_azimuth  > azimuth) 
               {
                 direction_to_go = CW;
               } else 
@@ -881,7 +881,7 @@ void service_request_queue()
           {
             target_azimuth = az_request_parm - (360*HEADING_MULTIPLIER);
             target_raw_azimuth = az_request_parm;
-            if (az_request_parm > AzFiltered) 
+            if (az_request_parm > azimuth) 
             {
               direction_to_go = CW;
             } else 
@@ -952,7 +952,7 @@ void service_request_queue()
         target_azimuth = target_raw_azimuth;
         if (target_azimuth >= (360*HEADING_MULTIPLIER)) {target_azimuth = target_azimuth - (360*HEADING_MULTIPLIER);}
         
-        if (((abs(AzFiltered - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) && (az_state == IDLE)) 
+        if (((abs(azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE*HEADING_MULTIPLIER))) && (az_state == IDLE)) 
         {
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {Serial.print(F(" request within tolerance"));}          
@@ -960,7 +960,7 @@ void service_request_queue()
           az_request_queue_state = NONE;
         } else 
         {
-          if (target_raw_azimuth > AzFiltered) 
+          if (target_raw_azimuth > azimuth) 
           {
             if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_slowstart_active)){
               az_state = INITIALIZE_DIR_CHANGE_TO_CW;
@@ -976,7 +976,7 @@ void service_request_queue()
               }  
             }
           }
-          if (target_raw_azimuth < AzFiltered) 
+          if (target_raw_azimuth < azimuth) 
           {
             if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (az_slowstart_active))
             {

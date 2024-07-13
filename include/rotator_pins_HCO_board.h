@@ -65,8 +65,8 @@
 #endif
 
 #ifdef FEATURE_HCO_BUTTONS
-#define BUTTON_CCW       8
-#define BUTTON_CW        9
+#define BUTTON_CCW_PIN   8
+#define BUTTON_CW_PIN    9
 #endif
 
 // when using a quad relay board
@@ -108,8 +108,8 @@
 
 #define rotate_h1               IN1Pin          // L298 H Bridge In 1 Pin, High means rotate cw
 #define rotate_h2               0               // L298 H Bridge In 2 Pin, High means rotate ccw
-#define button_cw               BUTTON_CW       // normally open button to ground for manual CW rotation (schematic pin: A1)
-#define button_ccw              BUTTON_CCW      // normally open button to ground for manual CCW rotation (schematic pin: A2)
+#define button_cw_pin           BUTTON_CW_PIN      // normally open button to ground for manual CW rotation (schematic pin: A1)
+#define button_ccw_pin          BUTTON_CCW_PIN      // normally open button to ground for manual CCW rotation (schematic pin: A2)
 #define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
 

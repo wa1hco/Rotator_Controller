@@ -36,12 +36,9 @@
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
-extern float         Vtop;           // Voltage at top of azimuth pot
-extern float         Vbot;           // Voltage at bottom of azimuth pot
 extern float         analog_az;      // az reading from sensor, prior to mapping
-extern int           azimuth;        // az after mapping used for display and control
-extern int           raw_azimuth;    // working variable, may be wrapped
-extern float         AzFiltered;   // HCO azimuth, both pot ends, wiper noise compensated filtered, replaces raw_azimuth
+extern float         azimuth;        // az after wrapping to 0-360, used for display and control
+extern float         raw_azimuth;    // working variable, may be unwrapped
 extern int           target_azimuth;
 extern int           target_raw_azimuth;
 extern char          az_request;

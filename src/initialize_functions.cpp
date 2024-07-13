@@ -93,13 +93,13 @@ void initialize_interrupts()
 //--------------------------------------------------------------
 void initialize_pins()
 {  
-  if (button_ccw)
+  if (button_ccw_pin)
   {
-    pinMode(button_ccw, INPUT_PULLUP);
+    pinMode(button_ccw_pin, INPUT_PULLUP);
   }
-  if (button_cw)
+  if (button_cw_pin)
   {
-    pinMode(button_cw, INPUT_PULLUP);
+    pinMode(button_cw_pin, INPUT_PULLUP);
   }
   
   if (serial_led) 
