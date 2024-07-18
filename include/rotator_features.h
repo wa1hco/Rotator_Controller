@@ -45,12 +45,13 @@
 //#define FEATURE_LCD_DISPLAY
 #define FEATURE_HCO_BOARD
 #ifdef FEATURE_HCO_BOARD
-  //#define FEATURE_WIRE_SUPPORT
   #define FEATURE_MAX7221_DISPLAY
   #define FEATURE_HCO_BUTTONS
   #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
   #define FEATURE_HCO_ADC
   #define FEATURE_FIR_FILTER
+  #define FEATURE_HCO_BUTTON_CALIBRATION    // press and hold both at end of travel triggers Cal
+
 #endif
 
 #define AZIMUTH_INTERRUPT                          // use 1 msec ISR for ADC read
@@ -128,8 +129,9 @@
 //#define DEBUG_AZ_PRESET_STATE
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
-//#define DEBUG_HCO_BUTTONS
-#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
+#define DEBUG_HCO_BUTTONS
+#define DEBUG_HCO_BUTTON_CALIBRATION
+//#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
 //#define DEBUG_BRAKE

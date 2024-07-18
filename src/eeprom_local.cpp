@@ -39,8 +39,8 @@ void initialize_eeprom_with_defaults()
   }
   #endif //DEBUG_EEPROM
 
-  configuration.analog_az_full_ccw          = ANALOG_AZ_FULL_CCW; // sensor reading
-  configuration.analog_az_full_cw           = ANALOG_AZ_FULL_CW;  // sensor reading
+  configuration.Raz_full_ccw                = RAZ_FULL_CCW; // sensor reading
+  configuration.Raz_full_cw                 = RAZ_FULL_CW;  // sensor reading
   configuration.analog_el_0_degrees         = ANALOG_EL_0_DEGREES;
   configuration.analog_el_max_elevation     = ANALOG_EL_MAX_ELEVATION;   
   configuration.azimuth_starting_point      = AZIMUTH_STARTING_POINT_DEFAULT;
@@ -96,10 +96,10 @@ void read_settings_from_eeprom()
     if (debug_mode) 
     {
       Serial.println(F("read_settings_from_eeprom: "));
-      Serial.print("analog_az_full_ccw           ");
-      Serial.println(configuration.analog_az_full_ccw,          DEC);
-      Serial.print("analog_az_full_cw            ");
-      Serial.println(configuration.analog_az_full_cw,           DEC);
+      Serial.print("Raz_full_ccw           ");
+      Serial.println(configuration.Raz_full_ccw,          DEC);
+      Serial.print("Raz_full_cw            ");
+      Serial.println(configuration.Raz_full_cw,           DEC);
       Serial.print("azimuth_starting_point       ");
       Serial.println(configuration.azimuth_starting_point,      DEC);
       Serial.print("azimuth_rotation_capability  ");

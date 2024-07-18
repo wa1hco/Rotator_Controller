@@ -113,7 +113,7 @@
 #define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
 
-#define rotator_analog_az       0               // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
+#define rotator_Raz             0               // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
 #define rotation_indication_pin 0
 
 

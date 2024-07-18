@@ -36,7 +36,7 @@
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
-extern float         analog_az;      // az reading from sensor, prior to mapping
+extern float         Raz;      // az reading from sensor, prior to mapping
 extern float         azimuth;        // az after wrapping to 0-360, used for display and control
 extern float         raw_azimuth;    // working variable, may be unwrapped
 extern int           target_azimuth;
@@ -61,6 +61,8 @@ extern char          az_slowdown_active;
 #ifdef FEATURE_HCO_BUTTONS
 extern int           button_cw_press_time;
 extern int           button_ccw_press_time;
+extern bool          is_CW_cal_mode;
+extern bool          is_CCW_cal_mode;
 #endif
 
 #ifdef FEATURE_HCO_ADC
@@ -73,8 +75,8 @@ extern unsigned long last_debug_output_time;
 struct config_t
 {
   char magic_number;
-  int analog_az_full_ccw;
-  int analog_az_full_cw;
+  int Raz_full_ccw;
+  int Raz_full_cw;
   int analog_el_0_degrees;
   int analog_el_max_elevation;
   int azimuth_starting_point;
@@ -168,45 +170,45 @@ extern float average_loop_time;
 #endif //DEBUG_PROFILE_LOOP_TIME
 
 #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
-volatile float az_position_pulse_input_azimuth = 0;
-volatile char last_known_az_state = 0;
+extern volatile float az_position_pulse_input_azimuth = 0;
+extern volatile char last_known_az_state = 0;
 #endif //FEATURE_AZ_POSITION_PULSE_INPUT
 
 #ifdef FEATURE_EL_POSITION_PULSE_INPUT
-volatile float el_position_pulse_input_elevation = 0;
-volatile char last_known_el_state = 0;
+extern volatile float el_position_pulse_input_elevation = 0;
+extern volatile char last_known_el_state = 0;
 #endif //FEATURE_EL_POSITION_PULSE_INPUT
 
 #ifdef FEATURE_REMOTE_UNIT_SLAVE
-char serial_read_event_flag[] = {0,0,0,0,0};
-char serial0_buffer_carriage_return_flag = 0;
+extern char serial_read_event_flag[] = {0,0,0,0,0};
+extern char serial0_buffer_carriage_return_flag = 0;
 #endif
 
 #ifdef FEATURE_HOST_REMOTE_PROTOCOL
-char serial1_buffer[COMMAND_BUFFER_SIZE];
-int serial1_buffer_index = 0;
-char serial1_buffer_carriage_return_flag = 0;
-unsigned long serial1_last_receive_time = 0;
-char remote_unit_command_submitted = 0;
-unsigned long last_remote_unit_command_time = 0;
-unsigned int remote_unit_command_timeouts = 0;
-unsigned int remote_unit_bad_results = 0;
-unsigned int remote_unit_good_results = 0;
-unsigned int remote_unit_incoming_buffer_timeouts = 0;
-char remote_unit_command_results_available = 0;
-float remote_unit_command_result_float = 0;
-char remote_port_rx_sniff = 0;
-char remote_port_tx_sniff = 0;
-char suspend_remote_commands = 0;
+extern char serial1_buffer[COMMAND_BUFFER_SIZE];
+extern int serial1_buffer_index = 0;
+extern char serial1_buffer_carriage_return_flag = 0;
+extern unsigned long serial1_last_receive_time = 0;
+extern char remote_unit_command_submitted = 0;
+extern unsigned long last_remote_unit_command_time = 0;
+extern unsigned int remote_unit_command_timeouts = 0;
+extern unsigned int remote_unit_bad_results = 0;
+extern unsigned int remote_unit_good_results = 0;
+extern unsigned int remote_unit_incoming_buffer_timeouts = 0;
+extern char remote_unit_command_results_available = 0;
+extern float remote_unit_command_result_float = 0;
+extern char remote_port_rx_sniff = 0;
+extern char remote_port_tx_sniff = 0;
+extern char suspend_remote_commands = 0;
 #endif
 
 #ifdef DEBUG_POSITION_PULSE_INPUT
-//unsigned int az_position_pule_interrupt_handler_flag = 0;
-//unsigned int el_position_pule_interrupt_handler_flag = 0;
-volatile unsigned long az_pulse_counter = 0;
-volatile unsigned long el_pulse_counter = 0;
-volatile unsigned int az_pulse_counter_ambiguous = 0;
-volatile unsigned int el_pulse_counter_ambiguous = 0;
+//extern unsigned int az_position_pule_interrupt_handler_flag = 0;
+//extern unsigned int el_position_pule_interrupt_handler_flag = 0;
+extern volatile unsigned long az_pulse_counter = 0;
+extern volatile unsigned long el_pulse_counter = 0;
+extern volatile unsigned int az_pulse_counter_ambiguous = 0;
+extern volatile unsigned int el_pulse_counter_ambiguous = 0;
 #endif //DEBUG_POSITION_PULSE_INPUT
 
 /*
@@ -214,13 +216,13 @@ volatile unsigned int el_pulse_counter_ambiguous = 0;
   You must have the same number of entries in the _from and _to arrays!
 */
 #ifdef FEATURE_AZIMUTH_CORRECTION
-float azimuth_calibration_from[]    = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
-float azimuth_calibration_to[]      = {180, 630};
+externfloat azimuth_calibration_from[]    = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
+extern float azimuth_calibration_to[]      = {180, 630};
 #endif //FEATURE_AZIMUTH_CORRECTION
 
 #ifdef FEATURE_ELEVATION_CORRECTION
-float elevation_calibration_from[]  = {-180, 0, 180};
-float elevation_calibration_to[]    = { 180, 0, 180};
+extern float elevation_calibration_from[]  = {-180, 0, 180};
+extern float elevation_calibration_to[]    = { 180, 0, 180};
 #endif //FEATURE_ELEVATION_CORRECTION
 
 extern char incoming_serial_char;
@@ -228,7 +230,6 @@ extern char serial0_buffer[COMMAND_BUFFER_SIZE];
 extern int serial0_buffer_index;
 extern unsigned long last_serial_receive_time;
 extern char backslash_command;
-
 extern char configuration_dirty;
 
 //----------------------------------------Public functions--------------------------------------

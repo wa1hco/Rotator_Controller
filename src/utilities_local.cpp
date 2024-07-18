@@ -195,8 +195,8 @@ void read_azimuth()
     // map(value, fromLow, fromHigh, toLow, toHigh)
     
     //raw_azimuth = map(Az_avg, 0, 360, 0, 360);
-    float ADC_ccw = configuration.analog_az_full_ccw;
-    float ADC_cw  = configuration.analog_az_full_cw;
+    float ADC_ccw = configuration.Raz_full_ccw;
+    float ADC_cw  = configuration.Raz_full_cw;
     float Az_start = configuration.azimuth_starting_point * HEADING_MULTIPLIER;
     float Az_capability = configuration.azimuth_rotation_capability;
     float Az_stop  = Az_start + Az_capability * HEADING_MULTIPLIER;
@@ -257,12 +257,12 @@ void read_azimuth()
     // Voltage:    0----------------------5
     // ADC:        0--------------------1023
 
-    ADC_az = analogRead(rotator_analog_az);
+    ADC_az = analogRead(rotator_Raz);
 
     // map(value, fromLow, fromHigh, toLow, toHigh)
     raw_azimuth = (map(  ADC_az,
-    		                 configuration.analog_az_full_ccw,
-                         configuration.analog_az_full_cw,
+    		                 configuration.Raz_full_ccw,
+                         configuration.Raz_full_cw,
                        ( configuration.azimuth_starting_point * HEADING_MULTIPLIER),
                        ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)));
     

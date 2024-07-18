@@ -88,36 +88,38 @@ void ReadAzimuthCDE()
 
   //    Rtop*(2*VS-Vtop-Vbot)=(RBIAS+RCABLE)*(Vtop-Vbot)+500*(VS-Vbot)
 
- // The current at the two ends of the pot... 
+ 
+ // Resistance from wiper to top of azimuth potentiometer, increases CW
+ // roughly 10 to 490 Ohms
+  float Rtop = ((RBIAS + RCABLE) * (Vtop - Vbot) + RPOT * (VS - Vbot)) / (2 * VS - Vtop - Vbot);
+ 
+  // rename Rtop to Raz
+  Raz = Rtop; // legacy variable name
+
+  #ifdef DEBUG_HCO_ADC
+  float Rbot = 500 - Rtop;
+  // The current at the two ends of the pot... 
   float Itop = (VS - Vtop) / RBIAS;    // Amps, current through top leg
   float Ibot = (VS - Vbot) / RBIAS;    // Amps, current through bottom leg
-  float Iwiper = Itop + Ibot;
-
-  // rename Rtop to analog_az for compatibility with K3NG functions
-  float Rtop = ((RBIAS + RCABLE) * (Vtop - Vbot) + RPOT * (VS - Vbot)) / (2 * VS - Vtop - Vbot);
-  float Rbot = 500 - Rtop;
-
-  analog_az = Rtop; // legacy variable name
 
   // The two equations for the voltage Vw, Vw at the wiper
   float Vwipert = Vtop - (Itop * (Rtop + RCABLE));
   float Vwiperb = Vbot - (Ibot * (Rbot + RCABLE)) ;  
 
+  float Iwiper = Itop + Ibot;
   float Rwipert = Vwipert / Iwiper;
   float Rwiperb = Vwiperb / Iwiper;
+  #endif
 
-  float analog_az_ccw = configuration.analog_az_full_ccw; // ohms, min analog_az
-  float analog_az_cw  = configuration.analog_az_full_cw;  // Ohms, max analog_az
+  float Raz_ccw       = configuration.Raz_full_ccw; // ohms, min Raz
+  float Raz_cw        = configuration.Raz_full_cw;  // Ohms, max Raz
   float Az_start      = configuration.azimuth_starting_point * HEADING_MULTIPLIER;
   float Az_capability = configuration.azimuth_rotation_capability;  // degress of rotation
   float Az_stop       = Az_start + Az_capability * HEADING_MULTIPLIER;
 
-  if (analog_az < analog_az_ccw)  analog_az = analog_az_ccw; // clamp to lower limit
-  if (analog_az > analog_az_cw)   analog_az = analog_az_cw;  // clamp to upper limit
-
   // Rtop is nominally 0 to 500 Ohms for full CCW to full CW rotation
-  // typically analog_az from 8 to 483 (Ohms) maps to 0 to 360 degrees
-  raw_azimuth = (int) map(analog_az, analog_az_ccw, analog_az_cw, Az_start, Az_stop);
+  // For one rotator, Raz from 8 to 483 (Ohms) maps to 0 to 360 degrees
+  raw_azimuth = (int) map(Raz, Raz_ccw, Raz_cw, Az_start, Az_stop);
   azimuth = raw_azimuth;  // Expand this to include wrapping if necessary
   
   // calculate the wiper resistance
@@ -162,7 +164,6 @@ void ReadAzimuthCDE()
     Serial.print(", ");
     Serial.print(azimuth);    // deg, azimuth, filtered and calibrated
     Serial.println();
-
   }
   #endif // ifdef debug HCO
   

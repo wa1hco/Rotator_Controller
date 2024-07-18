@@ -32,9 +32,7 @@
  */
 
 #include <Arduino.h>
-
 #include "dependencies.h"
-
 #include "Display_MAX7221.h"
 
 // SPI transfer function for MAX7221 7 segment LED controller

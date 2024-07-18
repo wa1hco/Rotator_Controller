@@ -180,4 +180,6 @@
 #include <Bounce2.h>
 #endif
 
+void service_blink_led();
+
 #endif /* DEPENDENCIES_H_ */

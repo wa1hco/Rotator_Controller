@@ -41,20 +41,20 @@ You can tweak these, but read the online documentation!
 // analog voltage calibration - these are default values;
 // you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
 #ifdef FEATURE_HCO_ADC
-#define ANALOG_AZ_FULL_CCW               0  // Ohms, min wiper noise corrected pot reading
-#define ANALOG_AZ_FULL_CW              500  // Ohms, max wiper noise corrected pot reading
+#define RAZ_FULL_CCW               0  // Ohms, uncalibrated Rtop, pot reading
+#define RAZ_FULL_CW              500  // Ohms, uncalabrated Rtop, pot reading
 #else
-#define ANALOG_AZ_FULL_CCW               0  
-#define ANALOG_AZ_FULL_CW              360  // max expected on 0 to 1023 scale
+#define RAZ_FULL_CCW               0  
+#define RAZ_FULL_CW              360  // max expected on 0 to 1023 scale
 #endif
 
 #define ANALOG_EL_0_DEGREES              2
 #define ANALOG_EL_MAX_ELEVATION        180  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
-#define ANALOG_AZ_OVERLAP_DEGREES      360  // if overlap_led is enabled, turn on overlap led line if azimuth is greater than this setting
-                                            // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
-                                            // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
-                                            // turning on when going CW and crossing 180, ANALOG_AZ_OVERLAP_DEGREES should be set for 540 (180 + 360)
+#define RAZ_OVERLAP_DEGREES      360  // if overlap_led is enabled, turn on overlap led line if azimuth is greater than this setting
+                                      // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
+                                      // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
+                                      // turning on when going CW and crossing 180, RAZ_OVERLAP_DEGREES should be set for 540 (180 + 360)
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
@@ -179,6 +179,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_RELEASE_OFF                LOW  // means braked, used inside *break_release*() control functions
 #define BRAKE_RELEASE_ON                 HIGH // means brake released, used inside *break_release*() control functions
 
+// not used if HCO ADC
 #define AZIMUTH_SMOOTHING_FACTOR         0 // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR       ((float)0.00) // value = 0 to 99.9
 

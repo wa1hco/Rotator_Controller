@@ -126,6 +126,11 @@ void initialize_pins()
   if (az_preset_pot) 
   {
     pinMode(az_preset_pot, INPUT);
+
+      #ifdef DEBUG_AZ_PRESET_POT
+      Serial.println("initialize_pins: pinMode(az_preset_pot, INPUT)");
+      #endif
+
   }
 
   if (az_speed_pot) 
@@ -177,7 +182,7 @@ void initialize_pins()
   rotator(DEACTIVATE, CCW);
 
   #ifndef FEATURE_AZ_POSITION_HMC5883L
-  pinMode(rotator_analog_az, INPUT);
+  pinMode(rotator_Raz, INPUT);
   #endif
   
   normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X4;

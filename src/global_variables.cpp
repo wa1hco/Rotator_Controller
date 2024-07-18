@@ -31,9 +31,9 @@
 
 // initialize global variables called from setup()
 // azimuth globals
-float         analog_az                           = 0.0;   // output of reading something about azimuth
-float         raw_azimuth                         = 0.0;   // working variable, may be wrapped
-float         azimuth                             = 0.0;   // unwrapped raw_azimuth
+float         Raz                                 = 0.0;   // Ohms, Resistance of top of azimuth pot
+float         raw_azimuth                         = 0.0;   // deg, azimuth, may be un wrapped
+float         azimuth                             = 0.0;   // deg, wrapped to 0 to 360
 int           target_azimuth                      = 0;
 int           target_raw_azimuth                  = 0;
 char          az_request                          = 0;
@@ -56,6 +56,8 @@ char          az_slowdown_active                  = AZ_SLOWDOWN_DEFAULT;
 #ifdef FEATURE_HCO_BUTTONS
 int           button_cw_press_time                = 0; // msec pressed, 0 means not pressed
 int           button_ccw_press_time               = 0; // msec pressed, 0 means not pressed
+bool          is_CW_cal_mode               = false;
+bool          is_CCW_cal_mode                  = false;
 #endif
 
 #ifdef FEATURE_HCO_ADC

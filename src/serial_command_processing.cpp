@@ -26,7 +26,8 @@
                           http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
 */
 #include "dependencies.h"
-#include "display_calibration_settings.h"
+
+void display_calibration_settings();
 
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
@@ -603,7 +604,7 @@ void yaesu_p_command()
 //--------------------------------------------------------------
 
 #ifdef FEATURE_YAESU_EMULATION
-void yaesu_o_command() // fully ccw, L command
+void yaesu_o_command() // fully ccw, Offset command
 {
 
   #ifdef FEATURE_ELEVATION_CONTROL
@@ -619,9 +620,16 @@ void yaesu_o_command() // fully ccw, L command
   Serial.println(F("Rotate to full CCW and send keystroke..."));
   get_keystroke();
   read_azimuth(); // NOP if using interrupts
-  configuration.analog_az_full_ccw = analog_az; // azimuth before mapping
+  configuration.Raz_full_ccw = Raz; // azimuth before mapping
   write_settings_to_eeprom();
   read_settings_from_eeprom();
+
+  Serial.print("O command:");
+  Serial.print(" Raz ");
+  Serial.print(Raz);
+  Serial.print(", config.Raz_full_ccw ");
+  Serial.print(configuration.Raz_full_ccw);
+  Serial.println();
 }
 #endif //FEATURE_YAESU_EMULATION
 
@@ -648,7 +656,7 @@ void clear_serial_buffer()
 
 //--------------------------------------------------------------
 #ifdef FEATURE_YAESU_EMULATION
-void yaesu_f_command() // fully cw, R command
+void yaesu_f_command() // fully cw, Fullscale command
 {
   #ifdef FEATURE_ELEVATION_CONTROL
   if ((serial0_buffer[1] == '2') && (serial0_buffer_index > 1)) 
@@ -663,9 +671,16 @@ void yaesu_f_command() // fully cw, R command
   Serial.println(F("Rotate to full CW and send keystroke..."));
   get_keystroke();
   read_azimuth(); // NOP is using interrupts
-  configuration.analog_az_full_cw = analog_az; // azimuth before mapping
+  configuration.Raz_full_cw = Raz; // azimuth before mapping
   write_settings_to_eeprom();
   read_settings_from_eeprom();
+
+  Serial.print("F command:");
+  Serial.print(" Raz ");
+  Serial.print(Raz);
+  Serial.print(", config.Raz_full_cw ");
+  Serial.print(configuration.Raz_full_cw);
+  Serial.println();
 }
 #endif //FEATURE_YAESU_EMULATION
 

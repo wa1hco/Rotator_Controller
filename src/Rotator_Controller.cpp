@@ -363,8 +363,8 @@ void check_overlap()
   
   if ((overlap_led) && ((millis() - last_check_time) > 500)) 
   {
-     //if ((analog_az > (500*HEADING_MULTIPLIER)) && (azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
-     if ((azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
+     //if ((Raz > (500*HEADING_MULTIPLIER)) && (azimuth > (RAZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
+     if ((azimuth > (RAZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) 
      {
        digitalWrite(overlap_led, HIGH);
        overlap_led_status = 1;
@@ -376,8 +376,8 @@ void check_overlap()
        #endif //DEBUG_OVERLAP
      } else 
      {
-       //if (((analog_az < (500*HEADING_MULTIPLIER)) || (azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
-       if ((azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
+       //if (((Raz < (500*HEADING_MULTIPLIER)) || (azimuth < (RAZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
+       if ((azimuth < (RAZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (overlap_led_status)) 
        {
          digitalWrite(overlap_led, LOW);
          overlap_led_status = 0;

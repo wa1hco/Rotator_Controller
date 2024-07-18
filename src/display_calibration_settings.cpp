@@ -32,19 +32,19 @@
  */
 #include "dependencies.h"
 
-#include "display_calibration_settings.h"
+void display_calibration_settings();
 
 // called from \C command
 // prints global variables related to calibration
 void display_calibration_settings()
 {
   Serial.println(F("Analog and cal settings: "));
-  Serial.print("analog_az                    ");
-  Serial.println(analog_az,                                 DEC);
-  Serial.print("analog_az_full_ccw           ");
-  Serial.println(configuration.analog_az_full_ccw,          DEC);
-  Serial.print("analog_az_full_cw            ");
-  Serial.println(configuration.analog_az_full_cw,           DEC);
+  Serial.print("Raz                    ");
+  Serial.println(Raz,                                       DEC);
+  Serial.print("Raz_full_ccw           ");
+  Serial.println(configuration.Raz_full_ccw,                DEC);
+  Serial.print("Raz_full_cw            ");
+  Serial.println(configuration.Raz_full_cw,                 DEC);
   Serial.print("azimuth_starting_point       ");
   Serial.println(configuration.azimuth_starting_point,      DEC);
   Serial.print("azimuth_rotation_capability  ");

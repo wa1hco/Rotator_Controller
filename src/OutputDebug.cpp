@@ -109,7 +109,7 @@ void output_debug()
     Serial.print(F("\tAZ: "));
     Serial.print(azimuth            / HEADING_MULTIPLIER, DECIMAL_PLACES);
     Serial.print(F(" (sensor: "));
-    Serial.print(analog_az);
+    Serial.print(Raz);
     Serial.print(")");
     
     Serial.print(F("\tTarget: "));
@@ -121,7 +121,7 @@ void output_debug()
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
     Serial.print(F("\tAnalog: "));
-    Serial.println(analog_az);
+    Serial.println(Raz);
     #endif //FEATURE_AZ_POSITION_POTENTIOMETER
     
     #ifdef DEBUG_AZ_SPEED_POT
@@ -232,9 +232,9 @@ void output_debug()
     Serial.print(F("+"));
     Serial.print(configuration.azimuth_rotation_capability);
     Serial.print(F("\tAZ ana: "));
-    Serial.print(configuration.analog_az_full_ccw);
+    Serial.print(configuration.Raz_full_ccw);
     Serial.print(F("-"));
-    Serial.print(configuration.analog_az_full_cw);
+    Serial.print(configuration.Raz_full_cw);
     #ifdef FEATURE_ELEVATION_CONTROL
     Serial.print(F("\tEL ana: "));
     Serial.print(configuration.analog_el_0_degrees);

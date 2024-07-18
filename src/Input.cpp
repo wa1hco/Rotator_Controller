@@ -30,13 +30,7 @@
 // Arduino environment
 #include <Arduino.h>
 #include <avr/pgmspace.h>
-#include <EEPROM.h>
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include "Service_Blink_LED.h"
-
-// C++ functions
-#include <math.h> 
 
 // Project configuration
 #include "dependencies.h"
@@ -89,144 +83,158 @@ void check_az_speed_pot()
 // read the preset pot if preset button or time to read
 
 // deal with first indication of change and as pot continues to change
+// this function is call from loop()
 void check_az_preset_potentiometer()
 {
-  unsigned long         az_preset_check_time;     
+  int                   millis_now;
   static unsigned long  last_az_preset_check_time = 0;
-  int                   az_preset_interval        = 0;
-  static int            turning_stopped_count     = 5;    // init to stopped
-  static int            last_pot_read             = 9999;
-  int                   pot_read                  = 0;      // current pot setting
+  int                   az_preset_interval        = 0;  // will not be zero at first check
+  static int            turning_stopped_count     = AZ_PRESET_STOP_COUNT; 
+  static int            last_pot_read             = 0;
+  int                   pot_read                  = 0;  // current pot setting
   int                   pot_rate                  = 0;
-  //static bool           is_pot_stopped;
-  //byte                  button_read               = 0;
-  //bool                  check_pot_flag            = 0;
 
-  if (az_preset_pot) // if az preset pot pin not defined
+  if (!az_preset_pot) // if az preset pot pin not defined
   {  
-    // initialize last_pot_read the first time we hit this subroutine
-    if (last_pot_read == 9999) 
-    {
-      last_pot_read = analogRead(az_preset_pot);
-      last_az_preset_check_time = millis();
-    }
+    return;
+  }
 
-    // read pot and measure turning rate
-    az_preset_check_time = millis();
-    az_preset_interval = az_preset_check_time - last_az_preset_check_time;
+  if (last_az_preset_check_time == 0) // first pass through check az preset
+  {
+    last_pot_read = analogRead(az_preset_pot);
+    last_az_preset_check_time = millis();
+
+    #ifdef DEBUG_AZ_PRESET_POT
+    Serial.print("check_az_preset, first check: ");
+    Serial.print("millis ");
+    Serial.print(last_az_preset_check_time);
+    Serial.print(", preset ");
+    Serial.print(last_pot_read);
+    Serial.print(", rate ");
+    Serial.print(pot_rate);
+    Serial.println();
+    #endif
+
+    return;
+  }
+
+  millis_now = millis();
+  az_preset_interval = millis_now - last_az_preset_check_time;
+  
+  // execute preset algorithm at intervals
+  if ((az_preset_interval) < AZ_PRESET_CHECK_INTERVAL)
+  {
+    return;
+  }
+
+  // Time to process az preset, read pot and measure turning rate
+  last_az_preset_check_time = millis_now;
+
+  pot_read = analogRead(az_preset_pot);
+  pot_rate = pot_read - last_pot_read; // pot adc value change per preset interval
+  last_pot_read = pot_read;
+  // set global apply calibration to pot reading, updated on each preset interval
+  azimuth_preset = map(pot_read,
+                        AZ_PRESET_POT_FULL_CCW,
+                        AZ_PRESET_POT_FULL_CW,
+                        AZ_PRESET_POT_FULL_CCW_MAP,
+                        AZ_PRESET_POT_FULL_CW_MAP);
+
+  #ifdef DEBUG_AZ_PRESET_POT
+  Serial.print("check_az_preset: ");
+  Serial.print("millis ");
+  Serial.print(millis_now);
+  Serial.print(", preset ");
+  Serial.print(pot_read);
+  Serial.print(", rate ");
+  Serial.print(pot_rate);
+  //Serial.print("\n");
+  #endif
+  
+  // stop_count hold info about turning vs not turning
+  // stop_count increments when stopped, but limited by later code
+  if (abs(pot_rate) > AZ_PRESET_RATE)
+  {
+    turning_stopped_count = 0;
+
+    #ifdef DEBUG_AZ_PRESET_POT
+    Serial.print(" stop count ");
+    Serial.print(turning_stopped_count);
+    Serial.print(" turning");
+    Serial.print("\n");
+    #endif
+  }
+  else // not currently turning
+  {
+    turning_stopped_count += 1; //pre-increment
+
+    #ifdef DEBUG_AZ_PRESET_POT
+    Serial.print(" stop count ");
+    Serial.print(turning_stopped_count);
+    Serial.print(" not turning");
+    Serial.print("\n");
+    #endif
+  }
+
+  // detect time after transition from turning to not turning
+  // stop_count state machine
+  //  set to 0 on turning
+  //  increments when stopped
+  //  triggers rotation when passing through AZ_PRESET_STOP_COUNT
+  //  stop_count limited if greater than AZ_PRESET_STOP_COUNT
+  // if-else sequence based on turning stop count
+  if (turning_stopped_count == 0) // currently turning, display preset
+  {
+    is_display_preset = true;
+  }
+  else if (turning_stopped_count > 0 && 
+           turning_stopped_count < AZ_PRESET_STOP_COUNT) // waiting for end of movement
+  {
+    is_display_preset = true; // continue display
+
+    #ifdef DEBUG_AZ_PRESET_STATE
+    Serial.print("check_az_preset: turning ");
+    Serial.print("stop count ");
+    Serial.print(turning_stopped_count);
+    Serial.print("\n");
+    #endif    
+
+    #ifdef FEATURE_LCD_DISPLAY
+    display_az_preset_LCD(new_pot_azimuth);
+    #endif
+  
+  }
+  else if (turning_stopped_count == AZ_PRESET_STOP_COUNT) // trigger rotation
+  {
+    is_display_preset = false;
+
+    // initiate movement to preset
+    submit_request(AZ, REQUEST_AZIMUTH_RAW, azimuth_preset * HEADING_MULTIPLIER);
     
-    // execute preset algorithm at intervals
-    if ((az_preset_interval) > AZ_PRESET_CHECK_INTERVAL)
-    {
-      last_az_preset_check_time = az_preset_check_time;
+    #ifdef DEBUG_AZ_PRESET_STATE
+    Serial.print("check_az_preset: stopping ");
+    Serial.print("stop count ");
+    Serial.print(turning_stopped_count);
+    Serial.print(", pot read ");
+    Serial.print(pot_read);
+    Serial.print(", azimuth ");
+    Serial.print(azimuth_preset);
+    Serial.print("\n");
+    #endif
+  }
+  else if (turning_stopped_count > AZ_PRESET_STOP_COUNT) // waiting for movement
+  {
+    is_display_preset = false;
+    turning_stopped_count = AZ_PRESET_STOP_COUNT; // gets pre-incremented before next test
 
-      pot_read = analogRead(az_preset_pot);
-      pot_rate = pot_read - last_pot_read;
-      last_pot_read = pot_read;
-      // set global apply calibration to pot reading, updated on each preset interval
-      azimuth_preset = map(pot_read,
-                            AZ_PRESET_POT_FULL_CCW,
-                            AZ_PRESET_POT_FULL_CW,
-                            AZ_PRESET_POT_FULL_CCW_MAP,
-                            AZ_PRESET_POT_FULL_CW_MAP);
-
-      #ifdef DEBUG_AZ_PRESET_POT
-      Serial.print("check_az_preset: ");
-      Serial.print("millis ");
-      Serial.print(az_preset_check_time);
-      Serial.print(", preset ");
-      Serial.print(pot_read);
-      Serial.print(", rate ");
-      Serial.print(pot_rate);
-      //Serial.print("\n");
-      #endif
-    
-      // detect when pot transisitions from turning to not turning
-      // stop counter 
-      //  set to 0 on turning
-      //  increments when stopped
-      //  triggers preset when passing through AZ_PRESET_STOP_COUNT
-      //  if greater than AZ_PRESET_STOP_COUNT
-
-      // check if preset pot turning 
-      if (abs(pot_rate) > AZ_PRESET_RATE)
-      {
-        turning_stopped_count = 0;
-
-        #ifdef DEBUG_AZ_PRESET_POT
-        Serial.print(" stop count ");
-        Serial.print(turning_stopped_count);
-        Serial.print(" turning");
-        Serial.print("\n");
-        #endif
-
-      }
-      else // not currently turning
-      {
-        turning_stopped_count += 1; //pre-increment
-
-        #ifdef DEBUG_AZ_PRESET_POT
-        Serial.print(" stop count ");
-        Serial.print(turning_stopped_count);
-        Serial.print(" not turning");
-        Serial.print("\n");
-        #endif
-      }
-
-      // if-else sequence based on turning stop count
-      if (turning_stopped_count == 0) // currently turning, display preset
-      {
-        is_display_preset = true;
-      }
-      else if (turning_stopped_count > 0 && turning_stopped_count < AZ_PRESET_STOP_COUNT) // waiting for end of movement, continue display
-      {
-        is_display_preset = true; 
-
-        #ifdef DEBUG_AZ_PRESET_STATE
-        Serial.print("check_az_preset: turning ");
-        Serial.print("stop count ");
-        Serial.print(turning_stopped_count);
-        Serial.print("\n");
-        #endif    
-
-        #ifdef FEATURE_LCD_DISPLAY
-        display_az_preset_LCD(new_pot_azimuth);
-        #endif
-     
-      }
-      else if (turning_stopped_count == AZ_PRESET_STOP_COUNT) // trigger rotation
-      {
-        is_display_preset = false;
-
-        #ifdef DEBUG_AZ_PRESET_STATE
-        Serial.print("check_az_preset: stopping ");
-        Serial.print("stop count ");
-        Serial.print(turning_stopped_count);
-        Serial.print(", pot read ");
-        Serial.print(pot_read);
-        Serial.print(", azimuth ");
-        Serial.print(azimuth_preset);
-        Serial.print("\n");
-        #endif
-
-        // initiate movement to preset
-        submit_request(AZ, REQUEST_AZIMUTH_RAW, azimuth_preset * HEADING_MULTIPLIER);
-      }
-      else if (turning_stopped_count > AZ_PRESET_STOP_COUNT) // waiting for movement
-      {
-        is_display_preset = false;
-        turning_stopped_count = AZ_PRESET_STOP_COUNT; // gets pre-incremented before next test
-
-        #ifdef DEBUG_AZ_PRESET_STATE
-        Serial.print("check_az_preset: stopped ");
-        Serial.print("stop count ");
-        Serial.print(turning_stopped_count);
-        Serial.print("\n");
-        #endif
-      }
-    }  // if az_preset_interval
-  } // if az_preset_pot
-} //check_az_preset_potentiometer()
+    #ifdef DEBUG_AZ_PRESET_STATE
+    Serial.print("check_az_preset: stopped ");
+    Serial.print("stop count ");
+    Serial.print(turning_stopped_count);
+    Serial.print("\n");
+    #endif
+  }
+}  // if az_preset_interval
 
 //--------------------------------------------------------------
 void initialize_rotary_encoders()
