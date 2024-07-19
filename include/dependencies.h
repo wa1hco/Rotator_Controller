@@ -41,7 +41,6 @@
 #include "rotator_pins_HCO_board.h"
 #include "StateMachine.h"
 #include "serial_command_processing.h"
-#include "eeprom_local.h"
 #include "Input.h"
 #include "utilities_local.h"
 #include "global_variables.h"
@@ -180,6 +179,9 @@
 #include <Bounce2.h>
 #endif
 
+void initialize_eeprom_with_defaults();
+void write_settings_to_eeprom();
+void read_settings_from_eeprom();
 void service_blink_led();
 
 #endif /* DEPENDENCIES_H_ */
