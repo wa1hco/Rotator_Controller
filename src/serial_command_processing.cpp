@@ -487,23 +487,6 @@ void check_serial(){
   #endif //OPTION_SERIAL4_SUPPORT  
 }
 
-//--------------------------------------------------------------
-void submit_request(byte axis, byte request, int parm)
-{ 
-  #ifdef DEBUG_SUBMIT_REQUEST 
-  if (debug_mode) {Serial.print(F("submit_request: "));}
-  #endif //DEBUG_SUBMIT_REQUEST
-  
-  if (axis == AZ) 
-  {
-    #ifdef DEBUG_SUBMIT_REQUEST
-    if (debug_mode) {Serial.print(F("AZ "));Serial.print(request);Serial.print(F(" "));Serial.println(parm);}
-    #endif //DEBUG_SUBMIT_REQUEST
-    az_request = request;
-    az_request_parm = parm;
-    az_request_queue_state = IN_QUEUE;
-  } 
-
   #ifdef FEATURE_ELEVATION_CONTROL
   if (axis == EL) 
   {
@@ -515,7 +498,6 @@ void submit_request(byte axis, byte request, int parm)
     el_request_queue_state = IN_QUEUE;
   }   
   #endif //FEATURE_ELEVATION_CONTROL 
-}
 
 //--------------------------------------------------------------
 void clear_command_buffer()

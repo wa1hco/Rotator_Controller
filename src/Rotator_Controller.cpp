@@ -182,23 +182,10 @@
     01/02/13 M0CKE added code for a cheap rotary encoder input for setting the azimuth direction, rotary encoder connected to pins 6 & 7 with the center to ground,
     degrees are set by turning the encoder cw or ccw with 1 click being 1 degree if turned slowly or 1 click being 10 degree by turning quickly, this replaces the 
     preset pot and can be enabled by uncommenting "#define FEATURE_AZ_PRESET_ENCODER" below.
-
 */
-
-// Arduino environment
-#include <Arduino.h>
-#include <avr/pgmspace.h>
-#include <EEPROM.h>
-#include <avr/io.h>
-
-// C++ functions
-#include <math.h> 
 
 // Project configuration
 #include "dependencies.h"
-
-// Project functions
-#include "Service_Blink_LED.h"
 
 FIR<float, 31> lpf_top;
 FIR<float, 31> lpf_bot;
@@ -206,7 +193,6 @@ FIR<float, 31> lpf_bot;
 // define external functions
 void check_serial();
 void read_headings();
-void service_request_queue();
 void az_check_operation_timeout();
 void check_overlap();
 void output_debug();

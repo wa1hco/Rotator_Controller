@@ -129,8 +129,8 @@
 //#define DEBUG_AZ_PRESET_STATE
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
-#define DEBUG_HCO_BUTTONS
-#define DEBUG_HCO_BUTTON_CALIBRATION
+//#define DEBUG_HCO_BUTTONS
+//#define DEBUG_HCO_BUTTON_CALIBRATION
 //#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
 //#define DEBUG_PRESET_ENCODERS
 //#define DEBUG_AZ_MANUAL_ROTATE_LIMITS

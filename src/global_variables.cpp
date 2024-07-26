@@ -32,7 +32,7 @@
 // initialize global variables called from setup()
 // azimuth globals
 float         Raz                                 = 0.0;   // Ohms, Resistance of top of azimuth pot
-float         raw_azimuth                         = 0.0;   // deg, azimuth, may be un wrapped
+float         raw_azimuth                         = 0.0;   // deg, azimuth, may be unwrapped
 float         azimuth                             = 0.0;   // deg, wrapped to 0 to 360
 int           target_azimuth                      = 0;
 int           target_raw_azimuth                  = 0;

@@ -183,8 +183,6 @@ void loop()
   #ifdef FEATURE_MAX7221_DISPLAY
   update_Az_MAX7221_display();
   #endif
-
-  read_headings();
   
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
   check_az_manual_rotate_limit();
@@ -310,7 +308,7 @@ void check_hco_buttons()
   // rotate to limit of travel
   // continue to press and hold button in direction of travel
   // press and hold other button for >BUTTON_LONG_PRESS millisec
-  // Display flashes to indicate enterring calibration mode, remains flashing as long as both pressed
+  // Display indicates calibration mode
   // Calibration complete when either button released
 
   // Set fullscale calibration modes based on button presses

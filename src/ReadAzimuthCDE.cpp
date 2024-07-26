@@ -93,8 +93,7 @@ void ReadAzimuthCDE()
  // roughly 10 to 490 Ohms
   float Rtop = ((RBIAS + RCABLE) * (Vtop - Vbot) + RPOT * (VS - Vbot)) / (2 * VS - Vtop - Vbot);
  
-  // rename Rtop to Raz
-  Raz = Rtop; // legacy variable name
+  Raz = Rtop;  // rename local Rtop to global Raz
 
   #ifdef DEBUG_HCO_ADC
   float Rbot = 500 - Rtop;
@@ -119,7 +118,10 @@ void ReadAzimuthCDE()
 
   // Rtop is nominally 0 to 500 Ohms for full CCW to full CW rotation
   // For one rotator, Raz from 8 to 483 (Ohms) maps to 0 to 360 degrees
-  raw_azimuth = (int) map(Raz, Raz_ccw, Raz_cw, Az_start, Az_stop);
+  raw_azimuth = (int) map(Raz, 
+                          Raz_ccw, Raz_cw, 
+                          Az_start, Az_stop);
+
   azimuth = raw_azimuth;  // Expand this to include wrapping if necessary
   
   // calculate the wiper resistance

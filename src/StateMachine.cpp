@@ -51,15 +51,33 @@
 // SLOW_START_CW                  -> NORMAL_CW
 // SLOW_START_CCW                 -> NORMAL_CCW
 
-// Arduino environment
-
-// C++ functions
-#include <math.h> 
-
 // Project configuration
 #include "dependencies.h"
 
 // Project functions
+void service_request_queue();
+void submit_request(byte axis, byte request, int parm);
+
+//--------------------------------------------------------------
+void submit_request(byte axis, byte request, int parm)
+{ 
+  #ifdef DEBUG_SUBMIT_REQUEST 
+  if (debug_mode) {Serial.print(F("submit_request: "));}
+  #endif //DEBUG_SUBMIT_REQUEST
+  
+  if (axis == AZ) 
+  {
+    az_request = request;
+    az_request_parm = parm;
+    az_request_queue_state = IN_QUEUE;
+
+    #ifdef DEBUG_SUBMIT_REQUEST
+    if (debug_mode) {Serial.print(F("AZ "));Serial.print(request);Serial.print(F(" "));Serial.println(parm);}
+    #endif //DEBUG_SUBMIT_REQUEST
+
+  } 
+}
+
 
 //--------------------------------------------------------------
 // rotator(), write the rotator controls, analogWrite(), digitalWrite()
