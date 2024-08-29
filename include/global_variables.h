@@ -36,7 +36,7 @@
 // -------------------- global variables definitions-----------------------------
 
 // azimuth globals
-extern float         Raz;      // az reading from sensor, prior to mapping
+extern float         Raz;            // az reading from sensor, prior to mapping
 extern float         azimuth;        // az after wrapping to 0-360, used for display and control
 extern float         raw_azimuth;    // working variable, may be unwrapped
 extern int           target_azimuth;

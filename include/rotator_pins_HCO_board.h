@@ -38,35 +38,35 @@
 // Teensy v4.0 Digital and Analog Pins, front side only
 
 //    Teensy 4.0 Pin Definitions, USB up, upperleft, counter clockwise
-//----------|-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
-// Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
-// Digital  |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
-// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|A2 |A3 |A4 |A5 |A6|A7|A8|A9|
-// PWM      |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|   |   |18 |19 |  |  |22|23|
-// I2C      | | | | | | | | |   |  |  |  |  |  |  |  |CL1|DA1|DA0|CL0|  |  |  |  |
-// Serial   |R|T| | | | | |R|T  |  |  |  |  |  |T3|R3|R4 |T4 |   |   |T5|R5|  |  |
-// CAN      |R|T| | | | | | |   |  |  |T |  |R |  |  |   |   |   |   |  |  |T |R |
-//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+//----------|-|-|-|-|-|-|---|--|-|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+// Pins     |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+// Digital  |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+// Analog   | | | | | | |   |  | | |  |  |  |  |A0|A1|A2 |A3 |A4 |A5 |A6|A7|A8|A9|
+// PWM      |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|   |   |18 |19 |  |  |22|23|
+// I2C      | | | | | | |   |  | | |  |  |  |  |  |  |CL1|DA1|DA0|CL0|  |  |  |  |
+// Serial   |R|T| | | | |   |R |T| |  |  |  |  |T3|R3|R4 |T4 |   |   |T5|R5|  |  |
+// CAN      |R|T| | | | |   |  | | |  |T |  |R |  |  |   |   |   |   |  |  |T |R |
+//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
 
 // HCO Rotator custom board use of pins
-// Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
-//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
-// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|   |   |   |   |  |A7|  |  |
-// I2C      | | | | | | | | |   |  |  |  |  |  |  |  |   |   |DA0|CL0|  |  |  |  |
-// Buttons  | | | | | | | | |CCW|CW|  |  |  |  |  |  |   |   |   |   |  |  |  |  |
-// SPI      | | | | | | | | |   |  |CS|SI|SO|CL|  |  |   |   |   |   |  |  |  |  |
-// Relays   | | | | | | | | |   |  |  |  |  |  |  |  |BR |LR |   |   |MV|  |  |  |
-//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
-// Unused   |0|1|2|3|4|5|6|7|   |  |  |  |  |  |  |  |   |   |   |   |  |  |22|23|
-//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
+// Pins     |0|1|2|3|4|5|6  |7 |8|9 |10|11|12|13|14|15|16 |17 |18 |19|20|21|22|23|
+//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
+// Analog   | | | | | | |   |  | | |  |  |  |  |A0|A1|   |   |A4 |   |  |  |  |  |
+// I2C      | | | | | | |   |  | | |  |  |  |  |  |  |   |   |DA0|CL0|  |  |  |  |
+// Buttons  | | | | | | |CCW|CW| | |  |  |  |  |  |  |   |   |   |   |  |  |  |  |
+// SPI      | | | | | | |   |  | | |CS|SI|SO|CL|  |  |   |   |   |   |  |  |  |  |
+// Relays   | | | | | | |   |  | | |  |  |  |  |  |  |BR |LR |   |   |MV|  |  |  |
+//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+// Unused   |0|1|2|3|4|5|   |  |8|9|  |  |  |  |  |  |   |   |   |   |20|21|22|23|
+//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
 
 #ifdef FEATURE_MAX7221_DISPLAY
 #define MAX7221_CS_PIN 10 // MAX7221 SPI bus chip select pin
 #endif
 
 #ifdef FEATURE_HCO_BUTTONS
-#define BUTTON_CCW_PIN   8
-#define BUTTON_CW_PIN    9
+#define BUTTON_CCW_PIN   6
+#define BUTTON_CW_PIN    7
 #endif
 
 // when using a quad relay board
@@ -76,7 +76,7 @@
 
 #define AzPositionTopPin 14         // A0, top pin of pot with grounded wiper
 #define AzPositionBotPin 15         // A1, bottom pin of pot with grounded wiper
-#define AzPresetPin      21         // A7, 10K pot, 3V3 to GND
+#define AzPresetPin      18         // A7, 10K pot, 3V3 to GND
 
 #define TeensyLED        13
 
@@ -108,8 +108,8 @@
 
 #define rotate_h1               IN1Pin          // L298 H Bridge In 1 Pin, High means rotate cw
 #define rotate_h2               0               // L298 H Bridge In 2 Pin, High means rotate ccw
-#define button_cw_pin           BUTTON_CW_PIN      // normally open button to ground for manual CW rotation (schematic pin: A1)
-#define button_ccw_pin          BUTTON_CCW_PIN      // normally open button to ground for manual CCW rotation (schematic pin: A2)
+#define button_cw_pin           BUTTON_CW_PIN   // normally closed button to ground for manual CW rotation (schematic pin: A1)
+#define button_ccw_pin          BUTTON_CCW_PIN  // normally closed button to ground for manual CCW rotation (schematic pin: A2)
 #define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
 

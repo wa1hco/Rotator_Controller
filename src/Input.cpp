@@ -528,6 +528,7 @@ void check_preset_encoders()
 
 //--------------------------------------------------------------
 // check and act on button presses
+// obsolete, slated for removal
 void check_buttons()
 {
   #if defined(FEATURE_ADAFRUIT_BUTTONS)
@@ -538,25 +539,23 @@ void check_buttons()
   #else // not adafruit
   if (button_cw_pin && (digitalRead(button_cw_pin) == LOW)) 
   {
-  #endif //FEATURE_ADAFRUIT_BUTTONS
-
-  if (!isAzButtonPressed) 
-  {
-    #ifdef DEBUG_BUTTONS
-    if (debug_mode) {Serial.println(F("check_buttons: button_cw_pin pushed"));}       
-    #endif //DEBUG_BUTTONS
-    if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
-    {
-    submit_request(AZ,REQUEST_CW, 0);
-    isAzButtonPressed = true;
-    } else 
+  #endif //FEATURE_ADAFRUIT_BUTTONS or not
+    if (!isAzButtonPressed) 
     {
       #ifdef DEBUG_BUTTONS
-      if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT"));}
+      if (debug_mode) {Serial.println(F("check_buttons: button_cw_pin pushed"));}       
       #endif //DEBUG_BUTTONS
+      if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT*HEADING_MULTIPLIER)) 
+      {
+      submit_request(AZ,REQUEST_CW, 0);
+      isAzButtonPressed = true;
+      } else 
+      {
+        #ifdef DEBUG_BUTTONS
+        if (debug_mode) {Serial.println(F("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT"));}
+        #endif //DEBUG_BUTTONS
+      }
     }
-  }
-
   } else // not button cw
   {
     #ifdef FEATURE_ADAFRUIT_BUTTONS
@@ -587,7 +586,7 @@ void check_buttons()
         }
       }
     }
-  }
+  } 
 
   #if defined(FEATURE_ADAFRUIT_BUTTONS)
   if ((isAzButtonPressed) && (!(buttons & 0x12))) 
@@ -744,4 +743,4 @@ void check_buttons()
       #endif //FEATURE_ELEVATION_CONTROL
     }      
   }  
-}
+} // check_buttons()

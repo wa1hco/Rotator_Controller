@@ -248,8 +248,10 @@ void check_hco_buttons()
   extern bool is_CCW_cal_mode;
 
   // button state, pressed = low, fell = pressed, rose = released
-  #define     PRESSED LOW
-  #define NOT_PRESSED HIGH
+  // if board marked V3, then pressed = low
+  // if board after V3, then pressed = high
+  #define     PRESSED HIGH
+  #define NOT_PRESSED LOW
 
   debounceCCW.update();
   debounceCW.update();
