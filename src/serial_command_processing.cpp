@@ -160,7 +160,7 @@ void yaesu_serial_command()
       #endif    
       #ifdef OPTION_GS_232B_EMULATION
       case 'P': yaesu_p_command(); break;                 ged// P - switch between 360 and 450 degree mode
-      case 'Z':                                           // Z - Starting point toggle
+      case 'Z':  // Z - Starting point toggle
         if (configuration.azimuth_starting_point == 180) 
         {
           configuration.azimuth_starting_point = 0;

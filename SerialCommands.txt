@@ -1,0 +1,63 @@
+      Yaesu Serial Command
+      case 'A':  // A - CW/CCW rotation stop
+      case 'C':  // C - return current azimuth                                  
+      case 'F':  // F - full scale calibration
+      case 'H':  // H - print help (simulated Yaesu GS-232A help
+      case 'L':  // L - manual left (CCW) rotation
+      case 'O':  // O - offset calibration
+      case 'R':  // R - manual right (CW) rotation
+      case 'S':  // S - all stop
+      case 'M':  // M - auto azimuth rotation
+      case 'N':  // N - number of loaded timed interval entries
+      case 'T':  // T - initiate timed tracking
+      case 'X':  // X - azimuth speed change
+      case 'U':  // U - manual up rotation
+      case 'D':  // D - manual down rotation
+      case 'E':  // E - stop elevation rotation
+      case 'B':  // B - return current elevation   
+      case 'W':  // W - auto elevation rotation
+      case 'P':  // P - switch between 360 and 450 degree mode
+      case 'Z':  // Z - Starting point toggle
+      
+      case '\D':  // toggle debug mode                                                            
+      case '\E' : // initialize eeprom                    
+      case '\C':  // display calibration      
+      case '\L':  // rotate 180 degrees   
+      
+      Remote Host Protocol
+      case '\R' :
+      case '\S':
+      case '\T' :
+      case '\Z' :
+      
+      Ancillary Pin Control
+      case '\N' :  // \Nxx - turn pin on; xx = pin number
+      case '\F' :  // \Fxx - turn pin off; xx = pin number
+      case '\P' :  // \Pxxyyy - turn on pin PWM; xx = pin number, yyy = PWM value (0-255)
+      
+      Yaesu X command, azimuth speed change
+      case '4':
+      case '3':
+      case '2':
+      case '1':
+      
+      Easycom Emulation	
+      case 'A':  //AZ
+        case 2:
+        case 5: // format AZx.x
+        case 6: // format AZxx.x 
+        case 7: // format AZxxx.x
+      case 'E':  //EL
+        case 2:
+        case 5: // format ELx.x
+        case 6: // format ELxx.x 
+        case 7: // format ELxxx.x
+      case 'S':  // SA or SE - stop azimuth, stop elevation
+        case 'A':
+        case 'E':
+      case 'M':  // ML, MR, MU, MD - move left, right, up, down
+        case 'L': // ML - move left
+        case 'R': // MR - move right
+        case 'U': // MU - move up
+        case 'D': // MD - move down
+      case 'V': // VE - version query

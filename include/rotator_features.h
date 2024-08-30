@@ -74,7 +74,7 @@
 //#define FEATURE_EL_POSITION_LSM303                          // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 
 /* preset rotary encoder features and options */
-#define FEATURE_AZ_PRESET_POT                     // Uncomment for azimuth preset rotary potentiometer
+//#define FEATURE_AZ_PRESET_POT                     // Uncomment for azimuth preset rotary potentiometer
 //#define FEATURE_AZ_PRESET_ENCODER                 // Uncomment for Rotary Encoder Preset support
 //#define FEATURE_EL_PRESET_ENCODER                 // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 //#define OPTION_ENCODER_HALF_STEP_MODE
@@ -117,7 +117,7 @@
   */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
-#define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
@@ -126,10 +126,10 @@
 //#define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT
 //#define DEBUG_AZ_PRESET_POT
-//#define DEBUG_AZ_PRESET_STATE
+#define DEBUG_AZ_PRESET_STATE
 //#define DEBUG_HCO_BOARD
 //#define DEBUG_HCO_DISPLAY
-//#define DEBUG_HCO_BUTTONS
+#define DEBUG_HCO_BUTTONS
 //#define DEBUG_HCO_BUTTON_CALIBRATION
 //#define DEBUG_HCO_ADC                   // write ADC values to serial port for plotting
 //#define DEBUG_PRESET_ENCODERS
@@ -144,7 +144,7 @@
 //#define DEBUG_EL_CHECK_OPERATION_TIMEOUT
 //#define DEBUG_VARIABLE_OUTPUTS
 //#define DEBUG_ROTATOR
-//#define DEBUG_SUBMIT_REQUEST
+#define DEBUG_SUBMIT_REQUEST
 //#define DEBUG_SERVICE_ROTATION
 //#define DEBUG_POSITION_ROTARY_ENCODER
 //#define DEBUG_PROFILE_LOOP_TIME

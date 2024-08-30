@@ -40,8 +40,6 @@
 
 // Project functions
 
-#include "Service_Blink_LED.h"
-
 //--------------------------------------------------------------
 void output_debug()
 {
