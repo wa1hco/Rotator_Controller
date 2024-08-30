@@ -45,7 +45,7 @@
 #include "utilities_local.h"
 #include "global_variables.h"
 
-#define CODE_VERSION "2024070901"
+#define CODE_VERSION "2024083001"
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 // added Teensy 3.2, 3.1 as M20DX256
