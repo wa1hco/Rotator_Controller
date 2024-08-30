@@ -116,9 +116,15 @@
 #define FEATURE_WIRE_SUPPORT
 #endif
 
-#if defined FEATURE_HCO_BOARD
-  //#define FEATURE_WIRE_SUPPORT
+#if defined FEATURE_HCO_BOARD_V2
   #define FEATURE_MAX7221_DISPLAY
+  #define FEATURE_HCO_BUTTONS
+  #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
+  #define FEATURE_HCO_ADC
+  #define FEATURE_FIR_FILTER  
+#endif
+
+#if defined FEATURE_HCO_BOARD_V3
   #define FEATURE_HCO_BUTTONS
   #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
   #define FEATURE_HCO_ADC

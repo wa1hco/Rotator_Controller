@@ -51,8 +51,8 @@ extern FIR<float, 31> lpf_bot;
 void ReadAzimuthCDE() 
 {
   // read + and - ends of pot with grounded wiper
-  float ADC_top = (float) analogRead(AzPositionTopPin); // adc reading for top    of azimuth pot
-  float ADC_bot = (float) analogRead(AzPositionBotPin); // adc reading for bottom of azimuth pot
+  float ADC_top = (float) analogRead(AZ_POS_TOP_PIN); // adc reading for top    of azimuth pot
+  float ADC_bot = (float) analogRead(AZ_POS_BOT_PIN); // adc reading for bottom of azimuth pot
 
   // FIR filter the ADC readings, LPF, 12 Hz pass, 40 Hz and up at -60 dB, Fs = 200 Hz, 31 taps
   float LPF_top = lpf_top.processReading(ADC_top);

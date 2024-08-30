@@ -119,8 +119,8 @@ void initialize_pins()
   }
 
   #ifdef FEATURE_HCO_ADC
-  pinMode(AzPositionTopPin, INPUT);
-  pinMode(AzPositionBotPin, INPUT);
+  pinMode(AZ_POS_TOP_PIN, INPUT);
+  pinMode(AZ_POS_BOT_PIN, INPUT);
   #endif
 
   if (az_preset_pot) 

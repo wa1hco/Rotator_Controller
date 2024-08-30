@@ -33,7 +33,8 @@
 
 #include <Arduino.h>
 #include "dependencies.h"
-//#include "Display_MAX7221.h"
+
+#ifdef FEATURE_MAX7221_DISPLAY
 
 //-----------------------------------Display_MAX7221 private functions--------------------------
 void SPI_Transfer(uint8_t address, uint8_t data);
@@ -214,3 +215,4 @@ void update_Az_MAX7221_display()
 
 } // update_Az_MAX7221_display()
 
+#endif

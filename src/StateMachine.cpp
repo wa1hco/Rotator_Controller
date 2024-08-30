@@ -126,57 +126,54 @@ void rotator(byte rotation_action, byte rotation_type)
         #ifdef DEBUG_ROTATOR    
         if (debug_mode) { Serial.println(F("ACTIVATE")); Serial.flush();}
         #endif //DEBUG_ROTATOR
-          brake_release(AZ, true);
-          if (az_slowstart_active) // CW, Activate, slow start
+        brake_release(AZ, true);
+        if (az_slowstart_active) // CW, Activate, slow start
+        {
+          if (rotate_cw_pwm)
           {
-        	if (rotate_cw_pwm)
-            {
-            	analogWrite(rotate_cw_pwm,    0); //CW, ACTIVATE, slow start, write 0 to pwm
-            }
-            if (rotate_ccw_pwm)
-            {
-            	analogWrite( rotate_ccw_pwm,   0);
-            	digitalWrite(rotate_ccw_pwm, LOW);
-            }
-            if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm, 0);}
-            if (rotate_motor     ) {digitalWrite(rotate_motor,     LOW);}
-            if (rotate_cw_freq)
-            {
-            	noTone(rotate_cw_freq);
-            }
-            if (rotate_ccw_freq)
-            {
-            	noTone(rotate_ccw_freq);
+            analogWrite(rotate_cw_pwm,    0); //CW, ACTIVATE, slow start, write 0 to pwm
+          }
+          if (rotate_ccw_pwm)
+          {
+            analogWrite( rotate_ccw_pwm,   0);
+            digitalWrite(rotate_ccw_pwm, LOW);
+          }
+          if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm, 0);}
+          if (rotate_motor     ) {digitalWrite(rotate_motor,     LOW);}
+          if (rotate_cw_freq)
+          {
+            noTone(rotate_cw_freq);
+          }
+          if (rotate_ccw_freq)
+          {
+            noTone(rotate_ccw_freq);
             }
           } else // CW, Activate, not slow start
           {
-        	// CW, Activate, not slow start
-        	if (rotate_cw_pwm)
+            // CW, Activate, not slow start
+            if (rotate_cw_pwm)
             {
-            	analogWrite(rotate_cw_pwm, normal_az_speed_voltage); //CW, ACTIVATE, slowstart, write speed to pwm
+              analogWrite(rotate_cw_pwm, normal_az_speed_voltage); //CW, ACTIVATE, slowstart, write speed to pwm
             }
             if (rotate_ccw_pwm)
             {
-            	analogWrite(rotate_ccw_pwm,  0);  //CW, ACTIVATE, slowstart, write zero to pwm, turn off
-            	digitalWrite(rotate_ccw_pwm, LOW);
+              analogWrite(rotate_ccw_pwm,  0);  //CW, ACTIVATE, slowstart, write zero to pwm, turn off
+              digitalWrite(rotate_ccw_pwm, LOW);
             }
             if (rotate_cw_ccw_pwm) {analogWrite(rotate_cw_ccw_pwm, normal_az_speed_voltage);}
             if (rotate_motor     ) {digitalWrite(rotate_motor,     HIGH);}
             if (rotate_cw_freq)
             {
-            	tone(rotate_cw_freq,
-            		 map(normal_az_speed_voltage,
-            		     0,
-						 255,
-						 AZ_VARIABLE_FREQ_OUTPUT_LOW,
-						 AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+              tone(rotate_cw_freq,
+                  map(normal_az_speed_voltage, 0, 255,
+                  AZ_VARIABLE_FREQ_OUTPUT_LOW,
+                  AZ_VARIABLE_FREQ_OUTPUT_HIGH));
             }
             if (rotate_ccw_freq)
             {
-            	noTone(rotate_ccw_freq);
+              noTone(rotate_ccw_freq);
             }
           } // if slow start active, else
-
           
           if (rotate_cw) // CW, Activate, not pwm
           {

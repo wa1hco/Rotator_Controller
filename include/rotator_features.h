@@ -43,16 +43,7 @@
 //#define FEATURE_REMOTE_UNIT_SLAVE       //uncomment this to make this unit a remote unit controlled by a host unit
 
 //#define FEATURE_LCD_DISPLAY
-#define FEATURE_HCO_BOARD
-#ifdef FEATURE_HCO_BOARD
-  #define FEATURE_MAX7221_DISPLAY
-  #define FEATURE_HCO_BUTTONS
-  #define FEATURE_HCO_AZ_POSITION         // read + and - ends of pot with grounded wiper
-  #define FEATURE_HCO_ADC
-  #define FEATURE_FIR_FILTER
-  #define FEATURE_HCO_BUTTON_CALIBRATION    // press and hold both at end of travel triggers Cal
-
-#endif
+#define FEATURE_HCO_BOARD_V3
 
 #define AZIMUTH_INTERRUPT                          // use 1 msec ISR for ADC read
 

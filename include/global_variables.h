@@ -34,7 +34,6 @@
 #include "dependencies.h"
 
 // -------------------- global variables definitions-----------------------------
-
 // azimuth globals
 extern float         Raz;            // az reading from sensor, prior to mapping
 extern float         azimuth;        // az after wrapping to 0-360, used for display and control
@@ -58,16 +57,15 @@ extern char          current_az_speed_voltage;
 extern char          az_slowstart_active;
 extern char          az_slowdown_active;
 
-#ifdef FEATURE_HCO_BUTTONS
+// needed when FEATURE_HCO_BUTTONS
 extern int           button_cw_press_time;
 extern int           button_ccw_press_time;
 extern bool          is_CW_cal_mode;
 extern bool          is_CCW_cal_mode;
-#endif
 
-#ifdef FEATURE_HCO_ADC
+
+// needed when FEATURE_HCO_ADC
 extern int           IsrTime;
-#endif
 
 extern char          debug_mode;
 extern unsigned long last_debug_output_time;

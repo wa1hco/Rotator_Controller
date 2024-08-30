@@ -249,7 +249,7 @@ void check_hco_buttons()
 
   // button state, pressed = low, fell = pressed, rose = released
   // if board marked V3, then pressed = low
-  // if board after V3, then pressed = high
+  // if board after V3, push button switch is normally closed to ground
   #define     PRESSED HIGH
   #define NOT_PRESSED LOW
 
@@ -258,7 +258,9 @@ void check_hco_buttons()
 
   // Rotation ---------------------------------------------------------------
   // buttons say rotate CW
-  if (debounceCW.fell() && debounceCCW.read() == NOT_PRESSED)
+  if (debounceCW.changed() &&
+      debounceCW.read() == PRESSED && 
+      debounceCCW.read() == NOT_PRESSED)
   {
     submit_request(AZ, REQUEST_CW, 0); // on first detection of press
 
@@ -270,7 +272,9 @@ void check_hco_buttons()
   } // rotate CW
 
   // buttons say rotate CCW
-  if (debounceCCW.fell() && debounceCW.read() == NOT_PRESSED) // only ccw pressed
+  if (debounceCCW.changed() &&
+      debounceCCW.read() == PRESSED && 
+      debounceCW.read() == NOT_PRESSED) // only ccw pressed
   {
     submit_request(AZ, REQUEST_CCW, 0); // on first detection of press
 
@@ -282,7 +286,9 @@ void check_hco_buttons()
   } // rotate CCW
 
   // buttons say stop CW rotation
-  if (debounceCW.rose() && debounceCCW.read() == NOT_PRESSED)
+  if (debounceCW.changed() &&
+      debounceCW.read() == NOT_PRESSED
+      && debounceCCW.read() == NOT_PRESSED)
   {
     submit_request(AZ, REQUEST_STOP, 0);
 
@@ -294,7 +300,9 @@ void check_hco_buttons()
   } // stop CW
 
   // buttons say stop CCW rotation
-  if (debounceCCW.rose() && (debounceCW.read() == NOT_PRESSED))
+  if (debounceCCW.changed() &&
+      debounceCCW.read() == NOT_PRESSED && 
+      (debounceCW.read() == NOT_PRESSED))
   {
     submit_request(AZ, REQUEST_STOP, 0);
 

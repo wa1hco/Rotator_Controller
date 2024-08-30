@@ -30,63 +30,70 @@
 
 #ifndef ROTATOR_PINS_H_
 #define ROTATOR_PINS_H_
+#include "rotator_features.h"
 
 // You need to look at these and set them appropriately !
 // Most pins can be disabled by setting them to 0 (zero).  If you're not using a pin or function, set it to 0.
 
-// This file is configured for each hardware variant.  It is read by dependencies.h
-// THis file cannot have any ifdef that depend on dependencies.h
-
 // Teensy v4.0 Digital and Analog Pins, front side only
 
 //    Teensy 4.0 Pin Definitions, USB up, upperleft, counter clockwise
-//----------|-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
-// Pins     |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
-// Digital  |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
-// Analog   | | | | | | |   |  | | |  |  |  |  |A0|A1|A2 |A3 |A4 |A5 |A6|A7|A8|A9|
-// PWM      |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|   |   |18 |19 |  |  |22|23|
-// I2C      | | | | | | |   |  | | |  |  |  |  |  |  |CL1|DA1|DA0|CL0|  |  |  |  |
-// Serial   |R|T| | | | |   |R |T| |  |  |  |  |T3|R3|R4 |T4 |   |   |T5|R5|  |  |
-// CAN      |R|T| | | | |   |  | | |  |T |  |R |  |  |   |   |   |   |  |  |T |R |
-//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+//----------|-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+// Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+// Digital  |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|A2 |A3 |A4 |A5 |A6|A7|A8|A9|
+// PWM      |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|   |   |18 |19 |  |  |22|23|
+// I2C      | | | | | | | | |   |  |  |  |  |  |  |  |CL1|DA1|DA0|CL0|  |  |  |  |
+// Serial   |R|T| | | | | |R|T  |  |  |  |  |  |T3|R3|R4 |T4 |   |   |T5|R5|  |  |
+// CAN      |R|T| | | | | | |   |  |  |T |  |R |  |  |   |   |   |   |  |  |T |R |
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
 
 // HCO Rotator custom board use of pins
-// Pins     |0|1|2|3|4|5|6  |7 |8|9|10|11|12|13|14|15|16 |17 |18 |19|20|21|22|23|
-//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
-// Analog   | | | | | | |   |  | | |  |  |  |  |A0|A1|   |   |A4 |   |  |  |  |  |
-// I2C      | | | | | | |   |  | | |  |  |  |  |  |  |   |   |DA0|CL0|  |  |  |  |
-// Buttons  | | | | | | |CCW|CW| | |  |  |  |  |  |  |   |   |   |   |  |  |  |  |
-// SPI      | | | | | | |   |  | | |  |  |  |  |  |  |   |   |   |   |  |  |  |  |
-// Relays   | | | | | | |   |  | | |  |  |  |  |  |  |BR |LR |   |   |MV|  |  |  |
-//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
-// Unused   |0|1|2|3|4|5|   |  |8|9|8 |9 |10|11|  |  |   |   |   |   |20|21|22|23|
-//--------- |-|-|-|-|-|-|---|--|-|-|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
+// Pins     |0|1|2|3|4|5|6|7|8  |9 |10|11|12|13|14|15|16 |17 |18 |19 |20|21|22|23|
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
+// Analog   | | | | | | | | |   |  |  |  |  |  |A0|A1|   |   |   |   |  |A7|  |  |
+// I2C      | | | | | | | | |   |  |  |  |  |  |  |  |   |   |DA0|CL0|  |  |  |  |
+// Buttons  | | | | | | | | |CCW|CW|  |  |  |  |  |  |   |   |   |   |  |  |  |  |
+// SPI      | | | | | | | | |   |  |CS|SI|SO|CL|  |  |   |   |   |   |  |  |  |  |
+// Relays   | | | | | | | | |   |  |  |  |  |  |  |  |BR |LR |   |   |MV|  |  |  |
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|---|--|--|--|--|
+// Unused   |0|1|2|3|4|5|6|7|   |  |  |  |  |  |  |  |   |   |   |   |  |  |22|23|
+//--------- |-|-|-|-|-|-|-|-|---|--|--|--|--|--|--|--|---|---|---|-- |--|--|--|--|
 
+#ifdef FEATURE_MAX7221_DISPLAY
+#define MAX7221_CS_PIN 10 // MAX7221 SPI bus chip select pin
+#endif
 
-#define BUTTON_CCW_PIN   6
-#define BUTTON_CW_PIN    7
+#ifdef FEATURE_HCO_BUTTONS
+#define BUTTON_CCW_PIN   8
+#define BUTTON_CW_PIN    9
+#endif
 
-#define TEENSY_LED       13
-
-#define AZ_POS_TOP_PIN   14         // A0, top pin of pot with grounded wiper
-#define AZ_POS_BOT_PIN   15         // A1, bottom pin of pot with grounded wiper
-
-#define BRAKE_AZ_PIN     16         // high to release brake
+// when using a quad relay board
+#define BrakeAzPin       16         // high to release brake
 #define DirectionPin     17         // high to rotate left
-#define AZ_PRESET_PIN    18         // A7, 10K pot, 3V3 to GND
-
 #define MotorPin         20         // high to run motor
 
-#define ENAPin           0
-#define IN1Pin           0
+#define AzPositionTopPin 14         // A0, top pin of pot with grounded wiper
+#define AzPositionBotPin 15         // A1, bottom pin of pot with grounded wiper
+#define AzPresetPin      21         // A7, 10K pot, 3V3 to GND
+
+#define TeensyLED        13
+
+// when using motor and direction relays or...
+// when using an L298N H-bridge PWM motor controller
+#define ENAPin           20         // ENA on L298n, Motor control pin
+#define IN1Pin           17         // IN1 on L298n, Direction controlpin
+#define IN2Pin           0          // IN2 on L298n
+
 
 // azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator)
 // if change made here, also change initialize_pins()
-#define serial_led              TEENSY_LED      // LED blinks when command is received on serial port (set to 0 to disable)
+#define serial_led              TeensyLED       // LED blinks when command is received on serial port (set to 0 to disable)
 #define overlap_led             0               // line goes high when azimuth rotator is in overlap (> 360 rotators)
-#define brake_az                BRAKE_AZ_PIN    // goes high to disengage azimuth brake (set to 0 to disable)
+#define brake_az                BrakeAzPin      // goes high to disengage azimuth brake (set to 0 to disable)
 #define az_speed_pot            0               // connect to wiper of 1K to 10K potentiometer for speed control (set to 0 to disable)
-#define az_preset_pot           AZ_PRESET_PIN   // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
+#define az_preset_pot           AzPresetPin     // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
 #define preset_start_button     0               // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 #define button_stop             0               // connect to momentary switch (ground on button press) for preset stop (set to 0 to disable or for preset automatic start)
 
@@ -101,8 +108,8 @@
 
 #define rotate_h1               IN1Pin          // L298 H Bridge In 1 Pin, High means rotate cw
 #define rotate_h2               0               // L298 H Bridge In 2 Pin, High means rotate ccw
-#define button_cw_pin           BUTTON_CW_PIN   // normally closed button to ground for manual CW rotation (schematic pin: A1)
-#define button_ccw_pin          BUTTON_CCW_PIN  // normally closed button to ground for manual CCW rotation (schematic pin: A2)
+#define button_cw_pin           BUTTON_CW_PIN      // normally open button to ground for manual CW rotation (schematic pin: A1)
+#define button_ccw_pin          BUTTON_CCW_PIN      // normally open button to ground for manual CCW rotation (schematic pin: A2)
 #define azimuth_speed_voltage   0               // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define blink_led               0
 
