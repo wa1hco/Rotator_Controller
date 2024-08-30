@@ -34,8 +34,7 @@
 //--------------------------------------------------------------
 
 #include <Arduino.h>
-#include "rotator_features.h"
-#include "rotator_pins_HCO_board.h"
+#include "dependencies.h"
 
 void service_blink_led()
 {

@@ -324,7 +324,7 @@ void check_serial(){
                 pin_value = ((serial0_buffer[2]-48)*10) + (serial0_buffer[3]-48);
               }
               pinMode(pin_value,OUTPUT);
-              digitalWrite(pin_value,HIGH);
+              digitalWrite(pin_value, HIGH);
               Serial.println("OK");                          
             } else 
             {
