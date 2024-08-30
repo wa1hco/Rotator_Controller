@@ -165,13 +165,15 @@ void update_Az_MAX7221_display()
   #endif
 
   // Display updates for each mode
+  #ifdef FEATURE_AZ_PRESET_POT
   if(is_display_preset) // azimuth preset mode
   {
     write_az_digits(azimuth_preset); //also sets decode mode
     SPI_Transfer(DIGIT3, char(0x67)); // P, ABEFG,       40 20 04 02 01
     return;
   }
-
+  #endif
+  
   if(is_CCW_cal_mode)
   {
     //display "CALO"

@@ -2,7 +2,7 @@
       case 'A':  // A - CW/CCW rotation stop
       case 'C':  // C - return current azimuth                                  
       case 'F':  // F - full scale calibration
-      case 'H':  // H - print help (simulated Yaesu GS-232A help - not all commands are supported
+      case 'H':  // H - print help (simulated Yaesu GS-232A help
       case 'L':  // L - manual left (CCW) rotation
       case 'O':  // O - offset calibration
       case 'R':  // R - manual right (CW) rotation

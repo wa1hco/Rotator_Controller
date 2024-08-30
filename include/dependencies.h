@@ -38,7 +38,7 @@
 
 #include "rotator_features.h"
 #include "settings.h"
-#include "rotator_pins_HCO_board.h"
+#include "rotator_pins_HCO_board_V2.h"
 #include "StateMachine.h"
 #include "serial_command_processing.h"
 #include "Input.h"

@@ -86,6 +86,7 @@ void check_az_speed_pot()
 // this function is call from loop()
 void check_az_preset_potentiometer()
 {
+  #ifdef FEATURE_AZ_PRESET_POT
   int                   millis_now;
   static unsigned long  last_az_preset_check_time = 0;
   int                   az_preset_interval        = 0;  // will not be zero at first check
@@ -134,6 +135,7 @@ void check_az_preset_potentiometer()
   pot_rate = pot_read - last_pot_read; // pot adc value change per preset interval
   last_pot_read = pot_read;
   // set global apply calibration to pot reading, updated on each preset interval
+  #ifdef FEATURE_AZ_PRESET_POT
   azimuth_preset = map(pot_read,
                         AZ_PRESET_POT_FULL_CCW,
                         AZ_PRESET_POT_FULL_CW,
@@ -149,6 +151,8 @@ void check_az_preset_potentiometer()
   Serial.print(", rate ");
   Serial.print(pot_rate);
   //Serial.print("\n");
+  #endif
+  
   #endif
   
   // stop_count hold info about turning vs not turning
@@ -234,6 +238,7 @@ void check_az_preset_potentiometer()
     Serial.print("\n");
     #endif
   }
+#endif
 }  // if az_preset_interval
 
 //--------------------------------------------------------------

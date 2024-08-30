@@ -65,7 +65,7 @@
 //#define FEATURE_EL_POSITION_LSM303                          // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 
 /* preset rotary encoder features and options */
-#define FEATURE_AZ_PRESET_POT                     // Uncomment for azimuth preset rotary potentiometer
+//#define FEATURE_AZ_PRESET_POT                     // Uncomment for azimuth preset rotary potentiometer
 //#define FEATURE_AZ_PRESET_ENCODER                 // Uncomment for Rotary Encoder Preset support
 //#define FEATURE_EL_PRESET_ENCODER                 // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 //#define OPTION_ENCODER_HALF_STEP_MODE
@@ -108,7 +108,7 @@
   */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
-#define DEFAULT_DEBUG_STATE 1  // this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
 
 //#define DEBUG_MEMORY
 //#define DEBUG_BUTTONS
