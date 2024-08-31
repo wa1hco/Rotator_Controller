@@ -38,10 +38,6 @@
 // Project configuration
 #include "dependencies.h"
 
-//#define CODE_VERSION "2013091101"
-//#define CODE_VERSION "2017021101"
-#define CODE_VERSION "2024070901"
-
 // Project functions
 
 //--------------------------------------------------------------
